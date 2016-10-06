@@ -13,31 +13,29 @@ module Sinatra
       ACTIONS.freeze
 
       abort 'JSONAPI relationship actions can\'t be HTTP verbs!' \
-        if ACTIONS.any? { |action| Sinatra::Base.respond_to?(action) }
+        if ACTIONS.any? { |action| Base.respond_to?(action) }
 
       ACTIONS.each do |action|
-        define_method(action) do |**opts, &block|
-          if opts.key?(:roles)
-            fail "Roles not enforced for `#{action}'" unless action_roles.key?(action)
-            action_roles[action].replace([*opts[:roles]])
-          end
-          helpers { define_method(action, &block) } if block
+        define_method(action) do |&block|
+          helpers { define_method(action, &block) }
         end
       end
 
       def self.registered(app)
         app.register AbstractResource
 
-        # TODO: freeze these structures (deeply) at some later time?
-        app.set :action_roles, ACTIONS.map { |action| [action, Set.new] }.to_h.freeze
-
         app.helpers do
           def resource
             env['jsonapi.resource']
           end
+        end
 
-          def role
-            env['jsonapi.role']
+        app.set :actions do |*actions|
+          condition do
+            actions.all? do |action|
+              halt 405 unless respond_to?(action)
+              true
+            end
           end
         end
 

@@ -8,7 +8,7 @@ module Sinatra
   module JSONAPI
     module Resource
       abort 'JSONAPI resource actions can\'t be HTTP verbs!' \
-        if ResourceRoutes::ACTIONS.any? { |action| Sinatra::Base.respond_to?(action) }
+        if ResourceRoutes::ACTIONS.any? { |action| Base.respond_to?(action) }
 
       ResourceRoutes::ACTIONS.each do |action|
         define_method(action) do |**opts, &block|
@@ -25,8 +25,8 @@ module Sinatra
       end
 
       %i[has_one has_many].each do |rel_type|
-        define_method(rel_type) do |rel, &block|
-          relationships[rel] = Sinatra.new do
+        define_method(rel_type) do |rel, **opts, &block|
+          relationships[rel] = Sinatra.new(opts.fetch(:base, Base)) do
             register Relationship
             register RelationshipRoutes.const_get \
               rel_type.to_s.split('_').map(&:capitalize).join.to_sym
@@ -35,14 +35,30 @@ module Sinatra
         end
       end
 
+      def role(&block)
+        helpers { define_method(__callee__, &block) }
+      end
+
       def self.registered(app)
         app.register AbstractResource
-        app.register ResourceRoutes
 
         # TODO: freeze these structures (deeply) at some later time?
         app.set :action_roles, ResourceRoutes::ACTIONS.map { |action| [action, Set.new] }.to_h.freeze
         app.set :action_conflicts, { :create=>[] }.freeze
         app.set :relationships, {}
+
+        app.set :actions do |*actions|
+          condition do
+            actions.all? do |action|
+              roles = settings.action_roles[action]
+              halt 403 unless roles.empty? || Set[*role].intersect?(roles)
+              halt 405 unless respond_to?(action)
+              true
+            end
+          end
+        end
+
+        app.register ResourceRoutes
 
         delegator = proc do |id, rel_path|
           rel = rel_path.to_s.tr('-', '_').to_sym
@@ -52,7 +68,6 @@ module Sinatra
 
           fake_env = env.merge \
             'PATH_INFO'=>'/',
-            'jsonapi.role'=>role,
             'jsonapi.resource'=>resource,
             'jsonapi.bypass'=>false
 

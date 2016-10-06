@@ -15,7 +15,7 @@ class PostController < Sinatra::Base
   end
 
   find do |id|
-    Post[id]
+    Post[id.to_i]
   end
 
   create do |data|
@@ -46,6 +46,40 @@ And then execute:
 Or install it yourself as:
 
     $ gem install sinatra-jsonapi-resource
+
+## Goals &amp; Assumptions
+
+* Conform to the JSON:API spec
+* Expose flexibility where the JSON:API spec is loose
+* Controllers should be primarily composed of business logic
+* Controllers sit in a middleware stack with authentication (e.g.
+  [Rodauth][5]), attack protection (e.g. [Rack::Protection][6]), etc. above
+  them
+* Controllers sit beneath a router (e.g. [Rack::URLMap][4])
+* Be ORM-agnostic (bring your own models)
+* Play nice with Sinatra and JSONAPI::Serializers, allowing application
+  developers to use those libraries as intended without jumping through hoops
+
+## Design
+
+We want to provide some collection of Sinatra extensions that add helpers,
+conditions, filters, routes, and more. We'll use Sinatra's extension API
+internally to compose functionality, and make two main entry points
+(Sinatra::JSONAPI and Sinatra::JSONAPI::Resource) public. We can extend
+Sinatra's DSL to allow application developers to register helpers with
+predetermined names ("actions") and functionality, and dynamically create
+nested routes and helpers for relationships.
+
+### Wishlist
+
+* Tighter integration with JSONAPI::Serializers (JAS); specifically, using
+  links metadata to draw routes (may require improvements to JAS to allow moar
+  introspection)
+* Collect registered controllers and present a route map (this will likely need
+  to be a separate gem&mdash;more like a framework&mdash;that wraps this one)
+* Slightly related, can we provide some JWT middleware/boilerplate?
+* We are bypassing so much of Sinatra, can we lift this code and maybe part of
+  Sinatra into something more bare-metal?
 
 ## Usage
 
@@ -94,3 +128,6 @@ License](http://opensource.org/licenses/MIT).
 [1]: http://www.sinatrarb.com
 [2]: http://jsonapi.org
 [3]: https://github.com/fotinakis/jsonapi-serializers
+[4]: http://www.rubydoc.info/github/rack/rack/master/Rack/URLMap
+[5]: http://rodauth.jeremyevans.net
+[6]: https://github.com/sinatra/sinatra/tree/master/rack-protection

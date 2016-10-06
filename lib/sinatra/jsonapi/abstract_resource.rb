@@ -34,23 +34,8 @@ module Sinatra
         end
       end
 
-      def role(&block)
-        helpers { define_method(__callee__, &block) }
-      end
-
       def self.registered(app)
         app.register JSONAPI
-
-        app.set :actions do |*actions|
-          condition do
-            actions.all? do |action|
-              roles = settings.action_roles[action]
-              halt 403 unless roles.empty? || Set[*role].intersect?(roles)
-              halt 405 unless respond_to?(action)
-              true
-            end
-          end
-        end
 
         app.helpers Helpers
 

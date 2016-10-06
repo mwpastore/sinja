@@ -18,7 +18,7 @@ module Sinatra::JSONAPI::ResourceRoutes
 
       status 201
       body serialize_model(item)
-      if self_link = response.body['data']['links']['self']
+      if respond.body.respond_to?(:dig) && self_link = response.body.dig('data', 'links', 'self')
         headers 'Location'=>self_link
       end
     end
