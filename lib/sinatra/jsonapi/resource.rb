@@ -1,25 +1,16 @@
 # frozen_string_literal: true
 require 'set'
-require 'sinatra/jsonapi'
-require 'sinatra/jsonapi/resource/helpers'
-require 'sinatra/jsonapi/resource/relationships'
+require 'sinatra/jsonapi/abstract_resource'
+require 'sinatra/jsonapi/relationship'
+require 'sinatra/jsonapi/resource_routes'
 
 module Sinatra
   module JSONAPI
     module Resource
-      ACTIONS = %i[
-        create
-        destroy
-        find
-        list
-        replace
-        update
-      ].freeze
+      abort 'JSONAPI resource actions can\'t be HTTP verbs!' \
+        if ResourceRoutes::ACTIONS.any? { |action| Sinatra::Base.respond_to?(action) }
 
-      abort 'JSONAPI actions can\'t be HTTP verbs!' \
-        if ACTIONS.any? { |action| Sinatra::Base.respond_to?(action) }
-
-      ACTIONS.each do |action|
+      ResourceRoutes::ACTIONS.each do |action|
         define_method(action) do |**opts, &block|
           if opts.key?(:roles)
             fail "Roles not enforced for `#{action}'" unless action_roles.key?(action)
@@ -33,98 +24,51 @@ module Sinatra
         end
       end
 
-      include Relationships
-
-      def role(&block)
-        helpers { define_method(__callee__, &block) }
+      %i[has_one has_many].each do |rel_type|
+        define_method(rel_type) do |rel, &block|
+          relationships[rel] = Sinatra.new do
+            register Relationship
+            register RelationshipRoutes.const_get \
+              rel_type.to_s.split('_').map(&:capitalize).join.to_sym
+            instance_eval(&block)
+          end
+        end
       end
 
       def self.registered(app)
-        app.register JSONAPI
+        app.register AbstractResource
+        app.register ResourceRoutes
 
-        # TODO: freeze these structures deeply at some later time?
-        app.set :action_roles,
-          ACTIONS.map { |action| [action, Set.new] }.to_h.freeze
+        # TODO: freeze these structures (deeply) at some later time?
+        app.set :action_roles, ResourceRoutes::ACTIONS.map { |action| [action, Set.new] }.to_h.freeze
+        app.set :action_conflicts, { :create=>[] }.freeze
+        app.set :relationships, {}
 
-        app.set :action_conflicts,
-          { :create=>[] }.freeze
+        delegator = proc do |id, rel_path|
+          rel = rel_path.to_s.tr('-', '_').to_sym
+          not_found unless settings.relationships.key?(rel)
+          resource = find(id)
+          not_found unless resource
 
-        app.set :actions do |*actions|
-          condition do
-            actions.all? do |action|
-              roles = settings.action_roles[action]
-              halt 403 unless roles.empty? || Set[*role].intersect?(roles)
-              halt 405 unless respond_to?(action)
-              true
-            end
+          fake_env = env.merge \
+            'PATH_INFO'=>'/',
+            'jsonapi.role'=>role,
+            'jsonapi.resource'=>resource,
+            'jsonapi.bypass'=>false
+
+          settings.relationships[rel].call(fake_env).tap do
+            # TODO: There has to be a better way to do this.
+            env['jsonapi.bypass'] = true
           end
         end
 
-        app.helpers Helpers
-
-        app.before do
-          normalize_params!
+        %w[/:id/:rel /:id/relationships/:rel].each do |path|
+          app.get(path, :actions=>:find, &delegator)
         end
 
-        app.after do
-          body serialize_response_body if response.ok?
+        %i[patch post delete].each do |verb|
+          app.send(verb, '/:id/relationships/:rel', :actions=>%i[find update], &delegator)
         end
-
-        app.get '/', :actions=>:list do
-          serialize_models(list)
-        end
-
-        app.post '/', :actions=>:create do
-          item =
-            begin
-              create(data)
-            rescue Exception=>e
-              raise e unless settings.action_conflicts[:create].include?(e.class)
-              halt 409, e.message
-            end
-
-          status 201
-          body serialize_model(item)
-          if self_link = response.body['data']['links']['self']
-            headers 'Location'=>self_link
-          end
-        end
-
-        app.get '/:id', :actions=>:find do |id|
-          item = find(id)
-          not_found unless item
-
-          serialize_model(item)
-        end
-
-        %i[put post].each do |verb|
-          app.send verb, '/:id', :actions=>%i[find replace] do |id|
-            item = find(id)
-            not_found unless item
-            replace(item, data)
-
-            serialize_model(item)
-          end
-        end
-
-        app.patch '/:id', :actions=>%i[find update] do |id|
-          item = find(id)
-          not_found unless item
-          update(item, data)
-
-          serialize_model(item)
-        end
-
-        app.delete '/:id', :actions=>%i[find destroy] do |id|
-          item = find(id)
-          not_found unless item
-          destroy(item)
-
-          status 204
-          body nil
-        end
-
-        Relationships.registered(app)
       end
 
       def inherited(subclass)
@@ -136,7 +80,7 @@ module Sinatra
         subclass.action_conflicts =
           Marshal.load(Marshal.dump(subclass.action_conflicts)).freeze
 
-        Relationships.inherited(subclass)
+        subclass.relationships = {}
       end
     end
   end
