@@ -19,7 +19,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = %w[lib]
 
   # TODO: relax these dependencies
-  spec.add_dependency 'activesupport', '~> 5.0.0'
   spec.add_dependency 'json', '~> 2.0.1'
   spec.add_dependency 'jsonapi-serializers', '~> 0.15.0'
   spec.add_dependency 'sinatra', '~> 2.0.0.beta2'

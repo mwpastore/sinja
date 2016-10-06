@@ -1,45 +1,12 @@
 # frozen_string_literal: true
-require 'active_support/inflector'
 require 'set'
 require 'sinatra/jsonapi'
+require 'sinatra/jsonapi/resource/helpers'
+require 'sinatra/jsonapi/resource/relationships'
 
 module Sinatra
   module JSONAPI
     module Resource
-      Conflict = Class.new(StandardError)
-
-      module Helpers
-        def normalize_params!
-          {
-            :filter=>{},
-            :fields=>{},
-            :page=>{},
-            :include=>[]
-          }.each { |k, v| params[k] ||= v }
-        end
-
-        def data
-          deserialize_request_body[:data]
-        end
-
-        def serialize_model(model=nil, options={})
-          options[:is_collection] = false
-          options[:skip_collection_check] = defined?(Sequel)
-
-          ::JSONAPI::Serializer.serialize(model, options)
-        end
-
-        def serialize_models(models=[], options={})
-          options[:is_collection] = true
-
-          ::JSONAPI::Serializer.serialize([*models], options)
-        end
-
-        def singular?(noun)
-          noun == ActiveSupport::Inflector.singularize(ActiveSupport::Inflector.pluralize(noun))
-        end
-      end
-
       ACTIONS = %i[
         create
         destroy
@@ -52,14 +19,10 @@ module Sinatra
       abort 'JSONAPI actions can\'t be HTTP verbs!' \
         if ACTIONS.any? { |action| Sinatra::Base.respond_to?(action) }
 
-      def role(&block)
-        helpers { define_method(__callee__, &block) }
-      end
-
       ACTIONS.each do |action|
         define_method(action) do |**opts, &block|
           if opts.key?(:roles)
-            fail "Roles not checked for `#{action}'" unless action_roles.key?(action)
+            fail "Roles not enforced for `#{action}'" unless action_roles.key?(action)
             action_roles[action].replace([*opts[:roles]])
           end
           if opts.key?(:conflicts)
@@ -70,9 +33,16 @@ module Sinatra
         end
       end
 
+      include Relationships
+
+      def role(&block)
+        helpers { define_method(__callee__, &block) }
+      end
+
       def self.registered(app)
         app.register JSONAPI
 
+        # TODO: freeze these structures deeply at some later time?
         app.set :action_roles,
           ACTIONS.map { |action| [action, Set.new] }.to_h.freeze
 
@@ -89,6 +59,8 @@ module Sinatra
             end
           end
         end
+
+        app.helpers Helpers
 
         app.before do
           normalize_params!
@@ -152,76 +124,7 @@ module Sinatra
           body nil
         end
 
-=begin
-        has_one.each do |rel|
-          ["/:id/relationships/#{rel.tr('_', '-')}", "/:id/#{rel.tr('_', '-')}"].each do |path|
-            app.send :get, path, :actions=>[:find, "find_#{rel}".to_sym] do |id, rel|
-              item = find(id)
-              not_found unless item
-        end
-
-        has_many.each do |rel|
-        end
-
-
-            meth = "find_#{rel.tr('-', '_')}"
-            if singular?(rel)
-              not_found "To-one relationship `#{rel}' not found" unless respond_to?(meth)
-              serialize_model(send(meth, item))
-            else
-              not_found "To-many relationship `#{rel}' not found" unless respond_to?(meth)
-              serialize_models(send(meth, item))
-            end
-          end
-        end
-
-        app.patch '/:id/relationships/:rel', :actions=>%i[find] do |id, rel|
-          item = find(id)
-          not_found unless item
-          if singular?(rel)
-            meth, *args =
-              if data.nil?
-                ["clear_#{rel.tr('-', '_')}"]
-              else
-                ["update_#{rel.tr('-', '_')}", data]
-              end
-
-            not_found "To-one relationship `#{rel}' not found" unless item.respond_to?(meth)
-
-            send(meth, *args)
-            status 204
-          else
-            meth, *args =
-              if data.empty?
-                ["clear_#{rel.tr('-', '_')}"]
-              else
-                ["replace_#{rel.tr('-', '_')}", data]
-              end
-
-            not_found "To-many relationship `#{rel}' not found" unless item.respond_to?(meth)
-
-            send(meth, *args)
-            status 204
-          end
-        end
-
-        app.post '/:id/relationships/:rel', :actions=>%i[find] do |id, rel|
-          item = find(id)
-          not_found unless item
-          not_found "To-many relationship `#{rel}' not found" unless item.relationship?(rel)
-                ["add_#{rel.tr('-', '_')}", data]
-
-          # add member(s) to to-many relationship
-        end
-
-        app.delete '/:id/relationships/:rel', :actions=>%i[find] do |id, rel|
-          item = find(id)
-          not_found unless item
-          not_found "To-many relationship `#{rel}' not found" unless item.relationship?(rel)
-
-          # remove member(s) from to-many relationship
-        end
-=end
+        Relationships.registered(app)
       end
 
       def inherited(subclass)
@@ -232,6 +135,8 @@ module Sinatra
 
         subclass.action_conflicts =
           Marshal.load(Marshal.dump(subclass.action_conflicts)).freeze
+
+        Relationships.inherited(subclass)
       end
     end
   end
