@@ -26,16 +26,17 @@ module Sinatra
 
         app.helpers do
           def resource
-            env['jsonapi.resource']
+            env['SJA']['resource']
           end
         end
 
         app.set :actions do |*actions|
           condition do
-            actions.all? do |action|
+            actions.each do |action|
+              halt 403 unless can?(action)
               halt 405 unless respond_to?(action)
-              true
             end
+            true
           end
         end
 

@@ -16,8 +16,22 @@ module Sinatra
           }.each { |k, v| params[k] ||= v }
         end
 
+        def can?(_)
+          true
+        end
+
         def data
-          deserialize_request_body[:data]
+          @data ||= deserialize_request_body[:data]
+        end
+
+        def attributes
+          return enum_for(__callee__) unless block_given?
+          data.fetch(:attributes, {})
+        end
+
+        def relationships
+          return enum_for(__callee__) unless block_given?
+          data.fetch(:relationships, {})
         end
 
         def serialize_model(model=nil, options={})
@@ -44,7 +58,7 @@ module Sinatra
         end
 
         app.after do
-          pass if env['jsonapi.bypass']
+          pass if env['SJA']['nested']
 
           body serialize_response_body if response.ok?
         end

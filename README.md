@@ -18,8 +18,8 @@ class PostController < Sinatra::Base
     Post[id.to_i]
   end
 
-  create do |data|
-    Post.create(data)
+  create do |attr|
+    Post.create(attr)
   end
 end
 ```

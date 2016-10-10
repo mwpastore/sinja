@@ -7,6 +7,37 @@ require 'sinatra/jsonapi/resource_routes'
 module Sinatra
   module JSONAPI
     module Resource
+      module Helpers
+        def can?(action)
+          roles = settings.action_roles[action]
+          roles.empty? || Set[*role].intersect?(roles)
+        end
+
+        def has_relationship?(path)
+          settings.relationships.key?(path.tr('-', '_').to_sym)
+        end
+
+        def has_relationships?(paths)
+          paths.all? { |path| has_relationship?(path) }
+        end
+
+        def dispatch_relationship_request(path, resource, **opts)
+          handler = settings.relationships[path.tr('-', '_').to_sym]
+          sja = env['SJA'].merge 'resource'=>resource, 'nested'=>true
+          fake_env = env.merge 'PATH_INFO'=>'/', 'SJA'=>sja
+          fake_env['REQUEST_METHOD'] = opts[:method].to_s.tap(&:upcase!) if opts[:method]
+          fake_env['rack.input'] = StringIO.new(JSON.fast_generate(opts[:body])) if opts.key?(:body)
+          handler.call(fake_env)
+        end
+
+        def dispatch_relationship_requests!(resource, **opts)
+          relationships do |path, body|
+            response = dispatch_relationship_request(path, resource, opts.merge(:body=>body))
+            halt(*response) unless (200...300).cover?(response[0])
+          end
+        end
+      end
+
       abort 'JSONAPI resource actions can\'t be HTTP verbs!' \
         if ResourceRoutes::ACTIONS.any? { |action| Base.respond_to?(action) }
 
@@ -47,42 +78,32 @@ module Sinatra
         app.set :action_conflicts, { :create=>[] }.freeze
         app.set :relationships, {}
 
+        app.helpers Helpers
+
         app.set :actions do |*actions|
           condition do
-            actions.all? do |action|
-              roles = settings.action_roles[action]
-              halt 403 unless roles.empty? || Set[*role].intersect?(roles)
+            actions.each do |action|
+              halt 403 unless can?(action)
               halt 405 unless respond_to?(action)
-              true
             end
+            true
           end
         end
 
         app.register ResourceRoutes
 
-        delegator = proc do |id, rel_path|
-          rel = rel_path.to_s.tr('-', '_').to_sym
-          not_found unless settings.relationships.key?(rel)
-          resource = find(id)
-          not_found unless resource
-
-          fake_env = env.merge \
-            'PATH_INFO'=>'/',
-            'jsonapi.resource'=>resource,
-            'jsonapi.bypass'=>false
-
-          settings.relationships[rel].call(fake_env).tap do
-            # TODO: There has to be a better way to do this.
-            env['jsonapi.bypass'] = true
-          end
+        rel_router = proc do |id, rel_path|
+          not_found unless has_relationship?(rel_path)
+          not_found unless resource = find(id)
+          dispatch_relationship_request(rel_path, resource)
         end
 
-        %w[/:id/:rel /:id/relationships/:rel].each do |path|
-          app.get(path, :actions=>:find, &delegator)
+        %w[/:id/:rel_path /:id/relationships/:rel_path].each do |path|
+          app.get(path, :actions=>:find, &rel_router)
         end
 
         %i[patch post delete].each do |verb|
-          app.send(verb, '/:id/relationships/:rel', :actions=>%i[find update], &delegator)
+          app.send(verb, '/:id/relationships/:rel_path', :actions=>%i[find update], &rel_router)
         end
       end
 

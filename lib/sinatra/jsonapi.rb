@@ -5,6 +5,8 @@ require 'sinatra/base'
 
 module Sinatra
   module JSONAPI
+    MIME_TYPE = 'application/vnd.api+json'
+
     module Helpers
       def deserialize_request_body
         return {} unless request.body.respond_to?(:size) && request.body.size > 0
@@ -49,30 +51,35 @@ module Sinatra
       app.disable :protection
       app.disable :static
 
-      app.mime_type :api_json, 'application/vnd.api+json'
+      app.set :show_exceptions, :after_handler
+      app.set :progname, 'jsonapi'
+
+      app.mime_type :api_json, MIME_TYPE
 
       app.helpers Helpers
 
       app.error 400...600, nil do
-        pass if env['jsonapi.bypass']
+        return normalized_error if env['SJA']['nested']
 
         hash = error_hash(normalized_error)
-        logger.error('jsonapi') { hash }
+        logger.error(settings.progname) { hash }
         content_type :api_json
         JSON.fast_generate ::JSONAPI::Serializer.serialize_errors [hash]
       end
 
       app.before do
-        pass if env['jsonapi.resource']
+        env['SJA'] ||= { 'nested'=>false }
 
-        halt 406 unless request.preferred_type.to_s == mime_type(:api_json)
-        halt 415 unless request.media_type == mime_type(:api_json)
+        pass if env['SJA']['nested']
+
+        halt 406 unless request.preferred_type.entry == MIME_TYPE
+        halt 415 unless request.media_type == MIME_TYPE
         halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }
       end
     end
 
     def self.extended(base)
-      def base.route(*args, **opts)
+      def base.route(*, **opts)
         opts[:provides] ||= :api_json
 
         super
