@@ -11,7 +11,7 @@ module Sinatra
     module Resource
       module RequestHelpers
         def can?(action)
-          roles = settings.action_roles[action]
+          roles = settings._action_roles[action]
           roles.nil? || roles.empty? || Set[*role].intersect?(roles)
         end
 
@@ -36,14 +36,14 @@ module Sinatra
           options[:skip_collection_check] = defined?(Sequel)
 
           ::JSONAPI::Serializer.serialize model,
-            settings.jsonapi_serializer_opts.merge(options)
+            settings._jsonapi_serializer_opts.merge(options)
         end
 
         def serialize_models(models=[], options={})
           options[:is_collection] = true
 
           ::JSONAPI::Serializer.serialize [*models],
-            settings.jsonapi_serializer_opts.merge(options)
+            settings._jsonapi_serializer_opts.merge(options)
         end
       end
 
@@ -73,9 +73,27 @@ module Sinatra
         return if respond_to?(action)
 
         define_singleton_method(action) do |**opts, &block|
-          action_roles[action] = Set[*opts[:roles]] if opts.key?(:roles)
-          action_conflicts[action] = !!opts[:conflicts] if opts.key?(:conflicts)
-          helpers { define_method(action, &block) } if block
+          _action_roles[action] = Set[*opts[:roles]] if opts.key?(:roles)
+          _action_conflicts[action] = !!opts[:conflicts] if opts.key?(:conflicts)
+          return unless block
+
+          helpers do
+            define_method(action) do |*args|
+              result =
+                begin
+                  instance_exec(*args.take(block.arity.abs), &block)
+                rescue Exception=>e
+                  raise e unless settings._action_conflicts[action] \
+                    && settings._conflict_exceptions.include?(e.class)
+
+                  halt 409, e.message
+                end
+
+              return result \
+                if result.is_a?(Array) && result.length == 2 && result.last.instance_of?(Hash)
+              return result, {}
+            end
+          end
         end
       end
 
@@ -84,10 +102,10 @@ module Sinatra
           namespace "/:resource_id/relationships/#{rel.to_s.tr('_', '-')}", :actions=>:find do
             helpers do
               def resource
-                @resource ||= find(params[:resource_id])
+                @resource ||= find(params[:resource_id]).first
               end
 
-              def check_conflict!
+              def sanity_check!
                 super
                 halt 409, 'Resource ID in payload does not match endpoint' \
                   unless data[:id].to_s == params[:resource_id].to_s
@@ -111,52 +129,32 @@ module Sinatra
       end
 
       def conflict_exceptions(e=[])
-        conflict_exceptions.concat([*e])
+        _conflict_exceptions.concat([*e])
       end
 
       def jsonapi_serializer_opts(h={})
-        jsonapi_serializer_opts.merge!(h)
+        _jsonapi_serializer_opts.merge!(h)
       end
 
       def freeze!
-        action_conflicts.freeze
-        action_roles.tap { |c| c.values.each(&:freeze) }.freeze
-        conflict_exceptions.freeze
-        jsonapi_serializer_opts.tap { |c| c.values.each(&:freeze) }.freeze
+        _action_conflicts.freeze
+        _action_roles.tap { |c| c.values.each(&:freeze) }.freeze
+        _conflict_exceptions.freeze
+        _jsonapi_serializer_opts.tap { |c| c.values.each(&:freeze) }.freeze
       end
 
       def self.registered(app)
         app.register JSONAPI, Namespace
 
-        app.set :action_roles, {}
-        app.set :action_conflicts, {}
-        app.set :conflict_exceptions, []
-        app.set :jsonapi_serializer_opts, {}
+        app.set :_action_roles, {}
+        app.set :_action_conflicts, {}
+        app.set :_conflict_exceptions, []
+        app.set :_jsonapi_serializer_opts, {}
 
         app.helpers RequestHelpers, ResponseHelpers do
-          # Use send_action when we have variable number of arguments and/or
-          # we need conflict handling
-          def send_action(action, *args)
-            send(action, *args.take(method(action).arity.abs))
-          rescue Exception=>e
-            raise e unless settings.action_conflicts[action] \
-              && settings.conflict_exceptions.include?(e.class)
-
-            # TODO: why won't an error handler catch Exception?
-            halt 409, e.message
-          end
-
-          def check_conflict!
+          def sanity_check!
             halt 409, 'Resource type in payload does not match endpoint' \
               unless data[:type] == request.path.split('/').last # TODO
-          end
-
-          def with_opts?(collection)
-            return collection if collection.is_a?(Array) \
-              && collection.length == 2 \
-              && collection.map(&:class).tap(&:uniq!).length == 2
-
-            return collection, {}
           end
         end
 
@@ -194,10 +192,10 @@ module Sinatra
         super
 
         %i[
-          action_roles
-          action_conflicts
-          conflict_exceptions
-          jsonapi_serializer_opts
+          _action_roles
+          _action_conflicts
+          _conflict_exceptions
+          _jsonapi_serializer_opts
         ].each do |setting|
           subclass.send "#{setting}=", Marshal.load(Marshal.dump(subclass.send(setting)))
         end
