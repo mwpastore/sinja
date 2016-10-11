@@ -7,7 +7,7 @@ module Sinatra
   module JSONAPI
     MIME_TYPE = 'application/vnd.api+json'
 
-    module Helpers
+    module RequestHelpers
       def deserialize_request_body
         return {} unless request.body.respond_to?(:size) && request.body.size > 0
 
@@ -16,7 +16,9 @@ module Sinatra
       rescue JSON::ParserError
         halt 400, 'Malformed JSON in the request body'
       end
+    end
 
+    module ResponseHelpers
       def serialize_response_body
         JSON.generate(response.body)
       rescue JSON::GeneratorError
@@ -48,7 +50,7 @@ module Sinatra
     end
 
     def self.registered(app)
-      app.disable :protection
+      app.disable :protection # TODO
       app.disable :static
 
       app.set :show_exceptions, :after_handler
@@ -56,11 +58,9 @@ module Sinatra
 
       app.mime_type :api_json, MIME_TYPE
 
-      app.helpers Helpers
+      app.helpers RequestHelpers, ResponseHelpers
 
       app.error 400...600, nil do
-        return normalized_error if env['SJA']['nested']
-
         hash = error_hash(normalized_error)
         logger.error(settings.progname) { hash }
         content_type :api_json
@@ -68,10 +68,6 @@ module Sinatra
       end
 
       app.before do
-        env['SJA'] ||= { 'nested'=>false }
-
-        pass if env['SJA']['nested']
-
         halt 406 unless request.preferred_type.entry == MIME_TYPE
         halt 415 unless request.media_type == MIME_TYPE
         halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }

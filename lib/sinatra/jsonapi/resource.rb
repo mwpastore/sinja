@@ -1,66 +1,106 @@
 # frozen_string_literal: true
 require 'set'
-require 'sinatra/jsonapi/abstract_resource'
-require 'sinatra/jsonapi/relationship'
+require 'sinatra/jsonapi'
+require 'sinatra/jsonapi/relationship_routes/has_many'
+require 'sinatra/jsonapi/relationship_routes/has_one'
 require 'sinatra/jsonapi/resource_routes'
+require 'sinatra/namespace'
 
 module Sinatra
   module JSONAPI
     module Resource
-      module Helpers
+      module RequestHelpers
         def can?(action)
           roles = settings.action_roles[action]
-          roles.empty? || Set[*role].intersect?(roles)
+          roles.nil? || roles.empty? || Set[*role].intersect?(roles)
         end
 
-        def has_relationship?(path)
-          settings.relationships.key?(path.tr('-', '_').to_sym)
+        def data
+          @data ||= deserialize_request_body[:data]
         end
 
-        def has_relationships?(paths)
-          paths.all? { |path| has_relationship?(path) }
+        def normalize_params!
+          # TODO: halt 400 if other params, or params not implemented?
+          {
+            :filter=>{},
+            :fields=>{},
+            :page=>{},
+            :include=>[]
+          }.each { |k, v| params[k] ||= v }
+        end
+      end
+
+      module ResponseHelpers
+        def serialize_model(model=nil, options={})
+          options[:is_collection] = false
+          options[:skip_collection_check] = defined?(Sequel)
+
+          ::JSONAPI::Serializer.serialize model,
+            settings.jsonapi_serializer_opts.merge(options)
         end
 
-        def dispatch_relationship_request(path, resource, **opts)
-          handler = settings.relationships[path.tr('-', '_').to_sym]
-          sja = env['SJA'].merge 'resource'=>resource, 'nested'=>true
-          fake_env = env.merge 'PATH_INFO'=>'/', 'SJA'=>sja
+        def serialize_models(models=[], options={})
+          options[:is_collection] = true
+
+          ::JSONAPI::Serializer.serialize [*models],
+            settings.jsonapi_serializer_opts.merge(options)
+        end
+      end
+
+      module RelationshipHelpers
+        def dispatch_relationship_request(path, **opts)
+          fake_env = env.merge 'PATH_INFO'=>"/#{data[:id]}/relationships/#{path}"
           fake_env['REQUEST_METHOD'] = opts[:method].to_s.tap(&:upcase!) if opts[:method]
           fake_env['rack.input'] = StringIO.new(JSON.fast_generate(opts[:body])) if opts.key?(:body)
-          handler.call(fake_env)
+          call(fake_env) # TODO: we may need to bypass postprocessing here
         end
 
-        def dispatch_relationship_requests!(resource, **opts)
-          relationships do |path, body|
-            response = dispatch_relationship_request(path, resource, opts.merge(:body=>body))
+        def dispatch_relationship_requests!(**opts)
+          data.fetch(:relationships, {}).each do |path, body|
+            response = dispatch_relationship_request(path, opts.merge(:body=>body))
             halt(*response) unless (200...300).cover?(response[0])
           end
         end
       end
 
-      abort 'JSONAPI resource actions can\'t be HTTP verbs!' \
-        if ResourceRoutes::ACTIONS.any? { |action| Base.respond_to?(action) }
+      def def_action_helpers(actions)
+        [*actions].each { |action| def_action_helper(action) }
+      end
 
-      ResourceRoutes::ACTIONS.each do |action|
-        define_method(action) do |**opts, &block|
-          if opts.key?(:roles)
-            fail "Roles not enforced for `#{action}'" unless action_roles.key?(action)
-            action_roles[action].replace([*opts[:roles]])
-          end
-          if opts.key?(:conflicts)
-            fail "Conflicts not handled for `#{action}'" unless action_conflicts.key?(action)
-            action_conflicts[action].replace([*opts[:conflicts]])
-          end
+      def def_action_helper(action)
+        abort 'JSONAPI resource actions can\'t be HTTP verbs!' if Base.respond_to?(action)
+
+        return if respond_to?(action)
+
+        define_singleton_method(action) do |**opts, &block|
+          action_roles[action] = Set[*opts[:roles]] if opts.key?(:roles)
+          action_conflicts[action] = !!opts[:conflicts] if opts.key?(:conflicts)
           helpers { define_method(action, &block) } if block
         end
       end
 
       %i[has_one has_many].each do |rel_type|
-        define_method(rel_type) do |rel, **opts, &block|
-          relationships[rel] = Sinatra.new(opts.fetch(:base, Base)) do
-            register Relationship
+        define_method(rel_type) do |rel, &block|
+          namespace "/:resource_id/relationships/#{rel.to_s.tr('_', '-')}", :actions=>:find do
+            helpers do
+              def resource
+                @resource ||= find(params[:resource_id])
+              end
+
+              def check_conflict!
+                super
+                halt 409, 'Resource ID in payload does not match endpoint' \
+                  unless data[:id].to_s == params[:resource_id].to_s
+              end
+            end
+
+            before do
+              not_found unless resource
+            end
+
             register RelationshipRoutes.const_get \
               rel_type.to_s.split('_').map(&:capitalize).join.to_sym
+
             instance_eval(&block)
           end
         end
@@ -70,17 +110,59 @@ module Sinatra
         helpers { define_method(__callee__, &block) }
       end
 
+      def conflict_exceptions(e=[])
+        conflict_exceptions.concat([*e])
+      end
+
+      def jsonapi_serializer_opts(h={})
+        jsonapi_serializer_opts.merge!(h)
+      end
+
+      def freeze!
+        action_conflicts.freeze
+        action_roles.tap { |c| c.values.each(&:freeze) }.freeze
+        conflict_exceptions.freeze
+        jsonapi_serializer_opts.tap { |c| c.values.each(&:freeze) }.freeze
+      end
+
       def self.registered(app)
-        app.register AbstractResource
+        app.register JSONAPI, Namespace
 
-        # TODO: freeze these structures (deeply) at some later time?
-        app.set :action_roles, ResourceRoutes::ACTIONS.map { |action| [action, Set.new] }.to_h.freeze
-        app.set :action_conflicts, { :create=>[] }.freeze
-        app.set :relationships, {}
+        app.set :action_roles, {}
+        app.set :action_conflicts, {}
+        app.set :conflict_exceptions, []
+        app.set :jsonapi_serializer_opts, {}
 
-        app.helpers Helpers
+        app.helpers RequestHelpers, ResponseHelpers do
+          # Use send_action when we have variable number of arguments and/or
+          # we need conflict handling
+          def send_action(action, *args)
+            send(action, *args.take(method(action).arity.abs))
+          rescue Exception=>e
+            raise e unless settings.action_conflicts[action] \
+              && settings.conflict_exceptions.include?(e.class)
+
+            # TODO: why won't an error handler catch Exception?
+            halt 409, e.message
+          end
+
+          def check_conflict!
+            halt 409, 'Resource type in payload does not match endpoint' \
+              unless data[:type] == request.path.split('/').last # TODO
+          end
+
+          def with_opts?(collection)
+            return collection if collection.is_a?(Array) \
+              && collection.length == 2 \
+              && collection.map(&:class).tap(&:uniq!).length == 2
+
+            return collection, {}
+          end
+        end
 
         app.set :actions do |*actions|
+          def_action_helpers(actions)
+
           condition do
             actions.each do |action|
               halt 403 unless can?(action)
@@ -90,33 +172,35 @@ module Sinatra
           end
         end
 
-        app.register ResourceRoutes
-
-        rel_router = proc do |id, rel_path|
-          not_found unless has_relationship?(rel_path)
-          not_found unless resource = find(id)
-          dispatch_relationship_request(rel_path, resource)
+        app.set :nullif do |nullish|
+          condition { nullish.(data) }
         end
 
-        %w[/:id/:rel_path /:id/relationships/:rel_path].each do |path|
-          app.get(path, :actions=>:find, &rel_router)
+        app.before do
+          normalize_params!
         end
 
-        %i[patch post delete].each do |verb|
-          app.send(verb, '/:id/relationships/:rel_path', :actions=>%i[find update], &rel_router)
+        app.after do
+          body serialize_response_body if response.ok?
+        end
+
+        app.namespace '/' do
+          app.helpers RelationshipHelpers
+          app.register ResourceRoutes
         end
       end
 
       def inherited(subclass)
         super
 
-        subclass.action_roles =
-          Marshal.load(Marshal.dump(subclass.action_roles)).freeze
-
-        subclass.action_conflicts =
-          Marshal.load(Marshal.dump(subclass.action_conflicts)).freeze
-
-        subclass.relationships = {}
+        %i[
+          action_roles
+          action_conflicts
+          conflict_exceptions
+          jsonapi_serializer_opts
+        ].each do |setting|
+          subclass.send "#{setting}=", Marshal.load(Marshal.dump(subclass.send(setting)))
+        end
       end
     end
   end

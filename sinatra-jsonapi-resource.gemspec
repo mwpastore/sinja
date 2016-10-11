@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'json', '~> 2.0.1'
   spec.add_dependency 'jsonapi-serializers', '~> 0.15.0'
   spec.add_dependency 'sinatra', '~> 2.0.0.beta2'
+  spec.add_dependency 'sinatra-contrib', '~> 2.0.0.beta2'
 
   spec.add_development_dependency 'bundler', '~> 1.13'
   spec.add_development_dependency 'rake', '~> 10.0'
