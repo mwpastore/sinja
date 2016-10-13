@@ -1,59 +1,58 @@
 # frozen_string_literal: true
 module Sinatra::JSONAPI::ResourceRoutes
   def self.registered(app)
-    app.settings._action_conflicts[:create] = true
+    app.action_conflicts :create=>true, :update=>true
 
     app.get '', :actions=>:list do
-      serialize_models(*list)
+      serialize_models!(*list)
+    end
+
+    app.get '/:id', :actions=>:find do |id|
+      resource, opts = find(id)
+      not_found unless resource
+      serialize_model!(resource, opts)
     end
 
     app.post '', :actions=>:create do
       sanity_check!
-      resource, = create(data.fetch(:attributes, {}), data[:id])
-      dispatch_relationship_requests!(:method=>:patch)
+      halt 403, 'Client-generated IDs not supported' \
+        if data[:id] && method(:create).arity != 2
+
+      resource, _, opts = transaction do
+        create(data.fetch(:attributes, {}), data[:id]).tap do |_, id, _|
+          dispatch_relationship_requests!(id, :method=>:patch)
+        end
+      end
 
       if resource
-        status 201
-        content = serialize_model(resource)
+        content = serialize_model!(resource, opts)
         if content.respond_to?(:dig) && self_link = content.dig(*%w[data links self])
           headers 'Location'=>self_link
         end
-        body content
-      elsif data.key?(:id) && method(:create).arity == 2
-        status 204
+        [201, content]
+      elsif data[:id]
+        204
       else
-        # TODO???
-        status 202
-      end
-    end
-
-    app.get '/:id', :actions=>:find do |id|
-      resource, = find(id)
-      not_found unless resource
-      serialize_model(resource)
-    end
-
-    %i[put post].each do |verb|
-      app.send verb, '/:id', :actions=>%i[find replace] do |id|
-        resource, = find(id)
-        not_found unless resource
-        replace(resource, data)
-        serialize_model(resource)
+        raise ActionHelperError, "Bad return value from `create' action helper"
       end
     end
 
     app.patch '/:id', :actions=>%i[find update] do |id|
+      sanity_check!(id)
       resource, = find(id)
       not_found unless resource
-      update(resource, data.fetch(attributes, {}))
-      serialize_model(resource)
+      serialize_model?(transaction do
+        update(resource, data.fetch(attributes, {})).tap do
+          dispatch_relationship_requests!(id, :method=>:patch)
+        end
+      end)
     end
 
     app.delete '/:id', :actions=>%i[find destroy] do |id|
       resource, = find(id)
       not_found unless resource
-      destroy(resource)
-      status 204
+      _, opts = destroy(resource)
+      serialize_model?(nil, opts)
     end
   end
 end
