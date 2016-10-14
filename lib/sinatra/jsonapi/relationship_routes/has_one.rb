@@ -8,16 +8,16 @@ module Sinatra::JSONAPI::RelationshipRoutes
       app.action_conflicts :graft=>true
 
       app.get '', :actions=>:pluck do
-        serialize_model!(*pluck(resource))
+        serialize_model!(*pluck)
       end
 
       app.patch '', :nullif=>proc(&:nil?), :actions=>:prune do
-        _, opts = prune(resource)
+        _, opts = prune
         serialize_model?(nil, opts)
       end
 
       app.patch '', :actions=>:graft do
-        serialize_model?(*graft(resource, data))
+        serialize_model?(*graft(data))
       end
     end
   end

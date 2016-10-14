@@ -31,8 +31,9 @@ module Sinatra
         if not_found? && detail = [*body].first
           title = 'Not Found'
           detail = nil if detail == '<h1>Not Found</h1>'
-        elsif env.key?('sinatra.error') && detail = env['sinatra.error'].message
+        elsif env.key?('sinatra.error')
           title = 'Unknown Error'
+          detail = env['sinatra.error'].message
         elsif detail = [*body].first
         end
 

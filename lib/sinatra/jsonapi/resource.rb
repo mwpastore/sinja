@@ -36,7 +36,7 @@ module Sinatra
         def serialize_model!(model=nil, options={})
           options[:is_collection] = false
           options[:skip_collection_check] = defined?(Sequel) && model.is_a?(Sequel::Model)
-          options[:include] ||= params[:include] unless params[:include].empty?
+          options[:include] ||= params[:include] unless params[:include].empty? # TODO
 
           ::JSONAPI::Serializer.serialize model,
             settings._jsonapi_serializer_opts.merge(options)
@@ -54,7 +54,7 @@ module Sinatra
 
         def serialize_models!(models=[], options={})
           options[:is_collection] = true
-          options[:include] ||= params[:include] unless params[:include].empty?
+          options[:include] ||= params[:include] unless params[:include].empty? # TODO
 
           ::JSONAPI::Serializer.serialize [*models],
             settings._jsonapi_serializer_opts.merge(options)
@@ -82,6 +82,7 @@ module Sinatra
         def dispatch_relationship_requests!(id, **opts)
           data.fetch(:relationships, {}).each do |path, body|
             response = dispatch_relationship_request(id, path, opts.merge(:body=>body))
+            # TODO: Gather responses and report all errors instead of only first?
             halt(*response) unless (200...300).cover?(response[0])
           end
         end
@@ -113,6 +114,7 @@ module Sinatra
                   halt 409, e.message
                 end
 
+              # TODO: This is a nightmare.
               if action == :create
                 raise ActionHelperError, "`#{action}' must return primary key and resource object" \
                   unless result.is_a?(Array) && result.length >= 2 && !result[1].instance_of?(Hash)
@@ -203,21 +205,25 @@ module Sinatra
 
         # TODO: Skip this for abstract controllers?
         app.namespace '/' do
-          app.helpers RelationshipHelpers
+          app.helpers RelationshipHelpers do
+            attr_accessor :resource
+          end
+
           app.register ResourceRoutes
         end
       end
 
       %i[has_one has_many].each do |rel_type|
         define_method(rel_type) do |rel, &block|
-          namespace %r{/(?<resource_id>[^/]+)(/relationships)?/#{rel.to_s.tr('_', '-')}}, :actions=>:find do
+          namespace %r{/(?<resource_id>[^/]+)(?<foo>/relationships)?/#{rel.to_s.tr('_', '-')}}, :actions=>:find do
             helpers do
               def setter_path?
-                !params[:captures][1].nil?
+                # TODO: Can't mix named and positional capture groups?
+                !params[:foo].nil?
               end
 
               def resource
-                @resource ||= find(params[:resource_id]).first
+                super || self.resource = find(params[:resource_id]).first
               end
 
               def sanity_check!
@@ -226,7 +232,7 @@ module Sinatra
             end
 
             before do
-              not_found unless nil ^ setter_path? ^ request.get? # TODO: yuck
+              not_found unless setter_path? ^ request.get?
               not_found unless resource
             end
 

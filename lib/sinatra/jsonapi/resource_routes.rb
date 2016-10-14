@@ -11,7 +11,7 @@ module Sinatra::JSONAPI::ResourceRoutes
     end
 
     app.get '/:id', :actions=>:find do |id|
-      resource, opts = find(id)
+      self.resource, opts = find(id)
       not_found unless resource
       serialize_model!(resource, opts)
     end
@@ -21,7 +21,7 @@ module Sinatra::JSONAPI::ResourceRoutes
       halt 403, 'Client-generated IDs not supported' \
         if data[:id] && method(:create).arity != 2
 
-      resource, _, opts = transaction do
+      self.resource, _, opts = transaction do
         create(data.fetch(:attributes, {}), data[:id]).tap do |_, id, _|
           dispatch_relationship_requests!(id, :method=>:patch)
         end
@@ -42,19 +42,19 @@ module Sinatra::JSONAPI::ResourceRoutes
 
     app.patch '/:id', :actions=>%i[find update] do |id|
       sanity_check!(id)
-      resource, = find(id)
+      self.resource, = find(id)
       not_found unless resource
       serialize_model?(transaction do
-        update(resource, data.fetch(attributes, {})).tap do
+        update(data.fetch(attributes, {})).tap do
           dispatch_relationship_requests!(id, :method=>:patch)
         end
       end)
     end
 
     app.delete '/:id', :actions=>%i[find destroy] do |id|
-      resource, = find(id)
+      self.resource, = find(id)
       not_found unless resource
-      _, opts = destroy(resource)
+      _, opts = destroy
       serialize_model?(nil, opts)
     end
   end

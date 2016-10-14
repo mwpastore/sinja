@@ -8,26 +8,26 @@ module Sinatra::JSONAPI::RelationshipRoutes
       app.action_conflicts :merge=>true
 
       app.get '', :actions=>:fetch do
-        serialize_models!(*fetch(resource))
+        serialize_models!(*fetch)
       end
 
       app.patch '', :nullif=>proc(&:empty?), :actions=>:clear do
-        _, opts = clear(resource)
+        _, opts = clear
         serialize_models?([], opts)
       end
 
       app.patch '', :actions=>%i[clear merge] do
-        _, clear_opts = clear(resource)
-        subresources, merge_opts = merge(resource, data)
+        _, clear_opts = clear
+        subresources, merge_opts = merge(data)
         serialize_models?(subresources, clear_opts.merge(merge_opts)) # TODO: DWIM?
       end
 
       app.post '', :actions=>%i[merge] do
-        serialize_models?(*merge(resource, data))
+        serialize_models?(*merge(data))
       end
 
       app.delete '', :actions=>%i[subtract] do
-        serialize_models?(*subtract(resource, data))
+        serialize_models?(*subtract(data))
       end
     end
   end

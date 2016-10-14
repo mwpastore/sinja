@@ -79,10 +79,10 @@ created model.
 
 ```ruby
 create(:roles=>:admin) do |attr, id=nil|
-  Foo.new(attr).tap do |foo|
-    foo.pk = id if id
-    foo.save!
-  end
+  foo = Foo.new(attr)
+  foo.pk = id if id
+  foo.save!
+  next foo, foo.pk
 end
 ```
 
