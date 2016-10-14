@@ -44,9 +44,9 @@ module Sinatra
 
         def serialize_model?(model=nil, options={})
           if model
-            serialize_model!(model, opts)
-          elsif opts.key?(:meta)
-            serialize_model!(nil, :meta=>opts[:meta])
+            serialize_model!(model, options)
+          elsif options.key?(:meta)
+            serialize_model!(nil, :meta=>options[:meta])
           else
             204
           end
@@ -62,9 +62,9 @@ module Sinatra
 
         def serialize_models?(models=[], options={})
           if [*models].any?
-            serialize_models!(models, opts)
-          elsif opts.key?(:meta)
-            serialize_models!([], :meta=>opts[:meta])
+            serialize_models!(models, options)
+          elsif options.key?(:meta)
+            serialize_models!([], :meta=>options[:meta])
           else
             204
           end
@@ -93,8 +93,6 @@ module Sinatra
 
       def def_action_helper(action, take_block=true)
         abort 'JSONAPI resource actions can\'t be HTTP verbs!' if Base.respond_to?(action)
-
-        return if respond_to?(action)
 
         define_singleton_method(action) do |**opts, &block|
           _action_roles[action] = Set[*opts[:roles]] if opts.key?(:roles)
@@ -178,8 +176,6 @@ module Sinatra
         end
 
         app.set :actions do |*actions|
-          def_action_helpers(actions)
-
           condition do
             actions.each do |action|
               halt 403 unless can?(action)
@@ -201,6 +197,11 @@ module Sinatra
           body serialize_response_body if response.ok?
         end
 
+        app.def_action_helpers ResourceRoutes::ACTIONS, false
+        app.def_action_helpers RelationshipRoutes::HasMany::ACTIONS, false
+        app.def_action_helpers RelationshipRoutes::HasOne::ACTIONS, false
+
+        # TODO: Skip this for abstract controllers?
         app.namespace '/' do
           app.helpers RelationshipHelpers
           app.register ResourceRoutes
@@ -209,8 +210,12 @@ module Sinatra
 
       %i[has_one has_many].each do |rel_type|
         define_method(rel_type) do |rel, &block|
-          namespace "/:resource_id/relationships/#{rel.to_s.tr('_', '-')}", :actions=>:find do
+          namespace %r{/(?<resource_id>[^/]+)(/relationships)?/#{rel.to_s.tr('_', '-')}}, :actions=>:find do
             helpers do
+              def setter_path?
+                !params[:captures][1].nil?
+              end
+
               def resource
                 @resource ||= find(params[:resource_id]).first
               end
@@ -221,6 +226,7 @@ module Sinatra
             end
 
             before do
+              not_found unless nil ^ setter_path? ^ request.get? # TODO: yuck
               not_found unless resource
             end
 

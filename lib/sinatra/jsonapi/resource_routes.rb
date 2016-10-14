@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 module Sinatra::JSONAPI::ResourceRoutes
+  ACTIONS = %i[list find create update destroy].freeze
+
   def self.registered(app)
+    app.def_action_helpers ACTIONS
     app.action_conflicts :create=>true, :update=>true
 
     app.get '', :actions=>:list do

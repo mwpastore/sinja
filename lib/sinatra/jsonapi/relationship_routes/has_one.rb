@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 module Sinatra::JSONAPI::RelationshipRoutes
   module HasOne
+    ACTIONS = %i[pluck prune graft].freeze
+
     def self.registered(app)
+      app.def_action_helpers ACTIONS
       app.action_conflicts :graft=>true
 
       app.get '', :actions=>:pluck do

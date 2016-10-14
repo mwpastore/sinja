@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 module Sinatra::JSONAPI::RelationshipRoutes
   module HasMany
+    ACTIONS = %i[fetch clear merge subtract].freeze
+
     def self.registered(app)
+      app.def_action_helpers ACTIONS
       app.action_conflicts :merge=>true
 
       app.get '', :actions=>:fetch do
