@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'sinatra/jsonapi/resource/version'
+require 'sinatra/jsonapi/version'
 
 Gem::Specification.new do |spec|
   spec.name          = 'sinja'
-  spec.version       = Sinatra::JSONAPI::Resource::VERSION
+  spec.version       = Sinatra::JSONAPI::VERSION
   spec.authors       = ['Mike Pastore']
   spec.email         = ['mike@oobak.org']
 
@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
 
   # TODO: relax these dependencies
   spec.add_dependency 'json', '~> 2.0.1'
-  spec.add_dependency 'jsonapi-serializers', '~> 0.15.0'
+  spec.add_dependency 'jsonapi-serializers', '~> 0.16.0'
   spec.add_dependency 'sinatra', '~> 2.0.0.beta2'
   spec.add_dependency 'sinatra-contrib', '~> 2.0.0.beta2'
 

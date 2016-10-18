@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-describe Sinatra::JSONAPI::Resource do
+describe Sinatra::JSONAPI do
   it 'has a version number' do
-    expect(Sinatra::JSONAPI::Resource::VERSION).not_to be nil
+    expect(VERSION).not_to be nil
   end
 
   it 'does something useful' do

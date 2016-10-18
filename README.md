@@ -1,33 +1,34 @@
 # Sinja (Sinatra::JSONAPI)
 
-A [Sinatra][1] extension for quickly building RESTful, [JSON:API][2]-compliant
-applications, leveraging the excellent [JSONAPI::Serializers][3] gem.
+A [Sinatra][1] [extension][10] for quickly building RESTful,
+[JSON:API][2]-compliant applications, leveraging the excellent
+[JSONAPI::Serializers][3] gem.
 
 **CAVEAT EMPTOR: This gem is under active development. Expect many breaking
 changes!**
 
 ```ruby
-class Api::V1 < Sinatra::Base
-  register Sinatra::JSONAPI
+require 'sinatra'
+require 'sinatra/jsonapi'
 
-  resource :posts do
-    list do
-      Post.all
-    end
+resource :posts do
+  list do
+    Post.all
+  end
 
-    find do |id|
-      Post[id.to_i]
-    end
+  find do |id|
+    Post[id.to_i]
+  end
 
-    create do |attr|
-      Post.create(attr)
-    end
+  create do |attr|
+    Post.create(attr)
   end
 end
 ```
 
-Racking up the above would enable the following endpoints (with all other
-JSON:API endpoints returning 404 or 405):
+Assuming the presence of a `Post` model and serializer, running the above
+"classic"-style Sinatra application would enable the following endpoints (with
+all other JSON:API endpoints returning 404 or 405):
 
 * `GET /posts`
 * `GET /posts/<id>`
@@ -205,3 +206,4 @@ License](http://opensource.org/licenses/MIT).
 [7]: http://jsonapi.org/format/
 [8]: https://github.com/cerebris/jsonapi-resources
 [9]: https://github.com/cerebris/jsonapi-resources#authorization
+[10]: http://www.sinatrarb.com/extensions-wild.html
