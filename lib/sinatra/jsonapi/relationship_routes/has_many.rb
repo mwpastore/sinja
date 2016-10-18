@@ -5,7 +5,6 @@ module Sinatra::JSONAPI::RelationshipRoutes
 
     def self.registered(app)
       app.def_action_helpers ACTIONS
-      app.action_conflicts :merge=>true
 
       app.get '', :actions=>:fetch do
         serialize_models!(*fetch)

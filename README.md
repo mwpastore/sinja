@@ -1,31 +1,33 @@
-# Sinatra::JSONAPI::Resource
+# Sinja (Sinatra::JSONAPI)
 
 A [Sinatra][1] extension for quickly building RESTful, [JSON:API][2]-compliant
-resource controllers, leveraging the excellent [JSONAPI::Serializers][3] gem.
+applications, leveraging the excellent [JSONAPI::Serializers][3] gem.
 
 **CAVEAT EMPTOR: This gem is under active development. Expect many breaking
 changes!**
 
 ```ruby
-class PostController < Sinatra::Base
-  register Sinatra::JSONAPI::Resource
+class Api::V1 < Sinatra::Base
+  register Sinatra::JSONAPI
 
-  list do
-    Post.all
-  end
+  resource :posts do
+    list do
+      Post.all
+    end
 
-  find do |id|
-    Post[id.to_i]
-  end
+    find do |id|
+      Post[id.to_i]
+    end
 
-  create do |attr|
-    Post.create(attr)
+    create do |attr|
+      Post.create(attr)
+    end
   end
 end
 ```
 
-Racking up the above at `/posts` would enable the following endpoints (with all
-other JSON:API endpoints returning 405):
+Racking up the above would enable the following endpoints (with all other
+JSON:API endpoints returning 404 or 405):
 
 * `GET /posts`
 * `GET /posts/<id>`
@@ -36,7 +38,7 @@ other JSON:API endpoints returning 405):
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'sinatra-jsonapi-resource'
+gem 'sinja'
 ```
 
 And then execute:
@@ -45,7 +47,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install sinatra-jsonapi-resource
+    $ gem install sinja
 
 ## Goals &amp; Assumptions
 
@@ -103,7 +105,7 @@ model) using your preferred ORM as well as a [JSONAPI::Serializer][3]-based
 
 ## Feature Comparisons
 
-| Feature         | [JSONAPI::Resources][8]      | Sinatra::JSONAPI::Resource                       |
+| Feature         | [JSONAPI::Resources][8]      | Sinja                                            |
 | :-------------- | :--------------------------- | :----------------------------------------------- |
 | Resource        | Works with a Controller      | Extends a Controller                             |
 | Serializer      | Built-in                     | [JSONAPI::Serializers][3]                        |
@@ -187,7 +189,7 @@ git commits and tags, and push the `.gem` file to
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at
-https://github.com/mwpastore/sinatra-jsonapi-resource.
+https://github.com/mwpastore/sinja.
 
 ## License
 

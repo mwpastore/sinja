@@ -5,7 +5,6 @@ module Sinatra::JSONAPI::RelationshipRoutes
 
     def self.registered(app)
       app.def_action_helpers ACTIONS
-      app.action_conflicts :graft=>true
 
       app.get '', :actions=>:pluck do
         serialize_model!(*pluck)

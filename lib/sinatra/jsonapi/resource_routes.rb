@@ -4,7 +4,6 @@ module Sinatra::JSONAPI::ResourceRoutes
 
   def self.registered(app)
     app.def_action_helpers ACTIONS
-    app.action_conflicts :create=>true, :update=>true
 
     app.get '', :actions=>:list do
       serialize_models!(*list)

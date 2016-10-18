@@ -4,13 +4,13 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'sinatra/jsonapi/resource/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'sinatra-jsonapi-resource'
+  spec.name          = 'sinja'
   spec.version       = Sinatra::JSONAPI::Resource::VERSION
   spec.authors       = ['Mike Pastore']
   spec.email         = ['mike@oobak.org']
 
-  spec.summary       = 'Sinatra extension for RESTful, JSON:API-compliant resource controllers'
-  spec.homepage      = 'https://github.com/mwpastore/sinatra-jsonapi-resource'
+  spec.summary       = 'Sinatra extension for RESTful, JSON:API-compliant applications'
+  spec.homepage      = 'https://github.com/mwpastore/sinja'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
