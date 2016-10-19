@@ -14,11 +14,11 @@ require 'sinatra'
 require 'sinatra/jsonapi'
 
 resource :posts do
-  list do
+  index do
     Post.all
   end
 
-  find do |id|
+  show do |id|
     Post[id.to_i]
   end
 
@@ -78,26 +78,26 @@ ton of boilerplate.
 
 ### Comparison with JSONAPI::Resources (JR)
 
-| Feature         | JR                           | Sinja                                            |
-| :-------------- | :--------------------------- | :----------------------------------------------- |
-| Serializer      | Built-in                     | [JSONAPI::Serializers][3]                        |
-| Framework       | Rails                        | Sinatra, but easy to mount within others         |
-| Routing         | ActionDispatch::Routing      | Mustermann                                       |
-| Caching         | ActiveSupport::Cache         | BYO                                              |
-| ORM             | ActiveRecord/ActiveModel     | BYO                                              |
-| Authorization   | [Pundit][9]                  | Role-based (`roles` keyword and `role` helper)   |
-| Immutability    | `immutable` method           | Omit mutator action helpers                      |
-| Fetchability    | `fetchable_fields` method    | Omit attributes in Serializer                    |
-| Creatability    | `creatable_fields` method    | Handle in `create` action helper or Model\*      |
-| Updatability    | `updatable_fields` method    | Handle in `update` action helper or Model\*      |
-| Sortability     | `sortable_fields` method     | Handle `params[:sort]` in `list` action helper   |
-| Default sorting | `default_sort` method        | Set default for `params[:sort]`                  |
-| Context         | `context` method             | Rack middleware (e.g. `env['context']`)          |
-| Attributes      | Define in Model and Resource | Define in Model\* and Serializer                 |
-| Formatting      | `format` attribute keyword   | Define attribute as a method in Serialier        |
-| Relationships   | Define in Model and Resource | Define in Model, Controller, and Serializer      |
-| Filters         | `filter(s)` keywords         | Handle `params[:filter]` in `list` action helper |
-| Default filters | `default` filter keyword     | Set default for `params[:filter]`                |
+| Feature         | JR                           | Sinja                                             |
+| :-------------- | :--------------------------- | :------------------------------------------------ |
+| Serializer      | Built-in                     | [JSONAPI::Serializers][3]                         |
+| Framework       | Rails                        | Sinatra, but easy to mount within others          |
+| Routing         | ActionDispatch::Routing      | Mustermann                                        |
+| Caching         | ActiveSupport::Cache         | BYO                                               |
+| ORM             | ActiveRecord/ActiveModel     | BYO                                               |
+| Authorization   | [Pundit][9]                  | Role-based (`roles` keyword and `role` helper)    |
+| Immutability    | `immutable` method           | Omit mutator action helpers                       |
+| Fetchability    | `fetchable_fields` method    | Omit attributes in Serializer                     |
+| Creatability    | `creatable_fields` method    | Handle in `create` action helper or Model\*       |
+| Updatability    | `updatable_fields` method    | Handle in `update` action helper or Model\*       |
+| Sortability     | `sortable_fields` method     | Handle `params[:sort]` in `index` action helper   |
+| Default sorting | `default_sort` method        | Set default for `params[:sort]`                   |
+| Context         | `context` method             | Rack middleware (e.g. `env['context']`)           |
+| Attributes      | Define in Model and Resource | Define in Model\* and Serializer                  |
+| Formatting      | `format` attribute keyword   | Define attribute as a method in Serialier         |
+| Relationships   | Define in Model and Resource | Define in Model, Controller, and Serializer       |
+| Filters         | `filter(s)` keywords         | Handle `params[:filter]` in `index` action helper |
+| Default filters | `default` filter keyword     | Set default for `params[:filter]`                 |
 
 \* - Depending on your ORM.
 

@@ -80,6 +80,22 @@ module Sinatra::JSONAPI
         end
       end
 
+      def serialize_linkage!(options={})
+        options = settings.sinja_config.serializer_opts.merge(options)
+        linkage.tap do |c|
+          c[:meta] = options[:meta] if options.key?(:meta)
+          c[:jsonapi] = options[:jsonapi] if options.key?(:jsonapi)
+        end
+      end
+
+      def serialize_linkage?(updated=false, options={})
+        updated ? serialize_linkage!(options) : serialize_model?(nil, options)
+      end
+
+      def serialize_linkages?(updated=false, options={})
+        updated ? serialize_linkage!(options) : serialize_models?([], options)
+      end
+
       def normalized_error
         return body if body.is_a?(Hash)
 

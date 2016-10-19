@@ -64,36 +64,43 @@ module Sinatra::JSONAPI
 
     %i[has_one has_many].each do |rel_type|
       define_method(rel_type) do |rel, &block|
-        namespace %r{/(?<resource_id>[^/]+)(?<r>/relationships)?/#{rel.to_s.tr('_', '-')}}, :actions=>:find do
+        rel_path = rel.to_s.tr('_', '-')
+
+        namespace %r{/(?<resource_id>[^/]+)(?<r>/relationships)?/#{rel_path}}, :actions=>:show do
           helpers do
-            def setter_path?
-              !params[:r].nil? # TODO: Can't mix named and positional capture groups?
+            def relationship_link?
+              !params[:r].nil?
             end
 
             def resource
-              super || self.resource = find(params[:resource_id]).first
+              super || self.resource = show(params[:resource_id]).first
             end
 
-            def sanity_check!
-              super(params[:resource_id])
+            define_method(:linkage) do
+              # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
+              serialize_model!(resource, :include=>rel_path)['data']['relationships'][rel_path]
             end
           end
 
           before do
-            not_found unless setter_path? ^ request.get?
             not_found unless resource
           end
+
+          %i[get patch delete].each do |verb|
+            send(verb, '') do
+              pass if relationship_link?
+              related = linkage.dig('links', 'related')
+              not_found unless related && !related.end_with?(request.path)
+              redirect related
+            end
+          end
+
+          get('') { serialize_linkage! }
 
           register RelationshipRoutes.const_get \
             rel_type.to_s.split('_').map(&:capitalize).join.to_sym
 
-          if block
-            instance_eval(&block)
-          elsif rel_type == :has_one
-            pluck { resource.send(rel) }
-          elsif rel_type == :has_many
-            fetch { resource.send(rel) }
-          end
+          instance_eval(&block) if block
         end
       end
     end
