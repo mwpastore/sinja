@@ -1,11 +1,13 @@
 # Sinja (Sinatra::JSONAPI)
 
-A [Sinatra][1] [extension][10] for quickly building RESTful,
-[JSON:API][2]-compliant applications, leveraging the excellent
-[JSONAPI::Serializers][3] gem.
-
-**CAVEAT EMPTOR: This gem is under active development. Expect many breaking
-changes!**
+Sinja is a [Sinatra 2.0][1] [extension][10] for quickly building [RESTful][11],
+[JSON:API][2]-[compliant][7] web services, leveraging the excellent
+[JSONAPI::Serializers][3] gem. It enhances Sinatra's DSL to enable resource-,
+relationship-, and role-centric definition of routes and helpers, and it
+configures Sinatra with the proper settings, MIME-types, filters, conditions,
+and error-handling to implement JSON:API. Sinja aims to be lightweight
+(low-overhead), ORM-agnostic (to the extent that JSONAPI::Serializers is), and
+opinionated (to the extent that the specification is).
 
 ```ruby
 require 'sinatra'
@@ -34,6 +36,10 @@ all other JSON:API endpoints returning 404 or 405):
 * `GET /posts/<id>`
 * `POST /posts`
 
+**CAVEAT EMPTOR: This gem is still very new and under active development. The
+API is mostly stable, but there still may be significant breaking changes. It
+has not yet been thoroughly tested or vetted in a production environment.**
+
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -50,51 +56,9 @@ Or install it yourself as:
 
     $ gem install sinja
 
-## Goals &amp; Assumptions
-
-* Conform to the JSON:API spec
-* Expose flexibility where the JSON:API spec is loose
-* Controllers should be primarily composed of business logic
-* Controllers sit at the "bottom" of a middleware stack, beneath a router (e.g.
-  [Rack::URLMap][4]) and critical components such as authentication (e.g.
-  [Rodauth][5]), attack protection (e.g. [Rack::Protection][6]), etc.
-* Be ORM-agnostic (bring your own models)
-* Play nice with Sinatra and JSONAPI::Serializers, allowing application
-  developers to use those libraries as intended without jumping through hoops
-
 ## Design
 
-This is an abstraction (and enhancement) of a collection of design patterns
-I've used in the past to implement JSON:API-conforming web services in
-Sinatra. It takes a surprising amount of boilerplate, but the [spec][7] is
-clear enough that a good abstraction could allow developers to focus on the
-business logic of their controllers, rather than e.g. parsing JSON and sending
-the correct HTTP status codes.
-
-This library lightly extends Sinatra's DSL and automates (so to speak; it's
-more like a blueprint) the drawing of routes and request and response handling.
-The workhorses are "action helpers": user-defined helper methods that are
-called from the standard JSON:API routes as necessary. For example, the
-following statements define an action helper named `create`&mdash;with access
-restricted to the `:admin` role&mdash;that takes `data.attributes` and an
-optional client-generated ID from the JSON:API request payload, and returns the
-created model.
-
-```ruby
-create(:roles=>:admin) do |attr, id=nil|
-  foo = Foo.new(attr)
-  foo.pk = id if id
-  foo.save!
-  next foo, foo.pk
-end
-```
-
-HTTP POST requests to the top-level route of this controller (i.e. `POST
-/foos`) will fire this action helper, assuming the currently logged-in user has
-the `:admin` role. It will halt with HTTP status code 409 if there's a
-constraint violation. Note that you are responsible for defining `Foo` (the
-model) using your preferred ORM as well as a [JSONAPI::Serializer][3]-based
-`FooSerializer`.
+action helpers
 
 ## Features
 
@@ -102,23 +66,30 @@ model) using your preferred ORM as well as a [JSONAPI::Serializer][3]-based
 * Role-based authorization
 * To-one and to-many relationships
 * Conflict (constraint violation) handling
-* Side-loaded relationships (on resource creation)
+* Side-loading on resource creation
 
-## Feature Comparisons
+Its main competitors in the Ruby space are [ActiveModelSerializers][12]
+(AMS) with the JsonApi adapter and [JSONAPI::Resources][8] (JR), both of which
+are designed to work with [Rails][16] and [ActiveRecord][17]/[ActiveModel][18]
+(although they may work with [Sequel][13] via [sequel-rails][14] and Sequel's
+[`:active_model` plugin][15]). Otherwise, you might use something like Sinatra,
+[Roda][20], or [Grape][19] with JSONAPI::Serializers, your own routes, and a
+ton of boilerplate.
 
-| Feature         | [JSONAPI::Resources][8]      | Sinja                                            |
+### Comparison with JSONAPI::Resources (JR)
+
+| Feature         | JR                           | Sinja                                            |
 | :-------------- | :--------------------------- | :----------------------------------------------- |
-| Resource        | Works with a Controller      | Extends a Controller                             |
 | Serializer      | Built-in                     | [JSONAPI::Serializers][3]                        |
 | Framework       | Rails                        | Sinatra, but easy to mount within others         |
-| ORM             | ActiveRecord                 | BYO                                              |
-| Routing         | ActionDispatch::Routing      | BYO                                              |
+| Routing         | ActionDispatch::Routing      | Mustermann                                       |
 | Caching         | ActiveSupport::Cache         | BYO                                              |
+| ORM             | ActiveRecord/ActiveModel     | BYO                                              |
 | Authorization   | [Pundit][9]                  | Role-based (`roles` keyword and `role` helper)   |
-| Immutability    | `immutable` method           | Omit mutator action helpers in Controller        |
+| Immutability    | `immutable` method           | Omit mutator action helpers                      |
 | Fetchability    | `fetchable_fields` method    | Omit attributes in Serializer                    |
-| Creatability    | `creatable_fields` method    | Handle in `create` action helper                 |
-| Updatability    | `updatable_fields` method    | Handle in `update` action helper                 |
+| Creatability    | `creatable_fields` method    | Handle in `create` action helper or Model\*      |
+| Updatability    | `updatable_fields` method    | Handle in `update` action helper or Model\*      |
 | Sortability     | `sortable_fields` method     | Handle `params[:sort]` in `list` action helper   |
 | Default sorting | `default_sort` method        | Set default for `params[:sort]`                  |
 | Context         | `context` method             | Rack middleware (e.g. `env['context']`)          |
@@ -139,19 +110,6 @@ This list is incomplete.
 * Side-loading (on request and response)
 * Namespaces
 * Configuration
-
-### Wishlist
-
-* Tighter integration with JSONAPI::Serializers (JAS); specifically, using
-  links metadata to draw routes (may require improvements to JAS to allow moar
-  introspection)
-* Collect registered controllers and present a route map (this will likely need
-  to be a separate gem&mdash;more like a framework&mdash;that wraps this one)
-* Slightly related, can we provide some JWT middleware/boilerplate?
-* We are bypassing so much of Sinatra, can we lift this code and maybe part of
-  Sinatra into something more bare-metal?
-* Relationship discovery
-* Don't draw routes if action helpers aren't defined
 
 ## Usage
 
@@ -207,3 +165,13 @@ License](http://opensource.org/licenses/MIT).
 [8]: https://github.com/cerebris/jsonapi-resources
 [9]: https://github.com/cerebris/jsonapi-resources#authorization
 [10]: http://www.sinatrarb.com/extensions-wild.html
+[11]: https://en.wikipedia.org/wiki/Representational_state_transfer
+[12]: https://github.com/rails-api/active_model_serializers
+[13]: http://sequel.jeremyevans.net
+[14]: http://talentbox.github.io/sequel-rails/
+[15]: http://sequel.jeremyevans.net/rdoc-plugins/classes/Sequel/Plugins/ActiveModel.html
+[16]: http://rubyonrails.org
+[17]: https://github.com/rails/rails/tree/master/activerecord
+[18]: https://github.com/rails/rails/tree/master/activemodel
+[19]: http://www.ruby-grape.org
+[20]: http://roda.jeremyevans.net
