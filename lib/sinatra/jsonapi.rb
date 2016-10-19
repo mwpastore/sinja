@@ -82,10 +82,11 @@ module Sinatra::JSONAPI
       def normalize_params!
         # TODO: halt 400 if other params, or params not implemented?
         {
+          :fields=>{}, # passthru
+          :include=>[], # passthru
           :filter=>{},
-          :fields=>{},
           :page=>{},
-          :include=>[]
+          :sort=>''
         }.each { |k, v| params[k] ||= v }
       end
     end
