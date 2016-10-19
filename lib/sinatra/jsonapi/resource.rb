@@ -86,19 +86,20 @@ module Sinatra::JSONAPI
             not_found unless resource
           end
 
-          %i[get patch delete].each do |verb|
-            send(verb, '') do
-              pass if relationship_link?
-              related = linkage.dig('links', 'related')
-              not_found unless related && !related.end_with?(request.path)
-              redirect related
-            end
-          end
+          get '' do
+            pass unless relationship_link?
 
-          get('') { serialize_linkage! }
+            serialize_linkage!
+          end
 
           register RelationshipRoutes.const_get \
             rel_type.to_s.split('_').map(&:capitalize).join.to_sym
+
+          if rel_type == :has_one
+            pluck { resource.send(rel) }
+          elsif rel_type == :has_many
+            fetch { resource.send(rel) }
+          end
 
           instance_eval(&block) if block
         end

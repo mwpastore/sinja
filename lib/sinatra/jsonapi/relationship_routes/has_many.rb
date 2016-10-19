@@ -2,11 +2,15 @@
 module Sinatra::JSONAPI
   module RelationshipRoutes
     module HasMany
-      ACTIONS = %i[clear merge subtract].freeze
+      ACTIONS = %i[fetch clear merge subtract].freeze
       CONFLICT_ACTIONS = %i[merge].freeze
 
       def self.registered(app)
         app.def_action_helpers ACTIONS
+
+        app.get '', :actions=>:fetch do
+          serialize_models!(*fetch)
+        end
 
         app.patch '', :nullif=>proc(&:empty?), :actions=>:clear do
           serialize_linkages?(*clear)
