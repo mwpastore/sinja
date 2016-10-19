@@ -10,17 +10,19 @@ require 'sinatra/jsonapi/resource'
 require 'sinatra/jsonapi/version'
 
 module Sinatra::JSONAPI
-  def resource(res, konst=nil, &block)
-    sinja_config.resource_roles[res] # trigger default proc
+  def resource(resource_name, konst=nil, &block)
+    fail unless konst || block # TODO
 
-    namespace "/#{res.to_s.tr('_', '-')}" do
+    sinja_config.resource_roles[resource_name] # trigger default proc
+
+    namespace "/#{resource_name.to_s.tr('_', '-')}" do
       define_singleton_method(:can) do |action, roles|
-        sinja_config.resource_roles[res].merge!(action=>roles)
+        sinja_config.resource_roles[resource_name].merge!(action=>roles)
       end
 
       helpers do
         define_method(:can?) do |*args|
-          super(res, *args)
+          super(resource_name, *args)
         end
       end
 
