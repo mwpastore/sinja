@@ -70,12 +70,9 @@ module Sinatra::JSONAPI
       @serializer_opts = deep_copy(DEFAULT_SERIALIZER_OPTS).merge!(h)
     end
 
-    def logger_progname
-      @opts[:logger_progname]
-    end
-
-    def logger_progname=(progname)
-      @opts[:logger_progname] = progname
+    DEFAULT_OPTS.keys.each do |k|
+      define_method(k) { @opts[k] }
+      define_method("#{k}=") { |v| @opts[k] = v }
     end
 
     def freeze
@@ -86,6 +83,7 @@ module Sinatra::JSONAPI
       @conflict_exceptions.freeze
       deep_freeze(@serializer_opts)
       @opts.freeze
+      super
     end
   end
 
@@ -112,11 +110,14 @@ module Sinatra::JSONAPI
     end
 
     def initialize_copy(other)
+      super
+
       @data = deep_copy(other.instance_variable_get(:@data))
     end
 
     def freeze
       deep_freeze(@data)
+      super
     end
   end
 end

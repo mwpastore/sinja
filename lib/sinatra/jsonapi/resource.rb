@@ -15,6 +15,12 @@ module Sinatra::JSONAPI
       define_singleton_method(action) do |**opts, &block|
         can(action, opts[:roles]) if opts.key?(:roles)
 
+        if block.nil?
+          remove_method(action) if respond_to?(action) # TODO: Is this safe to do?
+
+          return
+        end
+
         define_method(action) do |*args|
           result =
             begin

@@ -36,6 +36,22 @@ all other JSON:API endpoints returning 404 or 405):
 * `GET /posts/<id>`
 * `POST /posts`
 
+Of course, "modular"-style Sinatra aplications require you to register the
+extension:
+
+```ruby
+require 'sinatra/base'
+require 'sinatra/jsonapi'
+
+class MyAPI < Sinatra::Base
+  register Sinatra::JSONAPI
+
+  resource :posts do
+    # ..
+  end
+end
+```
+
 **CAVEAT EMPTOR: This gem is still very new and under active development. The
 API is mostly stable, but there still may be significant breaking changes. It
 has not yet been thoroughly tested or vetted in a production environment.**
