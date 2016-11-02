@@ -55,6 +55,7 @@ has not yet been thoroughly tested or vetted in a production environment.**
   - [Conflicts](#conflicts)
   - [Transactions](#transactions)
   - [Module Namespaces](#module-namespaces)
+  - [Code Organization](#code-organization)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -99,7 +100,7 @@ extension:
 require 'sinatra/base'
 require 'sinatra/jsonapi'
 
-class Api::V1 < Sinatra::Base
+class App < Sinatra::Base
   register Sinatra::JSONAPI
 
   resource :posts do
@@ -159,7 +160,7 @@ The action helpers blocks get compiled into Sinatra helpers, and the
 headers, and even `halt` (or `not_found`) out of action helpers as desired.
 
 ```ruby
-class Api < Sinatra::Base
+class App < Sinatra::Base
   register Sinatra::JSONAPI
 
   # <- This is a Sinatra::Base class definition. (Duh.)
@@ -188,7 +189,7 @@ This lets you easily pepper in all the syntactic sugar you might expect to see
 in a typical Sinatra application:
 
 ```ruby
-class Api < Sinatra::Base
+class App < Sinatra::Base
   register Sinatra::JSONAPI
 
   configure :development do
@@ -647,7 +648,7 @@ requires Sinatra::Base, so this:
 ```ruby
 require 'sinatra/jsonapi'
 
-class Foo < Sinatra::Base
+class App < Sinatra::Base
   register Sinatra::JSONAPI
 
   configure_jsonapi do |c|
@@ -663,7 +664,7 @@ Can also be written like this:
 ```ruby
 require 'sinja'
 
-class Foo < Sinatra::Base
+class App < Sinatra::Base
   register Sinja
 
   sinja do |c|
@@ -671,6 +672,44 @@ class Foo < Sinatra::Base
   end
 
   sinja(&:freeze)
+end
+```
+
+### Code Organization
+
+Sinatra applications might grow overly large with a block for each resource. I
+am still working on a better way to handle this (as well as a way to provide
+standalone resource controllers for e.g. cloud functions), but for the time
+being you can store each resource block as its own proc, and pass it to the
+`resource` keyword in lieu of a block. The migration to some future solution
+should be relatively painless. For example:
+
+```ruby
+# controllers/foo_controller.rb
+FooController = proc do
+  index do
+    Foo.all
+  end
+
+  show do |id|
+    Foo[id.to_i]
+  end
+
+  # ..
+end
+
+# app.rb
+require 'sinatra/base'
+require 'sinatra/jsonapi'
+
+require_relative 'controllers/foo_controller'
+
+class App < Sinatra::Base
+  register Sinatra::JSONAPI
+
+  resource :foos, FooController
+
+  freeze_jsonapi
 end
 ```
 
