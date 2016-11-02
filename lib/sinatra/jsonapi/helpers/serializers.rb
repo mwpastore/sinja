@@ -37,7 +37,7 @@ module Sinatra::JSONAPI
         options[:include] = included.to_a unless included.empty?
       end
 
-      def serialize_model!(model=nil, options={})
+      def serialize_model(model=nil, options={})
         options[:is_collection] = false
         options[:skip_collection_check] = defined?(Sequel) && model.is_a?(Sequel::Model)
         options[:include] ||= params[:include] unless params[:include].empty?
@@ -51,15 +51,15 @@ module Sinatra::JSONAPI
 
       def serialize_model?(model=nil, options={})
         if model
-          serialize_model!(model, options)
+          body serialize_model(model, options)
         elsif options.key?(:meta)
-          serialize_model!(nil, :meta=>options[:meta])
+          body serialize_model(nil, :meta=>options[:meta])
         else
-          204
+          status 204
         end
       end
 
-      def serialize_models!(models=[], options={})
+      def serialize_models(models=[], options={})
         options[:is_collection] = true
         options[:include] ||= params[:include] unless params[:include].empty?
         options[:fields] ||= params[:fields] unless params[:fields].empty?
@@ -72,15 +72,15 @@ module Sinatra::JSONAPI
 
       def serialize_models?(models=[], options={})
         if [*models].any?
-          serialize_models!(models, options)
+          body serialize_models(models, options)
         elsif options.key?(:meta)
-          serialize_models!([], :meta=>options[:meta])
+          body serialize_models([], :meta=>options[:meta])
         else
-          204
+          status 204
         end
       end
 
-      def serialize_linkage!(options={})
+      def serialize_linkage(options={})
         options = settings.sinja_config.serializer_opts.merge(options)
         linkage.tap do |c|
           c[:meta] = options[:meta] if options.key?(:meta)
@@ -89,11 +89,11 @@ module Sinatra::JSONAPI
       end
 
       def serialize_linkage?(updated=false, options={})
-        updated ? serialize_linkage!(options) : serialize_model?(nil, options)
+        body updated ? serialize_linkage(options) : serialize_model?(nil, options)
       end
 
       def serialize_linkages?(updated=false, options={})
-        updated ? serialize_linkage!(options) : serialize_models?([], options)
+        body updated ? serialize_linkage(options) : serialize_models?([], options)
       end
 
       def normalized_error

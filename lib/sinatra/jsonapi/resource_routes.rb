@@ -8,13 +8,13 @@ module Sinatra::JSONAPI
       app.def_action_helpers ACTIONS
 
       app.get '', :actions=>:index do
-        serialize_models!(*index)
+        serialize_models(*index)
       end
 
       app.get '/:id', :actions=>:show do |id|
         self.resource, opts = show(id)
         not_found unless resource
-        serialize_model!(resource, opts)
+        serialize_model(resource, opts)
       end
 
       app.post '', :actions=>:create do
@@ -22,22 +22,20 @@ module Sinatra::JSONAPI
         halt 403, 'Client-generated IDs not supported' \
           if data[:id] && method(:create).arity != 2
 
-        self.resource, _, opts = transaction do
-          create(data.fetch(:attributes, {}), data[:id]).tap do |_, id, _|
+        _, self.resource, opts = transaction do
+          create(data.fetch(:attributes, {}), data[:id]).tap do |id, *|
             dispatch_relationship_requests!(id, :method=>:patch)
           end
         end
 
         if resource
-          content = serialize_model!(resource, opts)
+          content = serialize_model(resource, opts)
           if content.respond_to?(:dig) && self_link = content.dig(*%w[data links self])
             headers 'Location'=>self_link
           end
           [201, content]
         elsif data[:id]
           204
-        else
-          raise ActionHelperError, "Bad return value from `create' action helper"
         end
       end
 

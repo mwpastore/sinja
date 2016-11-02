@@ -9,7 +9,7 @@ module Sinatra::JSONAPI
         app.def_action_helpers ACTIONS
 
         app.get '', :actions=>:fetch do
-          serialize_models!(*fetch)
+          serialize_models(*fetch)
         end
 
         app.patch '', :nullif=>proc(&:empty?), :actions=>:clear do

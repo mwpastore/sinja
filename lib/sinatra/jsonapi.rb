@@ -11,24 +11,25 @@ require 'sinatra/jsonapi/version'
 
 module Sinatra::JSONAPI
   def resource(resource_name, konst=nil, &block)
-    fail unless konst || block # TODO
+    abort "Must supply proc constant or block for `resource'" \
+      unless block = konst and konst.is_a?(Proc) or block
 
-    sinja_config.resource_roles[resource_name] # trigger default proc
+    sinja_config.resource_roles[resource_name.to_sym] # trigger default proc
 
     namespace "/#{resource_name.to_s.tr('_', '-')}" do
       define_singleton_method(:can) do |action, roles|
-        sinja_config.resource_roles[resource_name].merge!(action=>roles)
+        sinja_config.resource_roles[resource_name.to_sym].merge!(action=>roles)
       end
 
       helpers do
         define_method(:can?) do |*args|
-          super(resource_name, *args)
+          super(resource_name.to_sym, *args)
         end
       end
 
       register Resource
 
-      instance_eval(&(konst || block))
+      instance_eval(&block)
     end
   end
 
@@ -37,29 +38,24 @@ module Sinatra::JSONAPI
   end
 
   alias_method :configure_jsonapi, :sinja
-  def freeze_jsonapi!
+  def freeze_jsonapi
     sinja(&:freeze)
-  end
-
-  %i[role transaction].each do |helper|
-    define_method(helper) do |&block|
-      # capture the passed block as an instance method (i.e. a helper)
-      define_method(helper, &block)
-    end
   end
 
   def self.registered(app)
     app.register Sinatra::Namespace
 
     app.disable :protection, :static
-    app.set :show_exceptions, :after_handler
     app.set :sinja_config, Sinatra::JSONAPI::Config.new
+    app.configure(:development) do |c|
+      c.set :show_exceptions, :after_handler
+    end
 
     app.set :actions do |*actions|
       condition do
         actions.each do |action|
-          halt 403 unless can?(action)
-          halt 405 unless respond_to?(action)
+          halt 403, 'You are not authorized to perform this action' unless can?(action)
+          halt 405, 'Action or method not implemented or supported' unless respond_to?(action)
         end
         true
       end
@@ -91,6 +87,14 @@ module Sinatra::JSONAPI
           :sort=>''
         }.each { |k, v| params[k] ||= v }
       end
+
+      def role
+        nil
+      end
+
+      def transaction
+        yield
+      end
     end
 
     app.before do
@@ -108,15 +112,11 @@ module Sinatra::JSONAPI
     app.error 400...600, nil do
       serialized_error
     end
-
-    app.role { nil }
-    app.transaction { yield }
   end
 
   def self.extended(base)
     def base.route(*, **opts)
       opts[:provides] ||= :api_json
-
       super
     end
   end

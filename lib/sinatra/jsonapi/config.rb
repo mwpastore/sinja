@@ -103,7 +103,8 @@ module Sinatra::JSONAPI
 
     def merge!(h={})
       h.each do |action, roles|
-        fail unless @data.key?(action)
+        abort "Unknown or invalid action helper `#{action}' in configuration" \
+          unless @data.key?(action)
         @data[action].replace(Set[*roles])
       end
       @data
@@ -111,7 +112,6 @@ module Sinatra::JSONAPI
 
     def initialize_copy(other)
       super
-
       @data = deep_copy(other.instance_variable_get(:@data))
     end
 

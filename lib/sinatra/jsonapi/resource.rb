@@ -10,14 +10,14 @@ require 'sinatra/jsonapi/resource_routes'
 module Sinatra::JSONAPI
   module Resource
     def def_action_helper(action)
-      abort 'JSONAPI resource actions can\'t be HTTP verbs!' if Sinatra::Base.respond_to?(action)
+      abort "JSONAPI resource actions can't be HTTP verbs!" \
+        if Sinatra::Base.respond_to?(action)
 
       define_singleton_method(action) do |**opts, &block|
         can(action, opts[:roles]) if opts.key?(:roles)
 
         if block.nil?
           remove_method(action) if respond_to?(action) # TODO: Is this safe to do?
-
           return
         end
 
@@ -32,17 +32,30 @@ module Sinatra::JSONAPI
               raise
             end
 
-          # TODO: This is a nightmare.
-          if action == :create
-            raise ActionHelperError, "`#{action}' must return primary key and resource object" \
-              unless result.is_a?(Array) && result.length >= 2 && !result[1].instance_of?(Hash)
-            return result if result.length == 3
-            return *result, {}
+          # TODO: Move this to a constant or configurable?
+          required_arity = {
+            :create=>2,
+            :index=>-1,
+            :fetch=>-1
+          }.freeze[action] || 1
+
+          case result
+          when Array
+            opts = {}
+            if Hash === result.last
+              opts = result.pop
+            elsif required_arity < 0 && !(Array === result.first)
+              result = [result]
+            end
+
+            raise ActionHelperError, "Unexpected return value(s) from `#{action}'" \
+              unless result.length == required_arity.abs
+
+            result.push(opts)
+          when Hash
+            Array.new(required_arity.abs).push(result)
           else
-            return result \
-              if result.is_a?(Array) && result.length == 2 && result.last.instance_of?(Hash)
-            return nil, result if result.instance_of?(Hash)
-            return result, {}
+            [result, nil].take(required_arity.abs).push({})
           end
         end
       end
@@ -84,7 +97,7 @@ module Sinatra::JSONAPI
 
             define_method(:linkage) do
               # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
-              serialize_model!(resource, :include=>rel_path)['data']['relationships'][rel_path]
+              serialize_model(resource, :include=>rel_path)['data']['relationships'][rel_path]
             end
           end
 
@@ -95,7 +108,7 @@ module Sinatra::JSONAPI
           get '' do
             pass unless relationship_link?
 
-            serialize_linkage!
+            serialize_linkage
           end
 
           register RelationshipRoutes.const_get \

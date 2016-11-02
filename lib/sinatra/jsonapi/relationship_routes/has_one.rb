@@ -9,7 +9,7 @@ module Sinatra::JSONAPI
         app.def_action_helpers ACTIONS
 
         app.get '', :actions=>:pluck do
-          serialize_model!(*pluck)
+          serialize_model(*pluck)
         end
 
         app.patch '', :nullif=>proc(&:nil?), :actions=>:prune do
