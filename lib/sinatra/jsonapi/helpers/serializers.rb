@@ -16,7 +16,7 @@ module Sinatra::JSONAPI
       end
 
       def serialized_response_body
-        JSON.generate(response.body)
+        JSON.send settings.sinja_config.json_generator, response.body
       rescue JSON::GeneratorError
         halt 400, 'Unserializable entities in the response body'
       end
@@ -124,7 +124,8 @@ module Sinatra::JSONAPI
         hash = error_hash(normalized_error)
         logger.error(settings.sinja_config.logger_progname) { hash }
         content_type :api_json
-        JSON.fast_generate ::JSONAPI::Serializer.serialize_errors [hash]
+        JSON.send settings.sinja_config.json_error_generator,
+          ::JSONAPI::Serializer.serialize_errors([hash])
       end
     end
   end

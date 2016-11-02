@@ -362,6 +362,10 @@ configure_jsonapi do |c|
 
   # A hash of options to pass to JSONAPI::Serializer.serialize
   #c.serializer_opts = {}
+
+  # JSON methods to use when serializing response bodies and errors
+  #c.json_generator = development? ? :pretty_generate : :generate
+  #c.json_error_generator = development? ? :pretty_generate : :fast_generate
 end
 ```
 

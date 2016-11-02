@@ -26,7 +26,9 @@ module Sinatra::JSONAPI
     }.freeze
 
     DEFAULT_OPTS = {
-      :logger_progname=>'sinja'
+      :logger_progname=>'sinja',
+      :json_generator=>(Sinatra::Base.development? ? :pretty_generate : :generate),
+      :json_error_generator=>(Sinatra::Base.development? ? :pretty_generate : :fast_generate)
     }.freeze
 
     attr_reader \
