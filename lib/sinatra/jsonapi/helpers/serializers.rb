@@ -39,7 +39,7 @@ module Sinatra::JSONAPI
 
       def serialize_model(model=nil, options={})
         options[:is_collection] = false
-        options[:skip_collection_check] = defined?(Sequel) && model.is_a?(Sequel::Model)
+        options[:skip_collection_check] = defined?(::Sequel) && model.is_a?(::Sequel::Model)
         options[:include] ||= params[:include] unless params[:include].empty?
         options[:fields] ||= params[:fields] unless params[:fields].empty?
 

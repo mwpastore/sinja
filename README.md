@@ -338,7 +338,7 @@ conform to these settings.
   by manually `use`-ing the Rack::Protection middleware)
 * Disables static file routes (can be reenabled with `enable :static`)
 * Sets `:show_exceptions` to `:after_handler`
-* Adds an `:api_json` MIME-type (Sinatra::JSONAPI::MIME_TYPE)
+* Adds an `:api_json` MIME-type (`Sinatra::JSONAPI::MIME_TYPE`)
 * Defaults all routes to `:provides=>:api_json` (can be overridden per custom
   route)
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
@@ -455,7 +455,8 @@ response. Defined by default as `resource.send(<to-one>)`.
 ##### `prune {..}` => TrueClass?
 
 Remove the relationship from `resource`. To serialize the updated linkage on
-the response, refresh or reload `resource` (if necessary) and return `true`.
+the response, refresh or reload `resource` (if necessary) and return a truthy
+value.
 
 For example, using Sequel:
 
@@ -463,7 +464,7 @@ For example, using Sequel:
 has_one :qux do
   prune do
     resource.qux = nil
-    resource.save_changes # will return truthy if relationship was present
+    resource.save_changes # will return truthy if the relationship was present
   end
 end
 ```
@@ -472,7 +473,7 @@ end
 
 Take a [resource identifier object][22] and update the relationship on
 `resource`. To serialize the updated linkage on the response, refresh or reload
-`resource` (if necessary) and return `true`.
+`resource` (if necessary) and return a truthy value.
 
 #### `has_many`
 
@@ -484,7 +485,8 @@ the response. Defined by default as `resource.send(<to-many>)`.
 ##### `clear {..}` => TrueClass?
 
 Remove all relationships from `resource`. To serialize the updated linkage on
-the response, refresh or reload `resource` (if necessary) and return `true`.
+the response, refresh or reload `resource` (if necessary) and return a truthy
+value.
 
 For example, using Sequel:
 
@@ -501,14 +503,14 @@ end
 Take an array of [resource identifier objects][22] and update (add unless
 already present) the relationships on `resource`. To serialize the updated
 linkage on the response, refresh or reload `resource` (if necessary) and return
-`true`.
+a truthy value.
 
 ##### `subtract {|rios| ..}` => TrueClass?
 
 Take an array of [resource identifier objects][22] and update (remove unless
 already missing) the relationships on `resource`. To serialize the updated
 linkage on the response, refresh or reload `resource` (if necessary) and return
-`true`.
+a truthy value.
 
 ### Authorization
 
