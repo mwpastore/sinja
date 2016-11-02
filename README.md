@@ -12,8 +12,13 @@ and error-handling to implement JSON:API. Sinja aims to be lightweight
 (low-overhead), ORM-agnostic (to the extent that JSONAPI::Serializers is), and
 opinionated (to the extent that the specification is).
 
+**CAVEAT EMPTOR: This gem is still very new and under active development. The
+API is mostly stable, but there still may be significant breaking changes. It
+has not yet been thoroughly tested or vetted in a production environment.**
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
 
 - [Synopsis](#synopsis)
 - [Installation](#installation)
@@ -75,6 +80,8 @@ resource :posts do
     Post.create(attr)
   end
 end
+
+freeze_jsonapi
 ```
 
 Assuming the presence of a `Post` model and serializer, running the above
@@ -98,12 +105,10 @@ class Api::V1 < Sinatra::Base
   resource :posts do
     # ..
   end
+
+  freeze_jsonapi
 end
 ```
-
-**CAVEAT EMPTOR: This gem is still very new and under active development. The
-API is mostly stable, but there still may be significant breaking changes. It
-has not yet been thoroughly tested or vetted in a production environment.**
 
 ## Installation
 
@@ -115,11 +120,15 @@ gem 'sinja'
 
 And then execute:
 
-    $ bundle
+```sh
+$ bundle
+```
 
 Or install it yourself as:
 
-    $ gem install sinja
+```sh
+$ gem install sinja
+```
 
 ## Features
 
@@ -128,7 +137,7 @@ Or install it yourself as:
 * To-one and to-many relationships
 * Side-loaded relationships on resource creation
 * Conflict (constraint violation) handling
-* Plus all of JSONAPI::Serializers' features!
+* Plus all the features of JSONAPI::Serializers!
 
 Its main competitors in the Ruby space are [ActiveModelSerializers][12] (AMS)
 with the JsonApi adapter and [JSONAPI::Resources][8] (JR), both of which are
@@ -170,6 +179,8 @@ class Api < Sinatra::Base
       end
     end
   end
+
+  freeze_jsonapi
 end
 ```
 
@@ -225,6 +236,8 @@ class Api < Sinatra::Base
       serialize_models Book.where{}.reverse_order(:recent_sales).limit(10).all
     end
   end
+
+  freeze_jsonapi
 end
 ```
 
@@ -244,13 +257,13 @@ end
   status 204.
 
 **serialize_models**
-: Takes a model (and optional hash of JSONAPI::Serializers options) and returns
-  a serialized collection.
+: Takes an array of models (and optional hash of JSONAPI::Serializers options)
+  and returns a serialized collection.
 
 **serialize_models?**
-: Takes a model (and optional hash of JSONAPI::Serializers options) and returns
-  a serialized collection if non-empty, or the root metadata if present, or a
-  HTTP status 204.
+: Takes an array of models (and optional hash of JSONAPI::Serializers options)
+  and returns a serialized collection if non-empty, or the root metadata if
+  present, or a HTTP status 204.
 
 ### Performance
 
@@ -295,18 +308,19 @@ This list is incomplete. TODO:
 * Side-loading (on request and response)
 * Namespaces
 * Configuration
+* Validation
 
 ## Usage
 
-You'll need a database schema, models (using the ORM of your choice), and
-[serializers][3] to get started. Create a new Sinatra application (classic or
-modular) to hold all your JSON:API endpoints and register this extension.
-Instead of defining routes with `get`, `post`, etc. as you normally would,
-simply define `resource` blocks with action helpers and `has_one` and
-`has_many` relationship blocks (with their own action helpers). Sinja will draw
-and enable the appropriate routes based on the defined resources,
-relationships, and action helpers. Other routes will return the appropriate
-HTTP status code: 403, 404, or 405.
+You'll need a database schema and models (using the database and ORM of your
+choice) and [serializers][3] to get started. Create a new Sinatra application
+(classic or modular) to hold all your JSON:API endpoints and (if modular)
+register this extension. Instead of defining routes with `get`, `post`, etc. as
+you normally would, simply define `resource` blocks with action helpers and
+`has_one` and `has_many` relationship blocks (with their own action helpers).
+Sinja will draw and enable the appropriate routes based on the defined
+resources, relationships, and action helpers. Other routes will return the
+appropriate HTTP status codes: 403, 404, or 405.
 
 ### Configuration
 
@@ -343,7 +357,7 @@ configure_jsonapi do |c|
 
   #c.default_roles = {} # see "Authorization" below
 
-  # set the "progname" used by Sinja when accessing the logger
+  # Set the "progname" used by Sinja when accessing the logger
   #c.logger_progname = 'sinja'
 
   # A hash of options to pass to JSONAPI::Serializer.serialize
@@ -401,22 +415,26 @@ objects][22].
 
 ##### `index {..}` => Array
 
-Return an array of objects to serialize on the response.
+Return an array of zero or more objects to serialize on the response.
 
 ##### `show {|id| ..}` => Object
 
-Take an ID and return the corresponding object (or `nil`) to serialize on the
-response.
+Take an ID and return the corresponding object (or `nil` if not found) to
+serialize on the response.
 
 ##### `create {|attr, id| ..}` => id, Object?
 
 With client-generated IDs: Take a hash of attributes and a client-generated ID,
 create a new resource, and return the ID and optionally the created resource.
+(Note that only one or the other `create` action helpers is allowed in any
+given resource block.)
 
 ##### `create {|attr| ..}` => id, Object
 
 Without client-generated IDs: Take a hash of attributes, create a new resource,
-and return the server-generated ID and the created resource.
+and return the server-generated ID and the created resource. (Note that only
+one or the other `create` action helpers is allowed in any given resource
+block.)
 
 ##### `update {|attr| ..}` => Object?
 
@@ -431,43 +449,66 @@ Delete or destroy `resource`.
 
 ##### `pluck {..}` => Object
 
-Return the related object vis-à-vis `resource` to serialize on the response.
-Defined by default as `resource.send(<to-one>)`.
+Return the related object vis-&agrave;-vis `resource` to serialize on the
+response. Defined by default as `resource.send(<to-one>)`.
 
 ##### `prune {..}` => TrueClass?
 
 Remove the relationship from `resource`. To serialize the updated linkage on
-the response, refresh or reload `resource` and return `true`.
+the response, refresh or reload `resource` (if necessary) and return `true`.
+
+For example, using Sequel:
+
+```ruby
+has_one :qux do
+  prune do
+    resource.qux = nil
+    resource.save_changes # will return truthy if relationship was present
+  end
+end
+```
 
 ##### `graft {|rio| ..}` => TrueClass?
 
 Take a [resource identifier object][22] and update the relationship on
 `resource`. To serialize the updated linkage on the response, refresh or reload
-`resource` and return `true`.
+`resource` (if necessary) and return `true`.
 
 #### `has_many`
 
 ##### `fetch {..}` => Array
 
-Return an array of related objects vis-à-vis `resource` to serialize on the
-response. Defined by default as `resource.send(<to-many>)`.
+Return an array of related objects vis-&agrave;-vis `resource` to serialize on
+the response. Defined by default as `resource.send(<to-many>)`.
 
 ##### `clear {..}` => TrueClass?
 
 Remove all relationships from `resource`. To serialize the updated linkage on
-the response, refresh or reload `resource` and return `true`.
+the response, refresh or reload `resource` (if necessary) and return `true`.
+
+For example, using Sequel:
+
+```ruby
+has_many :bars do
+  clear do
+    resource.remove_all_bars # will return truthy if relationships were present
+  end
+end
+```
 
 ##### `merge {|rios| ..}` => TrueClass?
 
 Take an array of [resource identifier objects][22] and update (add unless
 already present) the relationships on `resource`. To serialize the updated
-linkage on the response, refresh or reload `resource` and return `true`.
+linkage on the response, refresh or reload `resource` (if necessary) and return
+`true`.
 
 ##### `subtract {|rios| ..}` => TrueClass?
 
 Take an array of [resource identifier objects][22] and update (remove unless
 already missing) the relationships on `resource`. To serialize the updated
-linkage on the response, refresh or reload `resource` and return `true`.
+linkage on the response, refresh or reload `resource` (if necessary) and return
+`true`.
 
 ### Authorization
 
@@ -497,12 +538,12 @@ configure_jsonapi do |c|
     :update=>:admin,
     :destroy=>:super,
 
-    # To-one roles
+    # To-one relationship roles
     :pluck=>:user,
     :prune=>:admin,
     :graft=>:admin,
 
-    # To-many roles
+    # To-many relationship roles
     :fetch=>:user,
     :clear=>:admin,
     :merge=>:admin,
@@ -560,14 +601,14 @@ end
 ### Conflicts
 
 If your database driver raises exceptions on constraint violations, you should
-specify which exception classes should be handled and return HTTP status code
+specify which exception class(es) should be handled and return HTTP status code
 409.
 
 For example, using Sequel:
 
 ```ruby
 configure_jsonapi do |c|
-  c.conflict_exceptions = Sequel::ConstraintViolation
+  c.conflict_exceptions = [Sequel::ConstraintViolation]
 end
 ```
 
