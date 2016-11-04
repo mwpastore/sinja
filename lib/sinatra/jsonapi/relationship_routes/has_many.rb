@@ -6,7 +6,7 @@ module Sinatra::JSONAPI
       CONFLICT_ACTIONS = %i[merge].freeze
 
       def self.registered(app)
-        app.def_action_helpers ACTIONS
+        app.def_action_helpers(ACTIONS, app)
 
         app.get '', :actions=>:fetch do
           serialize_models(*fetch)

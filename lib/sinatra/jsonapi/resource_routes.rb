@@ -5,7 +5,7 @@ module Sinatra::JSONAPI
     CONFLICT_ACTIONS = %i[create update].freeze
 
     def self.registered(app)
-      app.def_action_helpers ACTIONS
+      app.def_action_helpers(ACTIONS, app)
 
       app.get '', :actions=>:index do
         serialize_models(*index)

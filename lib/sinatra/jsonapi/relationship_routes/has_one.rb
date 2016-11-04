@@ -6,7 +6,7 @@ module Sinatra::JSONAPI
       CONFLICT_ACTIONS = %i[graft].freeze
 
       def self.registered(app)
-        app.def_action_helpers ACTIONS
+        app.def_action_helpers(ACTIONS, app)
 
         app.get '', :actions=>:pluck do
           serialize_model(*pluck)

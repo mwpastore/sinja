@@ -9,16 +9,21 @@ require 'sinatra/jsonapi/resource_routes'
 
 module Sinatra::JSONAPI
   module Resource
-    def def_action_helper(action)
+    def def_action_helper(action, context=nil)
       abort "JSONAPI resource actions can't be HTTP verbs!" \
         if Sinatra::Base.respond_to?(action)
 
-      define_singleton_method(action) do |**opts, &block|
+      context.define_singleton_method(action) do |**opts, &block|
         can(action, opts[:roles]) if opts.key?(:roles)
 
         if block.nil?
-          remove_method(action) if respond_to?(action) # TODO: Is this safe to do?
-          return
+          if respond_to?(action)
+            # TODO: Is this safe?
+            remove_method(action)
+            return
+          else
+            # TODO: Throw an error?
+          end
         end
 
         define_method(action) do |*args|
@@ -61,8 +66,8 @@ module Sinatra::JSONAPI
       end
     end
 
-    def def_action_helpers(actions)
-      [*actions].each { |action| def_action_helper(action) }
+    def def_action_helpers(actions, context=nil)
+      [*actions].each { |action| def_action_helper(action, context) }
     end
 
     def self.registered(app)
