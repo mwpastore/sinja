@@ -34,12 +34,16 @@ module Sinatra::JSONAPI
   end
 
   def sinja
-    yield sinja_config
+    if block_given?
+      yield sinja_config
+    else
+      sinja_config
+    end
   end
 
   alias_method :configure_jsonapi, :sinja
   def freeze_jsonapi
-    sinja(&:freeze)
+    sinja_config.freeze
   end
 
   def self.registered(app)
@@ -102,6 +106,8 @@ module Sinatra::JSONAPI
       halt 415 unless request.media_type == MIME_TYPE
       halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }
 
+      content_type :api_json
+
       normalize_params!
     end
 
@@ -111,13 +117,6 @@ module Sinatra::JSONAPI
 
     app.error 400...600, nil do
       serialized_error
-    end
-  end
-
-  def self.extended(base)
-    def base.route(*, **opts)
-      opts[:provides] ||= :api_json
-      super
     end
   end
 end

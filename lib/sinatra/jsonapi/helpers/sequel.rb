@@ -6,7 +6,13 @@ module Sinatra::JSONAPI
     module Sequel
       include ::Sequel::Inflections
 
-      CONFLICT_EXCEPTIONS = [::Sequel::ConstraintViolation]
+      def self.config(c)
+        c.conflict_exceptions = [::Sequel::ConstraintViolation]
+        #c.not_found_exceptions = [::Sequel::RecordNotFound]
+        #c.validation_exceptions = [::Sequel::ValidationVailed], proc do
+        #  format exception to json:api source.pointer and detail
+        #end
+      end
 
       def database
         ::Sequel::DATABASES.first
@@ -16,7 +22,7 @@ module Sinatra::JSONAPI
         database.transaction { yield }
       end
 
-      def with_pk(resource, **opts)
+      def next_pk(resource, **opts)
         [resource.pk, resource, opts]
       end
 

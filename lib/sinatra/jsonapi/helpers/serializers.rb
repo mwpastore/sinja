@@ -123,7 +123,6 @@ module Sinatra::JSONAPI
       def serialized_error
         hash = error_hash(normalized_error)
         logger.error(settings.sinja_config.logger_progname) { hash }
-        content_type :api_json
         JSON.send settings.sinja_config.json_error_generator,
           ::JSONAPI::Serializer.serialize_errors([hash])
       end

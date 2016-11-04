@@ -204,7 +204,7 @@ class App < Sinatra::Base
     cache_control :public, :max_age=>3_600
   end
 
-  # define a custom /status route and override the default provides condition
+  # define a custom /status route
   get('/status', :provides=>:json) { 'OK' }
 
   resource :books do
@@ -313,7 +313,7 @@ This list is incomplete. TODO:
 
 ## Usage
 
-You'll need a database schema and models (using the database and ORM of your
+You'll need a database schema and models (using the engine and ORM of your
 choice) and [serializers][3] to get started. Create a new Sinatra application
 (classic or modular) to hold all your JSON:API endpoints and (if modular)
 register this extension. Instead of defining routes with `get`, `post`, etc. as
@@ -340,9 +340,9 @@ conform to these settings.
 * Disables static file routes (can be reenabled with `enable :static`)
 * Sets `:show_exceptions` to `:after_handler`
 * Adds an `:api_json` MIME-type (`Sinatra::JSONAPI::MIME_TYPE`)
-* Defaults all routes to `:provides=>:api_json` (can be overridden per custom
-  route)
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
+* Sets the `Content-Type` response header to `:api_json` (can be overriden with
+  the `content_type` helper)
 * Formats all errors to the proper JSON:API structure
 * Serializes all response bodies (including errors) to JSON
 
@@ -415,6 +415,15 @@ end
 All arguments to action helpers are "tainted" and should be treated as
 potentially dangerous: IDs, attribute hashes, and [resource identifier
 objects][22].
+
+Finally, some routes will automatically invoke the `show` action helper on your
+behalf and make the selected resource available to other action helpers as
+`resource`. You've already told Sinja how to find a resource by ID, so why
+repeat yourself? For example, the `PATCH /<name>/:id` route looks up the
+resource with that ID using the `show` action helper and makes it available to
+the `update` action helper as `resource`. The same goes for the `DELETE
+/<name>/:id` route and the `destroy` action helper, and all of the `has_one`
+and `has_many` action helpers.
 
 #### `resource`
 
@@ -655,6 +664,8 @@ class App < Sinatra::Base
     # ..
   end
 
+  # ..
+
   freeze_jsonapi
 end
 ```
@@ -671,7 +682,9 @@ class App < Sinatra::Base
     # ..
   end
 
-  sinja(&:freeze)
+  # ..
+
+  sinja.freeze
 end
 ```
 
