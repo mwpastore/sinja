@@ -201,11 +201,11 @@ class App < Sinatra::Base
   end
 
   before do
-    cache_control :public, :max_age=>3_600
+    cache_control :public, max_age: 3_600
   end
 
   # define a custom /status route
-  get('/status', :provides=>:json) { 'OK' }
+  get('/status', provides: :json) { 'OK' }
 
   resource :books do
     show do |id|
@@ -213,7 +213,7 @@ class App < Sinatra::Base
       not_found "Book #{id} not found!" unless book
       headers 'X-ISBN'=>book.isbn
       last_modified book.updated_at
-      next book, :include=>%w[author]
+      next book, include: %w[author]
     end
 
     has_one :author do
@@ -396,7 +396,7 @@ manually.
 ```ruby
 resource :foos do
   index do
-    next Foo.all, :exclude=>%w[bars] # disallow including bars and bars.quxes
+    next Foo.all, exclude: %w[bars] # disallow including bars and bars.quxes
   end
 
   has_many :bars
@@ -404,7 +404,7 @@ end
 
 resource :bars do
   index do
-    [Bar.all, :fields=>[]] # disallow sparse fieldsets
+    [Bar.all, fields: []] # disallow sparse fieldsets
   end
 
   has_one :foo
@@ -548,22 +548,22 @@ default.
 configure_jsonapi do |c|
   c.default_roles = {
     # Resource roles
-    :index=>:user,
-    :show=>:user,
-    :create=>:admin,
-    :update=>:admin,
-    :destroy=>:super,
+    index: :user,
+    show: :user,
+    create: :admin,
+    update: :admin,
+    destroy: :super,
 
     # To-one relationship roles
-    :pluck=>:user,
-    :prune=>:admin,
-    :graft=>:admin,
+    pluck: :user,
+    prune: :admin,
+    graft: :admin,
 
     # To-many relationship roles
-    :fetch=>:user,
-    :clear=>:admin,
-    :merge=>:admin,
-    :subtract=>:admin
+    fetch: :user,
+    clear: :admin,
+    merge: :admin,
+    subtract: :admin
   }
 end
 ```
@@ -583,13 +583,13 @@ resource :foos do
 end
 
 resource :bars do
-  show(:roles=>:admin) do
+  show(roles: :admin) do
     # only logged-in users with the :admin role can access /bars/:id
   end
 end
 
 resource :quxes do
-  show(:roles=>[]) do
+  show(roles: []) do
     # anyone (bypassing the `role' helper) can access /quxes/:id
   end
 end
