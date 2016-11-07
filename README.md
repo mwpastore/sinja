@@ -81,6 +81,9 @@ resource :posts do
   create do |attr|
     Post.create(attr)
   end
+
+  has_one :author
+  has_many :comments
 end
 
 freeze_jsonapi
@@ -92,6 +95,10 @@ all other JSON:API endpoints returning 404 or 405):
 
 * `GET /posts`
 * `GET /posts/<id>`
+* `GET /posts/<id>/author`
+* `GET /posts/<id>/comments`
+* `GET /posts/<id>/relationships/author`
+* `GET /posts/<id>/relationships/comments`
 * `POST /posts`
 
 Of course, "modular"-style Sinatra aplications require you to register the
