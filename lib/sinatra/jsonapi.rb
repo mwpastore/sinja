@@ -4,10 +4,11 @@ require 'sinatra/base'
 require 'sinatra/namespace'
 
 require 'sinja'
+require 'sinja/version'
+
 require 'sinatra/jsonapi/config'
 require 'sinatra/jsonapi/helpers/serializers'
 require 'sinatra/jsonapi/resource'
-require 'sinatra/jsonapi/version'
 
 module Sinatra::JSONAPI
   def resource(resource_name, konst=nil, &block)
