@@ -36,6 +36,8 @@ module Sinatra::JSONAPI
           [201, content]
         elsif data[:id]
           204
+        else
+          raise ActionHelperError, "Unexpected return value(s) from `create' action helper"
         end
       end
 

@@ -53,7 +53,7 @@ module Sinatra::JSONAPI
               result = [result]
             end
 
-            raise ActionHelperError, "Unexpected return value(s) from `#{action}'" \
+            raise ActionHelperError, "Unexpected return value(s) from `#{action}' action helper" \
               unless result.length == required_arity.abs
 
             result.push(opts)
