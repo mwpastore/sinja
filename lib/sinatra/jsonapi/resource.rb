@@ -111,7 +111,7 @@ module Sinatra::JSONAPI
           end
 
           before do
-            not_found unless resource
+            not_found 'Parent resource not found' unless resource
           end
 
           get '' do

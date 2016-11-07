@@ -40,6 +40,8 @@ module Sinatra::JSONAPI
       def serialize_model(model=nil, options={})
         options[:is_collection] = false
         options[:skip_collection_check] = defined?(::Sequel) && model.is_a?(::Sequel::Model)
+        # TODO: This should allow a default include, take the param value if
+        # present, and support disabling passthru.
         options[:include] ||= params[:include] unless params[:include].empty?
         options[:fields] ||= params[:fields] unless params[:fields].empty?
 
@@ -61,6 +63,8 @@ module Sinatra::JSONAPI
 
       def serialize_models(models=[], options={})
         options[:is_collection] = true
+        # TODO: This should allow a default include, take the param value if
+        # present, and support disabling passthru.
         options[:include] ||= params[:include] unless params[:include].empty?
         options[:fields] ||= params[:fields] unless params[:fields].empty?
 
@@ -108,7 +112,7 @@ module Sinatra::JSONAPI
         elsif detail = [*body].first
         end
 
-        { title: title, detail: detail }
+        { :title=>title, :detail=>detail }
       end
 
       def error_hash(title: nil, detail: nil, source: nil)

@@ -13,7 +13,7 @@ module Sinatra::JSONAPI
 
       app.get '/:id', :actions=>:show do |id|
         self.resource, opts = show(id)
-        not_found unless resource
+        not_found "Resource '#{id}' not found" unless resource
         serialize_model(resource, opts)
       end
 
@@ -44,7 +44,7 @@ module Sinatra::JSONAPI
       app.patch '/:id', :actions=>%i[show update] do |id|
         sanity_check!(id)
         self.resource, = show(id)
-        not_found unless resource
+        not_found "Resource '#{id}' not found" unless resource
         serialize_model?(transaction do
           update(data.fetch(attributes, {})).tap do
             dispatch_relationship_requests!(id, :method=>:patch)
@@ -54,7 +54,7 @@ module Sinatra::JSONAPI
 
       app.delete '/:id', :actions=>%i[show destroy] do |id|
         self.resource, = show(id)
-        not_found unless resource
+        not_found "Resource '#{id}' not found" unless resource
         _, opts = destroy
         serialize_model?(nil, opts)
       end
