@@ -100,6 +100,10 @@ module Sinatra::JSONAPI
               super || self.resource = show(params[:resource_id]).first
             end
 
+            def sanity_check!
+              super(params[:resource_id])
+            end
+
             define_method(:linkage) do
               # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
               serialize_model(resource, :include=>rel_path)['data']['relationships'][rel_path]

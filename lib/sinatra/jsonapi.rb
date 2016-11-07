@@ -121,4 +121,6 @@ module Sinatra::JSONAPI
   end
 end
 
-Sinatra.register(Sinatra::JSONAPI)
+module Sinatra
+  register JSONAPI
+end

@@ -18,8 +18,8 @@ module Sinatra::JSONAPI
         ::Sequel::DATABASES.first
       end
 
-      def transaction
-        database.transaction { yield }
+      def transaction(&block)
+        database.transaction(&block)
       end
 
       def next_pk(resource, **opts)

@@ -5,12 +5,13 @@
 
 Sinja is a [Sinatra 2.0][1] [extension][10] for quickly building [RESTful][11],
 [JSON:API][2]-[compliant][7] web services, leveraging the excellent
-[JSONAPI::Serializers][3] gem. It enhances Sinatra's DSL to enable resource-,
-relationship-, and role-centric definition of routes and helpers, and it
-configures Sinatra with the proper settings, MIME-types, filters, conditions,
-and error-handling to implement JSON:API. Sinja aims to be lightweight
-(low-overhead), ORM-agnostic (to the extent that JSONAPI::Serializers is), and
-opinionated (to the extent that the specification is).
+[JSONAPI::Serializers][3] gem and [Sinatra::Namespace][21] extension. It
+enhances Sinatra's DSL to enable resource-, relationship-, and role-centric
+definition of applications, and it configures Sinatra with the proper settings,
+MIME-types, filters, conditions, and error-handling to implement JSON:API.
+Sinja aims to be lightweight (to the extent that Sinatra is), ORM-agnostic (to
+the extent that JSONAPI::Serializers is), and opinionated (to the extent that
+the JSON:API specification is).
 
 **CAVEAT EMPTOR: This gem is still very new and under active development. The
 API is mostly stable, but there still may be significant breaking changes. It
@@ -329,10 +330,10 @@ appropriate HTTP status codes: 403, 404, or 405.
 
 Registering this extension has a number of application-wide implications,
 detailed below. If you have any non-JSON:API routes, you may want to keep them
-in a separate Sinatra application and incorporate them as middleware or mount
-them elsewhere (e.g. with [Rack::URLMap][4]), or host them as a completely
-separate web service. It may not be feasible to have custom routes that don't
-conform to these settings.
+in a separate application and incorporate them as middleware or mount them
+elsewhere (e.g. with [Rack::URLMap][4]), or host them as a completely separate
+web service. It may not be feasible to have custom routes that don't conform to
+these settings.
 
 * Registers [Sinatra::Namespace][21]
 * Disables [Rack::Protection][6] (can be reenabled with `enable :protection` or
@@ -343,6 +344,8 @@ conform to these settings.
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
 * Sets the `Content-Type` response header to `:api_json` (can be overriden with
   the `content_type` helper)
+* Normalizes query parameters to reflect the features supported by JSON:API
+  (this may be strictly enforced in future versions of Sinja)
 * Formats all errors to the proper JSON:API structure
 * Serializes all response bodies (including errors) to JSON
 
@@ -384,33 +387,11 @@ omitted entirely. Any helper may additionally return an options hash to pass
 along to JSONAPI::Serializers.
 
 The `:include` and `:fields` query parameters are automatically passed through
-to JSONAPI::Serializers. To disable this behavior for any given query
-parameter, force it to an (empty) array in the aforementioned options hash. You
-may also use the special `:exclude` option to preserve the default pass-through
-behavior while preventing specific relationships from being included in the
-response. This accepts the same formats as JSONAPI::Serializers accepts for
-`:include`. If you exclude a relationship, any sub-relationships will also be
-excluded. The `:sort`, `:page`, and `:filter` query parameters must be handled
-manually.
-
-```ruby
-resource :foos do
-  index do
-    next Foo.all, exclude: %w[bars] # disallow including bars and bars.quxes
-  end
-
-  has_many :bars
-end
-
-resource :bars do
-  index do
-    [Bar.all, fields: []] # disallow sparse fieldsets
-  end
-
-  has_one :foo
-  has_many :quxes
-end
-```
+to JSONAPI::Serializers. You may also use the special `:exclude` option to
+prevent specific relationships from being included in the response. This
+accepts the same formats as JSONAPI::Serializers does for `:include`. If you
+exclude a relationship, any sub-relationships will also be excluded. The
+`:sort`, `:page`, and `:filter` query parameters must be handled manually.
 
 All arguments to action helpers are "tainted" and should be treated as
 potentially dangerous: IDs, attribute hashes, and [resource identifier
@@ -464,7 +445,8 @@ Delete or destroy `resource`.
 ##### `pluck {..}` => Object
 
 Return the related object vis-&agrave;-vis `resource` to serialize on the
-response. Defined by default as `resource.send(<to-one>)`.
+response. Defined by default as `resource.send(<to-one>)`; can be either
+overridden or disabled entirely with `pluck(&nil)`.
 
 ##### `prune {..}` => TrueClass?
 
@@ -494,7 +476,8 @@ Take a [resource identifier object][22] and update the relationship on
 ##### `fetch {..}` => Array
 
 Return an array of related objects vis-&agrave;-vis `resource` to serialize on
-the response. Defined by default as `resource.send(<to-many>)`.
+the response. Defined by default as `resource.send(<to-many>)`; can be either
+overridden or disabled entirely with `fetch(&nil)`.
 
 ##### `clear {..}` => TrueClass?
 
@@ -599,9 +582,9 @@ end
 
 Finally, define a `role` helper in your application that returns the user's
 role(s) (if any). You can handle login failures in your middleware, elsewhere
-in the application (i.e. a `before` filter), or within in the helper, simply
-letting Sinja halt 403 on restricted action helpers when `role` returns `nil`
-(the default behavior).
+in the application (i.e. a `before` filter), or within the helper, either by
+halting or raising an error or by simply letting Sinja halt 403 on restricted
+action helpers when `role` returns `nil` (the default behavior).
 
 ```ruby
 helpers do
@@ -690,10 +673,10 @@ end
 
 ### Code Organization
 
-Sinatra applications might grow overly large with a block for each resource. I
-am still working on a better way to handle this (as well as a way to provide
+Sinja applications might grow overly large with a block for each resource. I am
+still working on a better way to handle this (as well as a way to provide
 standalone resource controllers for e.g. cloud functions), but for the time
-being you can store each resource block as its own proc, and pass it to the
+being you can store each resource block as its own Proc, and pass it to the
 `resource` keyword in lieu of a block. The migration to some future solution
 should be relatively painless. For example:
 
