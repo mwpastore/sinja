@@ -78,6 +78,10 @@ module Sinatra::JSONAPI
         roles.nil? || roles.empty? || Set[*role].intersect?(roles)
       end
 
+      def content?
+        request.body.respond_to?(:size) && request.body.size > 0
+      end
+
       def data
         @data ||= deserialized_request_body[:data]
       end
@@ -104,8 +108,11 @@ module Sinatra::JSONAPI
 
     app.before do
       halt 406 unless request.preferred_type.entry == MIME_TYPE
-      halt 415 unless request.media_type == MIME_TYPE
-      halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }
+
+      if content?
+        halt 415 unless request.media_type == MIME_TYPE
+        halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }
+      end
 
       content_type :api_json
 

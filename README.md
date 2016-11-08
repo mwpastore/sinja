@@ -400,7 +400,8 @@ below. Implicitly return the expected values as described below (as an array if
 necessary) or use the `next` keyword (instead of `return` or `break`) to exit
 the action helper. Return values marked with a question mark below may be
 omitted entirely. Any helper may additionally return an options hash to pass
-along to JSONAPI::Serializers.
+along to JSONAPI::Serializer.serialize (will be merged into the global
+`serializer_opts` described above).
 
 The `:include` and `:fields` query parameters are automatically passed through
 to JSONAPI::Serializers. You may also use the special `:exclude` option to

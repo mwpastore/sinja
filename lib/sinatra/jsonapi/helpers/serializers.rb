@@ -23,7 +23,7 @@ module Sinatra::JSONAPI
       end
 
       def deserialized_request_body
-        return {} unless request.body.respond_to?(:size) && request.body.size > 0
+        return {} unless content?
 
         request.body.rewind
         JSON.parse(request.body.read, :symbolize_names=>true)
