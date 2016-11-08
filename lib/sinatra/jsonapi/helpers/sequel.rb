@@ -26,36 +26,38 @@ module Sinatra::JSONAPI
         [resource.pk, resource, opts]
       end
 
-      def add_missing(association, *args)
-        meth = "add_#{singularize(association)}".to_sym
-        transaction do
-          resource.lock!
-          venn(:-, association, *args) do |subresource|
-            resource.send(meth, subresource)
-          end
-          resource.reload
-        end
+      # <= association, rios, extra_keys
+      def add_missing(*args)
+        add_remove(:add, :-, *args)
       end
 
-      def remove_present(association, *args)
-        meth = "remove_#{singularize(association)}".to_sym
-        transaction do
-          resource.lock!
-          venn(:&, association, *args) do |subresource|
-            resource.send(meth, subresource)
-          end
-          resource.reload
-        end
+      # <= association, rios, extra_keys
+      def remove_present(*args)
+        add_remove(:remove, :&, *args)
       end
 
       private
 
+      def add_remove(meth_prefix, operator, association, rios)
+        meth = "#{meth_prefix}_#{singularize(association)}".to_sym
+        transaction do
+          resource.lock!
+          venn(operator, association, rios) do |subresource, rio|
+            args = [subresource]
+            args.push(yield(rio)) if block_given?
+            resource.send(meth, *args)
+          end
+          resource.reload
+        end
+      end
+
       def venn(operator, association, rios)
-        klass = resource.class.association_reflection(association) # get e.g. ProductType for :types
         dataset = resource.send("#{association}_dataset")
-        rios.map { |rio| rio[:id] }.tap(&:uniq!) # unique PKs in request payload
-          .send(operator, dataset.select_map(klass.primary_key)) # set operation with existing PKs in dataset
-          .each { |id| yield klass.with_pk!(id) } # TODO: return 404 if not found?
+        klass = resource.class.association_reflection(association)
+        rios = rios.map { |rio| [rio[:id], rio] }.to_h
+        rios.keys.send(operator, dataset.select_map(klass.primary_key)).each do |id|
+          yield klass.with_pk!(id), rios[id]
+        end
       end
     end
   end

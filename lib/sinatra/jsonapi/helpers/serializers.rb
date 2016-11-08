@@ -6,6 +6,22 @@ require 'set'
 module Sinatra::JSONAPI
   module Helpers
     module Serializers
+      def dedasherize(s=nil)
+        s.to_s.tr('-', '_').send(Symbol === s ? :to_sym : :itself)
+      end
+
+      def dedasherize_names(*args)
+        _dedasherize_names(*args).to_h
+      end
+
+      private def _dedasherize_names(hash={})
+        return enum_for(__callee__) unless block_given?
+
+        hash.each do |k, v|
+          yield dasherize(k), Hash === v ? dedasherize_names(v) : v
+        end
+      end
+
       def deserialized_request_body
         return {} unless request.body.respond_to?(:size) && request.body.size > 0
 

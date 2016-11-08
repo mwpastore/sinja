@@ -274,6 +274,15 @@ end
   and returns a serialized collection if non-empty, or the root metadata if
   present, or a HTTP status 204.
 
+**dedasherize**
+: Takes a string or symbol and returns the string or symbol with any and all
+  dashes transliterated to underscores.
+
+**dedasherize_names**
+: Takes a hash and returns the hash with its keys dedasherized (deeply).
+  Useful for fixing up the hashes of attributes passed to the `create` and
+  `update` action helpers before they are passed on to ORM methods.
+
 ### Performance
 
 Although there is some heavy metaprogramming happening at boot time, the end
