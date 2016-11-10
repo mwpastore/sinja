@@ -18,7 +18,7 @@ module Sinatra::JSONAPI
         return enum_for(__callee__) unless block_given?
 
         hash.each do |k, v|
-          yield dasherize(k), Hash === v ? dedasherize_names(v) : v
+          yield dedasherize(k), Hash === v ? dedasherize_names(v) : v
         end
       end
 
