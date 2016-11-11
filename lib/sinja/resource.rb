@@ -2,12 +2,12 @@
 require 'sinatra/base'
 require 'sinatra/namespace'
 
-require 'sinatra/jsonapi/helpers/relationships'
-require 'sinatra/jsonapi/relationship_routes/has_many'
-require 'sinatra/jsonapi/relationship_routes/has_one'
-require 'sinatra/jsonapi/resource_routes'
+require 'sinja/helpers/relationships'
+require 'sinja/relationship_routes/has_many'
+require 'sinja/relationship_routes/has_one'
+require 'sinja/resource_routes'
 
-module Sinatra::JSONAPI
+module Sinja
   module Resource
     def def_action_helper(action, context=nil)
       abort "JSONAPI resource actions can't be HTTP verbs!" \
@@ -31,9 +31,9 @@ module Sinatra::JSONAPI
             begin
               instance_exec(*args.take(block.arity.abs), &block)
             rescue Exception=>e
-              halt 409, e.message if settings.sinja_config.conflict?(action, e.class)
-              #halt 422, resource.errors if settings.sinja_config.invalid?(action, e.class) # TODO
-              #not_found if settings.sinja_config.not_found?(action, e.class) # TODO
+              halt 409, e.message if settings._sinja.conflict?(action, e.class)
+              #halt 422, resource.errors if settings._sinja.invalid?(action, e.class) # TODO
+              #not_found if settings._sinja.not_found?(action, e.class) # TODO
               raise
             end
 

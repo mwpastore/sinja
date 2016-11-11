@@ -356,7 +356,7 @@ these settings.
   by manually `use`-ing the Rack::Protection middleware)
 * Disables static file routes (can be reenabled with `enable :static`)
 * Sets `:show_exceptions` to `:after_handler`
-* Adds an `:api_json` MIME-type (`Sinatra::JSONAPI::MIME_TYPE`)
+* Adds an `:api_json` MIME-type (`Sinja::MIME_TYPE`)
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
 * Sets the `Content-Type` response header to `:api_json` (can be overriden with
   the `content_type` helper)

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module Sinatra::JSONAPI
+module Sinja
   module RelationshipRoutes
     module HasOne
       ACTIONS = %i[pluck prune graft].freeze

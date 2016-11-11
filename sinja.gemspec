@@ -5,7 +5,7 @@ require 'sinja/version'
 
 Gem::Specification.new do |spec|
   spec.name          = 'sinja'
-  spec.version       = Sinatra::JSONAPI::VERSION
+  spec.version       = Sinja::VERSION
   spec.authors       = ['Mike Pastore']
   spec.email         = ['mike@oobak.org']
 

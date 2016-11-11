@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module Sinatra::JSONAPI
+module Sinja
   module ResourceRoutes
     ACTIONS = %i[index show create update destroy].freeze
     CONFLICT_ACTIONS = %i[create update].freeze

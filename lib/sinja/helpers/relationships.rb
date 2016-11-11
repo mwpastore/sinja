@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'json'
 
-module Sinatra::JSONAPI
+module Sinja
   module Helpers
     module Relationships
       def dispatch_relationship_request(id, path, **opts)

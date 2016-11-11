@@ -2,11 +2,11 @@
 require 'forwardable'
 require 'set'
 
-require 'sinatra/jsonapi/relationship_routes/has_many'
-require 'sinatra/jsonapi/relationship_routes/has_one'
-require 'sinatra/jsonapi/resource_routes'
+require 'sinja/relationship_routes/has_many'
+require 'sinja/relationship_routes/has_one'
+require 'sinja/resource_routes'
 
-module Sinatra::JSONAPI
+module Sinja
   module ConfigUtils
     def deep_copy(c)
       Marshal.load(Marshal.dump(c))

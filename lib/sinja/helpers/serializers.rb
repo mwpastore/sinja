@@ -3,7 +3,7 @@ require 'json'
 require 'jsonapi-serializers'
 require 'set'
 
-module Sinatra::JSONAPI
+module Sinja
   module Helpers
     module Serializers
       def dedasherize(s=nil)
@@ -32,7 +32,7 @@ module Sinatra::JSONAPI
       end
 
       def serialized_response_body
-        JSON.send settings.sinja_config.json_generator, response.body
+        JSON.send settings._sinja.json_generator, response.body
       rescue JSON::GeneratorError
         halt 400, 'Unserializable entities in the response body'
       end
@@ -64,7 +64,7 @@ module Sinatra::JSONAPI
         exclude!(options) if options[:include] && options[:exclude]
 
         ::JSONAPI::Serializer.serialize model,
-          settings.sinja_config.serializer_opts.merge(options)
+          settings._sinja.serializer_opts.merge(options)
       end
 
       def serialize_model?(model=nil, options={})
@@ -87,7 +87,7 @@ module Sinatra::JSONAPI
         exclude!(options) if options[:include] && options[:exclude]
 
         ::JSONAPI::Serializer.serialize [*models],
-          settings.sinja_config.serializer_opts.merge(options)
+          settings._sinja.serializer_opts.merge(options)
       end
 
       def serialize_models?(models=[], options={})
@@ -101,7 +101,7 @@ module Sinatra::JSONAPI
       end
 
       def serialize_linkage(options={})
-        options = settings.sinja_config.serializer_opts.merge(options)
+        options = settings._sinja.serializer_opts.merge(options)
         linkage.tap do |c|
           c[:meta] = options[:meta] if options.key?(:meta)
           c[:jsonapi] = options[:jsonapi] if options.key?(:jsonapi)
@@ -142,8 +142,8 @@ module Sinatra::JSONAPI
 
       def serialized_error
         hash = error_hash(normalized_error)
-        logger.error(settings.sinja_config.logger_progname) { hash }
-        JSON.send settings.sinja_config.json_error_generator,
+        logger.error(settings._sinja.logger_progname) { hash }
+        JSON.send settings._sinja.json_error_generator,
           ::JSONAPI::Serializer.serialize_errors([hash])
       end
     end

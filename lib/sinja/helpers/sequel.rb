@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'sequel/model/inflections'
 
-module Sinatra::JSONAPI
+module Sinja
   module Helpers
     module Sequel
       include ::Sequel::Inflections
