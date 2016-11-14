@@ -26,14 +26,30 @@ module Sinja
         [resource.pk, resource, opts]
       end
 
-      # <= association, rios, extra_keys
+      # <= association, rios, block
       def add_missing(*args)
         add_remove(:add, :-, *args)
       end
 
-      # <= association, rios, extra_keys
+      # <= association, rios, block
       def remove_present(*args)
         add_remove(:remove, :&, *args)
+      end
+
+      def update_present(association, rios)
+        transaction do
+          venn(:&, association, rios) do |subresource, rio|
+            subresource.update(yield(rio))
+          end
+          resource.reload
+        end
+      end
+
+      def ampup(*args, &block)
+        transaction do
+          add_missing(*args, &block)
+          update_present(*args, &block)
+        end
       end
 
       private
