@@ -614,6 +614,23 @@ helpers do
 end
 ```
 
+If you need more fine-grained control, for example if your action helper logic
+varies by the user's role, you can use a simple switch statement along with the
+`RoleList` utility class:
+
+```ruby
+index(roles: []) do
+  case role
+  when RoleList[:user]
+    # logic specific to user role
+  when RoleList[:admin, :super]
+    # logic specific to administrative roles
+  else
+    halt 403, 'Access denied!'
+  end
+end
+```
+
 ### Conflicts
 
 If your database driver raises exceptions on constraint violations, you should

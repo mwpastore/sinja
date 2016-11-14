@@ -2,6 +2,7 @@
 require 'forwardable'
 require 'set'
 
+require 'role_list'
 require 'sinja/relationship_routes/has_many'
 require 'sinja/relationship_routes/has_one'
 require 'sinja/resource_routes'
@@ -98,7 +99,7 @@ module Sinja
         ResourceRoutes::ACTIONS,
         RelationshipRoutes::HasMany::ACTIONS,
         RelationshipRoutes::HasOne::ACTIONS
-      ].reduce([], :concat).map { |action| [action, Set.new] }.to_h
+      ].reduce([], :concat).map { |action| [action, RoleList.new] }.to_h
     end
 
     def_delegator :@data, :[]
@@ -107,7 +108,7 @@ module Sinja
       h.each do |action, roles|
         abort "Unknown or invalid action helper `#{action}' in configuration" \
           unless @data.key?(action)
-        @data[action].replace(Set[*roles])
+        @data[action].replace(RoleList[*roles])
       end
       @data
     end

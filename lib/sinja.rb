@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'set'
 require 'sinatra/base'
 require 'sinatra/namespace'
 
+require 'role_list'
 require 'sinja/config'
 require 'sinja/helpers/serializers'
 require 'sinja/resource'
@@ -77,7 +77,7 @@ module Sinja
     app.helpers Helpers::Serializers do
       def can?(resource_name, action)
         roles = settings._sinja.resource_roles[resource_name][action]
-        roles.nil? || roles.empty? || Set[*role].intersect?(roles)
+        roles.nil? || roles.empty? || roles === role
       end
 
       def content?
