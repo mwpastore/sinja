@@ -36,32 +36,14 @@ module Sinja
         add_remove(:remove, :&, *args)
       end
 
-      def update_present(association, rios)
-        transaction do
-          venn(:&, association, rios) do |subresource, rio|
-            subresource.update(yield(rio))
-          end
-          resource.reload
-        end
-      end
-
-      def ampup(*args, &block)
-        transaction do
-          add_missing(*args, &block)
-          update_present(*args, &block)
-        end
-      end
-
       private
 
       def add_remove(meth_prefix, operator, association, rios)
         meth = "#{meth_prefix}_#{singularize(association)}".to_sym
         transaction do
           resource.lock!
-          venn(operator, association, rios) do |subresource, rio|
-            args = [subresource]
-            args.push(yield(rio)) if block_given?
-            resource.send(meth, *args)
+          venn(operator, association, rios) do |subresource|
+            resource.send(meth, subresource)
           end
           resource.reload
         end
@@ -69,11 +51,10 @@ module Sinja
 
       def venn(operator, association, rios)
         dataset = resource.send("#{association}_dataset")
-        klass = resource.class.association_reflection(association)
-        rios = rios.map { |rio| [rio[:id], rio] }.to_h
-        rios.keys.send(operator, dataset.select_map(klass.primary_key)).each do |id|
-          yield klass.with_pk!(id), rios[id]
-        end
+        # does not / will not work with composite primary keys
+        rios.map { |rio| rio[:id].to_i }
+          .send(operator, dataset.select_map(:id))
+          .each { |id| yield dataset.with_pk!(id) }
       end
     end
   end
