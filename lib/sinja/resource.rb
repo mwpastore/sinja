@@ -74,6 +74,10 @@ module Sinja
       app.helpers Helpers::Relationships do
         attr_accessor :resource
 
+        def attributes
+          dedasherize_names(data.fetch(:attributes, {}))
+        end
+
         def sanity_check!(id=nil)
           halt 409, 'Resource type in payload does not match endpoint' \
             if data[:type] != request.path.split('/').last # TODO

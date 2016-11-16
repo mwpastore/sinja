@@ -281,8 +281,6 @@ end
 
 **dedasherize_names**
 : Takes a hash and returns the hash with its keys dedasherized (deeply).
-  Useful for fixing up the hashes of attributes passed to the `create` and
-  `update` action helpers before they are passed on to ORM methods.
 
 ### Performance
 
@@ -439,22 +437,22 @@ serialize on the response.
 
 ##### `create {|attr, id| ..}` => id, Object?
 
-With client-generated IDs: Take a hash of attributes and a client-generated ID,
-create a new resource, and return the ID and optionally the created resource.
-(Note that only one or the other `create` action helpers is allowed in any
-given resource block.)
+With client-generated IDs: Take a hash of (dedasherized) attributes and a
+client-generated ID, create a new resource, and return the ID and optionally
+the created resource. (Note that only one or the other `create` action helpers
+is allowed in any given resource block.)
 
 ##### `create {|attr| ..}` => id, Object
 
-Without client-generated IDs: Take a hash of attributes, create a new resource,
-and return the server-generated ID and the created resource. (Note that only
-one or the other `create` action helpers is allowed in any given resource
-block.)
+Without client-generated IDs: Take a hash of (dedasherized) attributes, create
+a new resource, and return the server-generated ID and the created resource.
+(Note that only one or the other `create` action helpers is allowed in any
+given resource block.)
 
 ##### `update {|attr| ..}` => Object?
 
-Take a hash of attributes, update `resource`, and optionally return the updated
-resource.
+Take a hash of (dedasherized) attributes, update `resource`, and optionally
+return the updated resource.
 
 ##### `destroy {..}`
 

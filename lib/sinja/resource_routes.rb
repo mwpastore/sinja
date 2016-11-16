@@ -38,7 +38,7 @@ module Sinja
           if data[:id] && method(:create).arity != 2
 
         _, self.resource, opts = transaction do
-          create(data.fetch(:attributes, {}), data[:id]).tap do |id, *|
+          create(attributes, data[:id]).tap do |id, *|
             dispatch_relationship_requests!(id, :method=>:patch)
           end
         end
@@ -61,7 +61,7 @@ module Sinja
         self.resource, = show(id)
         not_found "Resource '#{id}' not found" unless resource
         serialize_model?(transaction do
-          update(data.fetch(attributes, {})).tap do
+          update(attributes).tap do
             dispatch_relationship_requests!(id, :method=>:patch)
           end
         end)
