@@ -55,6 +55,7 @@ has not yet been thoroughly tested or vetted in a production environment.**
     - [`role` helper](#role-helper)
   - [Conflicts](#conflicts)
   - [Transactions](#transactions)
+  - [Coalesced Find Requests](#coalesced-find-requests)
   - [Module Namespaces](#module-namespaces)
   - [Code Organization](#code-organization)
 - [Development](#development)
@@ -408,7 +409,9 @@ to JSONAPI::Serializers. You may also use the special `:exclude` option to
 prevent specific relationships from being included in the response. This
 accepts the same formats as JSONAPI::Serializers does for `:include`. If you
 exclude a relationship, any sub-relationships will also be excluded. The
-`:sort`, `:page`, and `:filter` query parameters must be handled manually.
+`:sort`, `:page`, and `:filter` query parameters must be handled manually (with
+the exception of the `:id` filter, discussed under "Coalesced Find Requests"
+below).
 
 All arguments to action helpers are "tainted" and should be treated as
 potentially dangerous: IDs, attribute hashes, and [resource identifier
@@ -665,6 +668,15 @@ helpers do
   end
 end
 ```
+
+### Coalesced Find Requests
+
+If your JSON:API client coalesces find requests, the `show` action helper will
+be invoked once for each ID in the `:id` filter, and the resulting collection
+will be serialized on the response. Both query parameter syntaxes for arrays
+are supported: `?filter[id]=1,2` and `?filter[id][]=1&filter[id][]=2`. If any
+ID is not found (i.e. `show` returns `nil`), the route will halt with HTTP
+status code 404.
 
 ### Module Namespaces
 

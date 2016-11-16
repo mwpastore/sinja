@@ -7,6 +7,21 @@ module Sinja
     def self.registered(app)
       app.def_action_helpers(ACTIONS, app)
 
+      app.get '', :pfilters=>:id, :actions=>:show do
+        ids = params['filter'].delete('id')
+        ids = ids.split(',') if ids.respond_to?(:split)
+
+        opts = {}
+        resources = [*ids].tap(&:uniq!).map! do |id|
+          self.resource, opts = show(id)
+          not_found "Resource '#{id}' not found" unless resource
+          resource
+        end
+
+        # TODO: Serialize collection with opts from last model found?
+        serialize_models(resources, opts)
+      end
+
       app.get '', :actions=>:index do
         serialize_models(*index)
       end

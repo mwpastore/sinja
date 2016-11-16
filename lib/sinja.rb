@@ -68,6 +68,14 @@ module Sinja
       end
     end
 
+    app.set :pfilters do |*pfilters|
+      condition do
+        pfilters.all? do |pfilter|
+          params.key?('filter') && params['filter'].key?(pfilter.to_s)
+        end
+      end
+    end
+
     app.set :nullif do |nullish|
       condition { nullish.(data) }
     end
