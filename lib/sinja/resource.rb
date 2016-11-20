@@ -125,12 +125,6 @@ module Sinja
           register RelationshipRoutes.const_get \
             rel_type.to_s.split('_').map(&:capitalize).join.to_sym
 
-          if rel_type == :has_one
-            pluck { resource.send(rel) }
-          elsif rel_type == :has_many
-            fetch { resource.send(rel) }
-          end
-
           instance_eval(&block) if block
         end
       end

@@ -463,8 +463,7 @@ Delete or destroy `resource`.
 ##### `pluck {..}` => Object
 
 Return the related object vis-&agrave;-vis `resource` to serialize on the
-response. Defined by default as `resource.send(<to-one>)`; can be either
-overridden or disabled entirely with `pluck(&nil)`.
+response.
 
 ##### `prune {..}` => TrueClass?
 
@@ -494,8 +493,7 @@ Take a [resource identifier object][22] and update the relationship on
 ##### `fetch {..}` => Array
 
 Return an array of related objects vis-&agrave;-vis `resource` to serialize on
-the response. Defined by default as `resource.send(<to-many>)`; can be either
-overridden or disabled entirely with `fetch(&nil)`.
+the response.
 
 ##### `clear {..}` => TrueClass?
 
