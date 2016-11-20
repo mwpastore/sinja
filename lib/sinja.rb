@@ -92,7 +92,11 @@ module Sinja
       end
 
       def data
-        @data ||= deserialized_request_body[:data]
+        @data ||= begin
+          deserialized_request_body.fetch(:data)
+        rescue NoMethodError, KeyError
+          halt 400, 'Malformed JSON:API request payload'
+        end
       end
 
       def normalize_params!

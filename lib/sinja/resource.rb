@@ -19,11 +19,13 @@ module Sinja
         return if block.nil?
 
         define_method(action) do |*args|
-          send("before_#{action}") if respond_to?("before_#{action}")
+          block_args = args.take(block.arity.abs)
+
+          send("before_#{action}", *block_args) if respond_to?("before_#{action}")
 
           result =
             begin
-              instance_exec(*args.take(block.arity.abs), &block)
+              instance_exec(*block_args, &block)
             rescue Exception=>e
               halt 409, e.message if settings._sinja.conflict?(action, e.class)
               #halt 422, resource.errors if settings._sinja.invalid?(action, e.class) # TODO
@@ -59,7 +61,7 @@ module Sinja
         end
 
         define_singleton_method("remove_#{action}") do
-          remove_method(action)
+          remove_method(action) if respond_to?(action)
         end
       end
     end

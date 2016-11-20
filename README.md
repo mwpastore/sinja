@@ -49,6 +49,7 @@ has not yet been thoroughly tested or vetted in a production environment.**
       - [`clear {..}` => TrueClass?](#clear---trueclass)
       - [`merge {|rios| ..}` => TrueClass?](#merge-rios---trueclass)
       - [`subtract {|rios| ..}` => TrueClass?](#subtract-rios---trueclass)
+  - [Action Helper Helpers](#action-helper-helpers)
   - [Authorization](#authorization)
     - [`default_roles` configurable](#default_roles-configurable)
     - [`:roles` Action Helper option](#roles-action-helper-option)
@@ -525,6 +526,53 @@ already missing) the relationships on `resource`. To serialize the updated
 linkage on the response, refresh or reload `resource` (if necessary) and return
 a truthy value.
 
+### Action Helper Helpers
+
+You may remove a previously-registered action helper with `remove_<action>`:
+
+```ruby
+resource :foos do
+  index do
+    # ..
+  end
+
+  remove_index
+end
+```
+
+You may invoke an action helper keyword without a block to modify the options
+(i.e. roles) of a previously-registered action helper:
+
+```ruby
+resource :bars do
+  show do |id|
+    # ..
+  end
+
+  show(roles: :admin) # restrict the above action helper to the `admin' role
+end
+```
+
+You may define a `before_<action>` helper (in the namespace scope or any of
+its parent scopes) that takes the same arguments as the corresponding block:
+
+```ruby
+helpers do
+  def before_create(attr)
+    halt 400 unless validate(attr.delete(:special_key))
+  end
+end
+
+resource :quxes do
+  create do |attr|
+    attr.key?(:special_key) # => false
+  end
+end
+```
+
+Any changes made to attribute hashes or resource identifier objects in a
+`before` hook will be persisted to the action helper.
+
 ### Authorization
 
 Sinja provides a simple role-based authorization scheme to restrict access to
@@ -577,13 +625,13 @@ helper, set `:roles` to an empty array. For example, to manage access to
 ```ruby
 resource :foos do
   show do
-    # any logged-in user (with the :user role) can access /foos/:id
+    # any logged-in user (with the `user' role) can access /foos/:id
   end
 end
 
 resource :bars do
   show(roles: :admin) do
-    # only logged-in users with the :admin role can access /bars/:id
+    # only logged-in users with the `admin' role can access /bars/:id
   end
 end
 
@@ -615,17 +663,15 @@ end
 
 If you need more fine-grained control, for example if your action helper logic
 varies by the user's role, you can use a simple switch statement along with the
-`RoleList` utility class:
+`Sinja::RoleList` utility class:
 
 ```ruby
-index(roles: []) do
+index(roles: %i[user admin super]) do
   case role
-  when RoleList[:user]
-    # logic specific to user role
-  when RoleList[:admin, :super]
+  when Sinja::RoleList[:user]
+    # logic specific to the `user' role
+  when Sinja::RoleList[:admin, :super]
     # logic specific to administrative roles
-  else
-    halt 403, 'Access denied!'
   end
 end
 ```
