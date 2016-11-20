@@ -16,17 +16,11 @@ module Sinja
       context.define_singleton_method(action) do |**opts, &block|
         can(action, opts[:roles]) if opts.key?(:roles)
 
-        if block.nil?
-          if respond_to?(action)
-            # TODO: Is this safe?
-            remove_method(action)
-            return
-          else
-            # TODO: Throw an error?
-          end
-        end
+        return if block.nil?
 
         define_method(action) do |*args|
+          send("before_#{action}") if respond_to?("before_#{action}")
+
           result =
             begin
               instance_exec(*args.take(block.arity.abs), &block)
@@ -62,6 +56,10 @@ module Sinja
           else
             [result, nil].take(required_arity.abs).push({})
           end
+        end
+
+        define_singleton_method("remove_#{action}") do
+          remove_method(action)
         end
       end
     end
