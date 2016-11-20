@@ -2,7 +2,6 @@
 require 'sinatra/base'
 require 'sinatra/namespace'
 
-require 'role_list'
 require 'sinja/config'
 require 'sinja/helpers/serializers'
 require 'sinja/resource'

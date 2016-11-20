@@ -2,10 +2,10 @@
 require 'forwardable'
 require 'set'
 
-require 'role_list'
 require 'sinja/relationship_routes/has_many'
 require 'sinja/relationship_routes/has_one'
 require 'sinja/resource_routes'
+require 'sinja/role_list'
 
 module Sinja
   module ConfigUtils
