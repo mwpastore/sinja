@@ -15,7 +15,7 @@ module Sinja
 
   def resource(resource_name, konst=nil, &block)
     abort "Must supply proc constant or block for `resource'" \
-      unless block = (konst and konst.is_a?(Proc) or block)
+      unless block = (konst if konst.is_a?(Proc)) || block
 
     _sinja.resource_roles[resource_name.to_sym] # trigger default proc
 

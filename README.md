@@ -695,7 +695,7 @@ class App < Sinatra::Base
 end
 ```
 
-Can also be written like this:
+Can also be written like this ("modular"-style applications only):
 
 ```ruby
 require 'sinja'
