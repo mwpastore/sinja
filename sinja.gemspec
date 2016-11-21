@@ -18,13 +18,14 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = %w[lib]
 
-  # TODO: relax these dependencies
-  spec.add_dependency 'json', '~> 2.0.1'
-  spec.add_dependency 'jsonapi-serializers', '~> 0.16.0'
-  spec.add_dependency 'sinatra', '~> 2.0.0.beta2'
-  spec.add_dependency 'sinatra-contrib', '~> 2.0.0.beta2'
+  spec.required_ruby_version = '>= 2.3.0'
+
+  spec.add_dependency 'json', '>= 1.8.3'
+  spec.add_dependency 'jsonapi-serializers', '~> 0.16'
+  spec.add_dependency 'sinatra', '>= 2.0.0.beta2', '< 3'
+  spec.add_dependency 'sinatra-contrib', '>= 2.0.0.beta2', '< 3'
 
   spec.add_development_dependency 'bundler', '~> 1.13'
   spec.add_development_dependency 'rake', '~> 11.3'
-  spec.add_development_dependency 'rspec', '~> 3.0'
+  spec.add_development_dependency 'rspec', '~> 3.5'
 end
