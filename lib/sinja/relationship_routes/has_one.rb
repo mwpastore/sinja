@@ -10,9 +10,9 @@ module Sinja
 
         app.head '' do
           unless relationship_link?
-            allow :get=>:itself
+            allow :get=>:pluck
           else
-            allow :get=>:pluck, :patch=>[:prune, :graft]
+            allow :get=>:itself, :patch=>[:prune, :graft]
           end
         end
 

@@ -10,9 +10,9 @@ module Sinja
 
         app.head '' do
           unless relationship_link?
-            allow :get=>:itself
+            allow :get=>:fetch
           else
-            allow :get=>:fetch, :patch=>[:clear, :merge], :post=>:merge, :delete=>:subtract
+            allow :get=>:itself, :patch=>[:clear, :merge], :post=>:merge, :delete=>:subtract
           end
         end
 
