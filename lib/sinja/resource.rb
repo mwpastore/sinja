@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'set'
 require 'sinatra/base'
 require 'sinatra/namespace'
 
@@ -74,6 +75,14 @@ module Sinja
       app.helpers Helpers::Relationships do
         attr_accessor :resource
 
+        def allow(h={})
+          s = Set.new
+          h.each do |method, actions|
+            s << method if [*actions].all? { |action| respond_to?(action) }
+          end
+          headers 'Allow'=>s.map(&:upcase).join(',')
+        end
+
         def attributes
           dedasherize_names(data.fetch(:attributes, {}))
         end
@@ -116,12 +125,6 @@ module Sinja
 
           before do
             not_found 'Parent resource not found' unless resource
-          end
-
-          get '' do
-            pass unless relationship_link?
-
-            serialize_linkage
           end
 
           register RelationshipRoutes.const_get \

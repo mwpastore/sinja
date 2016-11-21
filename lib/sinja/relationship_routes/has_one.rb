@@ -8,6 +8,20 @@ module Sinja
       def self.registered(app)
         app.def_action_helpers(ACTIONS, app)
 
+        app.head '' do
+          unless relationship_link?
+            allow :get=>:itself
+          else
+            allow :get=>:pluck, :patch=>[:prune, :graft]
+          end
+        end
+
+        app.get '' do
+          pass unless relationship_link?
+
+          serialize_linkage
+        end
+
         app.get '', :actions=>:pluck do
           serialize_model(*pluck)
         end

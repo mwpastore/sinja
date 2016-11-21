@@ -7,6 +7,14 @@ module Sinja
     def self.registered(app)
       app.def_action_helpers(ACTIONS, app)
 
+      app.head '' do
+        allow :get=>:index, :post=>:create
+      end
+
+      app.head '/:id' do
+        allow :get=>:show, :patch=>[:show, :update], :delete=>[:show, :destroy]
+      end
+
       app.get '', :pfilters=>:id, :actions=>:show do
         ids = params['filter'].delete('id')
         ids = ids.split(',') if ids.respond_to?(:split)
