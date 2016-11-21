@@ -83,6 +83,18 @@ module Sinja
     app.mime_type :api_json, MIME_TYPE
 
     app.helpers Helpers::Serializers do
+      def allow(h={})
+        s = Set.new
+        h.each do |method, actions|
+          s << method if [*actions].all? { |action| respond_to?(action) }
+        end
+        headers 'Allow'=>s.map(&:upcase).join(',')
+      end
+
+      def attributes
+        dedasherize_names(data.fetch(:attributes, {}))
+      end
+
       def can?(resource_name, action)
         roles = settings._sinja.resource_roles[resource_name][action]
         roles.nil? || roles.empty? || roles === role
@@ -94,7 +106,7 @@ module Sinja
 
       def data
         @data ||= begin
-          deserialized_request_body.fetch(:data)
+          deserialize_request_body.fetch(:data)
         rescue NoMethodError, KeyError
           halt 400, 'Malformed JSON:API request payload'
         end
@@ -109,6 +121,14 @@ module Sinja
           :page=>{},
           :sort=>''
         }.each { |k, v| params[k] ||= v }
+      end
+
+      def sanity_check!(id=nil)
+        halt 409, 'Resource type in payload does not match endpoint' \
+          if data[:type] != request.path.split('/').last # TODO
+
+        halt 409, 'Resource ID in payload does not match endpoint' \
+          if id && data[:id].to_s != id.to_s
       end
 
       def role
@@ -134,11 +154,11 @@ module Sinja
     end
 
     app.after do
-      body serialized_response_body if response.ok?
+      body serialize_response_body if response.ok?
     end
 
     app.error 400...600, nil do
-      serialized_error
+      serialize_error
     end
   end
 end

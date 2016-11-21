@@ -22,7 +22,7 @@ module Sinja
         end
       end
 
-      def deserialized_request_body
+      def deserialize_request_body
         return {} unless content?
 
         request.body.rewind
@@ -31,7 +31,7 @@ module Sinja
         halt 400, 'Malformed JSON in the request body'
       end
 
-      def serialized_response_body
+      def serialize_response_body
         JSON.send settings._sinja.json_generator, response.body
       rescue JSON::GeneratorError
         halt 400, 'Unserializable entities in the response body'
@@ -116,7 +116,7 @@ module Sinja
         body updated ? serialize_linkage(options) : serialize_models?([], options)
       end
 
-      def normalized_error
+      def normalize_error
         return body if body.is_a?(Hash)
 
         if not_found? && detail = [*body].first
@@ -140,8 +140,8 @@ module Sinja
         end
       end
 
-      def serialized_error
-        hash = error_hash(normalized_error)
+      def serialize_error
+        hash = error_hash(normalize_error)
         logger.error(settings._sinja.logger_progname) { hash }
         JSON.send settings._sinja.json_error_generator,
           ::JSONAPI::Serializer.serialize_errors([hash])

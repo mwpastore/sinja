@@ -3,6 +3,7 @@ require 'set'
 require 'sinatra/base'
 require 'sinatra/namespace'
 
+require 'sinja/helpers/nested'
 require 'sinja/helpers/relationships'
 require 'sinja/relationship_routes/has_many'
 require 'sinja/relationship_routes/has_one'
@@ -74,26 +75,6 @@ module Sinja
     def self.registered(app)
       app.helpers Helpers::Relationships do
         attr_accessor :resource
-
-        def allow(h={})
-          s = Set.new
-          h.each do |method, actions|
-            s << method if [*actions].all? { |action| respond_to?(action) }
-          end
-          headers 'Allow'=>s.map(&:upcase).join(',')
-        end
-
-        def attributes
-          dedasherize_names(data.fetch(:attributes, {}))
-        end
-
-        def sanity_check!(id=nil)
-          halt 409, 'Resource type in payload does not match endpoint' \
-            if data[:type] != request.path.split('/').last # TODO
-
-          halt 409, 'Resource ID in payload does not match endpoint' \
-            if id && data[:id].to_s != id.to_s
-        end
       end
 
       app.register ResourceRoutes
@@ -106,19 +87,7 @@ module Sinja
         rel_path = rel.to_s.tr('_', '-')
 
         namespace %r{/(?<resource_id>[^/]+)(?<r>/relationships)?/#{rel_path}}, :actions=>:find do
-          helpers do
-            def relationship_link?
-              !params[:r].nil?
-            end
-
-            def resource
-              super || self.resource = find(params[:resource_id])
-            end
-
-            def sanity_check!
-              super(params[:resource_id])
-            end
-
+          helpers Helpers::Nested do
             define_method(:linkage) do
               # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
               serialize_model(resource, :include=>rel_path)['data']['relationships'][rel_path]
