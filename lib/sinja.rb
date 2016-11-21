@@ -128,9 +128,9 @@ module Sinja
         halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }
       end
 
-      content_type :api_json
-
       normalize_params!
+
+      content_type :api_json
     end
 
     app.after do

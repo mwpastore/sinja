@@ -57,6 +57,7 @@ has not yet been thoroughly tested or vetted in a production environment.**
   - [Conflicts](#conflicts)
   - [Transactions](#transactions)
   - [Coalesced Find Requests](#coalesced-find-requests)
+  - [Patchless Clients](#patchless-clients)
   - [Module Namespaces](#module-namespaces)
   - [Code Organization](#code-organization)
 - [Development](#development)
@@ -720,6 +721,27 @@ are supported: `?filter[id]=1,2` and `?filter[id][]=1&filter[id][]=2`. If any
 ID is not found (i.e. `show` returns `nil`), the route will halt with HTTP
 status code 404.
 
+### Patchless Clients
+
+JSON:API [recommends][23] supporting patchless clients by using the
+`X-HTTP-Method-Override` request header to coerce a `POST` into a `PATCH`. To
+support this in Sinja, add the Sinja::MethodOverride middleware (which is a
+stripped-down version of [Rack::MethodOverride][24]) into your application (or
+your Rackup configuration):
+
+```ruby
+require 'sinja'
+require 'sinja/method_override'
+
+class MyApp < Sinatra::Base
+  use Sinja::MethodOverride
+
+  register Sinja
+
+  # ..
+end
+```
+
 ### Module Namespaces
 
 Everything is dual-namespaced under both Sinatra::JSONAPI and Sinja, and Sinja
@@ -841,3 +863,5 @@ License](http://opensource.org/licenses/MIT).
 [20]: http://roda.jeremyevans.net
 [21]: http://www.sinatrarb.com/contrib/namespace.html
 [22]: http://jsonapi.org/format/#document-resource-identifier-objects
+[23]: http://jsonapi.org/recommendations/#patchless-clients
+[24]: http://www.rubydoc.info/github/rack/rack/Rack/MethodOverride
