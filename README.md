@@ -97,11 +97,11 @@ all other JSON:API endpoints returning 404 or 405):
 
 * `GET /posts`
 * `GET /posts/<id>`
-* `GET /posts/<id>/author`
-* `GET /posts/<id>/comments`
 * `GET /posts/<id>/relationships/author`
 * `GET /posts/<id>/relationships/comments`
 * `POST /posts`
+
+Other action helpers, documented below, enable other endpoints.
 
 Of course, "modular"-style Sinatra aplications require you to register the
 extension:

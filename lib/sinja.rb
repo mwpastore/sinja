@@ -5,6 +5,7 @@ require 'sinatra/namespace'
 require 'sinja/config'
 require 'sinja/helpers/serializers'
 require 'sinja/resource'
+require 'sinja/version'
 
 module Sinja
   MIME_TYPE = 'application/vnd.api+json'
