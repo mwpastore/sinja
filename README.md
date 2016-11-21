@@ -32,6 +32,7 @@ has not yet been thoroughly tested or vetted in a production environment.**
   - [Configuration](#configuration)
     - [Sinatra](#sinatra)
     - [Sinja](#sinja)
+  - [Resource Locator](#resource-locator)
   - [Action Helpers](#action-helpers)
     - [`resource`](#resource)
       - [`index {..}` => Array](#index---array)
@@ -49,7 +50,7 @@ has not yet been thoroughly tested or vetted in a production environment.**
       - [`clear {..}` => TrueClass?](#clear---trueclass)
       - [`merge {|rios| ..}` => TrueClass?](#merge-rios---trueclass)
       - [`subtract {|rios| ..}` => TrueClass?](#subtract-rios---trueclass)
-  - [Action Helper Helpers](#action-helper-helpers)
+  - [Action Helper Hooks &amp; Utilities](#action-helper-hooks-amp-utilities)
   - [Authorization](#authorization)
     - [`default_roles` configurable](#default_roles-configurable)
     - [`:roles` Action Helper option](#roles-action-helper-option)
@@ -73,20 +74,17 @@ require 'sinatra'
 require 'sinatra/jsonapi'
 
 resource :posts do
-  index do
-    Post.all
-  end
-
   show do |id|
     Post[id.to_i]
+  end
+
+  index do
+    Post.all
   end
 
   create do |attr|
     Post.create(attr)
   end
-
-  has_one :author
-  has_many :comments
 end
 
 freeze_jsonapi
@@ -98,11 +96,10 @@ all other JSON:API endpoints returning 404 or 405):
 
 * `GET /posts`
 * `GET /posts/<id>`
-* `GET /posts/<id>/relationships/author`
-* `GET /posts/<id>/relationships/comments`
 * `POST /posts`
 
-Other action helpers, documented below, enable other endpoints.
+The resource locator and other action helpers, documented below, enable other
+endpoints.
 
 Of course, "modular"-style Sinatra aplications require you to register the
 extension:
@@ -180,14 +177,14 @@ class App < Sinatra::Base
     # <- This is a Sinatra::Namespace block.
 
     show do |id|
-      # <- This is a Sinatra helper, scoped to the resource namespace.
+      # <- This is a special Sinatra helper, scoped to the resource namespace.
     end
 
     has_one :author do
       # <- This is a Sinatra::Namespace block, nested under the resource namespace.
 
       pluck do
-        # <- This is a Sinatra helper, scoped to the nested namespace.
+        # <- This is a special Sinatra helper, scoped to the nested namespace.
       end
     end
   end
@@ -219,8 +216,14 @@ class App < Sinatra::Base
   get('/status', provides: :json) { 'OK' }
 
   resource :books do
+    helpers do
+      def find(id)
+        Book[id.to_i]
+      end
+    end
+
     show do |id|
-      book = Book[id.to_i]
+      book = find(id)
       not_found "Book #{id} not found!" unless book
       headers 'X-ISBN'=>book.isbn
       last_modified book.updated_at
@@ -245,6 +248,8 @@ class App < Sinatra::Base
 
     # define a custom /books/top10 route
     get '/top10' do
+      halt 403 unless can?(:index) # restrict access to those with index rights
+
       serialize_models Book.where{}.reverse_order(:recent_sales).limit(10).all
     end
   end
@@ -398,6 +403,54 @@ end
 After Sinja is configured and all your resources are defined, you should call
 `freeze_jsonapi` to freeze the configuration store.
 
+### Resource Locator
+
+Much of Sinja's advanced functionality (i.e. updating and destroying resources
+and resource relationships) is dependent upon its ability to locate the
+corresponding resource for a request. To enable these features, simply define
+an ordinary helper method named `find` in your resource definition that takes a
+single ID argument and returns the corresponding object. You can, of course,
+use this helper method elsewhere in your definition, such as in your `show`
+action helper (if present).
+
+```ruby
+resource :posts
+  helpers do
+    def find(id)
+      Post[id.to_i]
+    end
+  end
+
+  show do |id|
+    next find(id), include: 'comments'
+  end
+end
+```
+
+* What's the difference between `find` and `show`?
+
+  You can think of it as the difference between a Model and a View. `find`
+  retrieves the record; `show` presents it.
+
+* Why separate the two? Why not use `show` as the resource locator?
+
+  For a variety of reasons, but primarily because the access rights for viewing
+  a resource are not always the same as those for updating and/or destroying a
+  resource, and vice-versa. For example, a user may be able to delete a
+  resource or subtract a relationship link without being able to see the
+  resource or its full relationship linkage.
+
+* How do I control access to the resource locator?
+
+  You don't. Instead, control access to the action helpers that use it:
+  `update`, `destroy`, and all of the relationship action helpers such as
+  `pluck` and `fetch`.
+
+* What happens if I define an action helper that requires a resource locator,
+  but no resource locator?
+
+  Sinja will act as if you had not defined the action helper.
+
 ### Action Helpers
 
 Action helpers should be defined within the appropriate block contexts
@@ -422,14 +475,13 @@ All arguments to action helpers are "tainted" and should be treated as
 potentially dangerous: IDs, attribute hashes, and [resource identifier
 objects][22].
 
-Finally, some routes will automatically invoke the `show` action helper on your
-behalf and make the selected resource available to other action helpers as
-`resource`. You've already told Sinja how to find a resource by ID, so why
-repeat yourself? For example, the `PATCH /<name>/:id` route looks up the
-resource with that ID using the `show` action helper and makes it available to
-the `update` action helper as `resource`. The same goes for the `DELETE
-/<name>/:id` route and the `destroy` action helper, and all of the `has_one`
-and `has_many` action helpers.
+Finally, some routes will automatically invoke the resource locator on your
+behalf and make the selected resource available to the corresponding action
+helper(s) as `resource`. For example, the `PATCH /<name>/:id` route looks up
+the resource with that ID using the `find` resource locator and makes it
+available to the `update` action helper as `resource`. The same goes for the
+`DELETE /<name>/:id` route and the `destroy` action helper, and all of the
+`has_one` and `has_many` action helpers.
 
 #### `resource`
 
@@ -459,13 +511,15 @@ given resource block.)
 ##### `update {|attr| ..}` => Object?
 
 Take a hash of (dedasherized) attributes, update `resource`, and optionally
-return the updated resource.
+return the updated resource. **Requires a resource locator.**
 
 ##### `destroy {..}`
 
-Delete or destroy `resource`.
+Delete or destroy `resource`. **Requires a resource locator.**
 
 #### `has_one`
+
+**Requires a resource locator.**
 
 ##### `pluck {..}` => Object
 
@@ -496,6 +550,8 @@ Take a [resource identifier object][22] and update the relationship on
 `resource` (if necessary) and return a truthy value.
 
 #### `has_many`
+
+**Requires a resource locator.**
 
 ##### `fetch {..}` => Array
 
@@ -532,7 +588,7 @@ already missing) the relationships on `resource`. To serialize the updated
 linkage on the response, refresh or reload `resource` (if necessary) and return
 a truthy value.
 
-### Action Helper Helpers
+### Action Helper Hooks &amp; Utilities
 
 You may remove a previously-registered action helper with `remove_<action>`:
 
@@ -798,12 +854,12 @@ should be relatively painless. For example:
 ```ruby
 # controllers/foo_controller.rb
 FooController = proc do
-  index do
-    Foo.all
-  end
-
   show do |id|
     Foo[id.to_i]
+  end
+
+  index do
+    Foo.all
   end
 
   # ..

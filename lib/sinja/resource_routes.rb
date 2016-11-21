@@ -7,12 +7,8 @@ module Sinja
     def self.registered(app)
       app.def_action_helpers(ACTIONS, app)
 
-      app.head '' do
-        allow :get=>:index, :post=>:create
-      end
-
-      app.head '/:id' do
-        allow :get=>:show, :patch=>[:show, :update], :delete=>[:show, :destroy]
+      app.head '', :pfilters=>:id do
+        allow :get=>:show
       end
 
       app.get '', :pfilters=>:id, :actions=>:show do
@@ -30,14 +26,12 @@ module Sinja
         serialize_models(resources, opts)
       end
 
-      app.get '', :actions=>:index do
-        serialize_models(*index)
+      app.head '' do
+        allow :get=>:index, :post=>:create
       end
 
-      app.get '/:id', :actions=>:show do |id|
-        self.resource, opts = show(id)
-        not_found "Resource '#{id}' not found" unless resource
-        serialize_model(resource, opts)
+      app.get '', :actions=>:index do
+        serialize_models(*index)
       end
 
       app.post '', :actions=>:create do
@@ -64,9 +58,19 @@ module Sinja
         end
       end
 
-      app.patch '/:id', :actions=>%i[show update] do |id|
+      app.head '/:id' do
+        allow :get=>:show, :patch=>[:find, :update], :delete=>[:find, :destroy]
+      end
+
+      app.get '/:id', :actions=>:show do |id|
+        self.resource, opts = show(id)
+        not_found "Resource '#{id}' not found" unless resource
+        serialize_model(resource, opts)
+      end
+
+      app.patch '/:id', :actions=>%i[find update] do |id|
         sanity_check!(id)
-        self.resource, = show(id)
+        self.resource = find(id)
         not_found "Resource '#{id}' not found" unless resource
         serialize_model?(transaction do
           update(attributes).tap do
@@ -75,8 +79,8 @@ module Sinja
         end)
       end
 
-      app.delete '/:id', :actions=>%i[show destroy] do |id|
-        self.resource, = show(id)
+      app.delete '/:id', :actions=>%i[find destroy] do |id|
+        self.resource = find(id)
         not_found "Resource '#{id}' not found" unless resource
         _, opts = destroy
         serialize_model?(nil, opts)

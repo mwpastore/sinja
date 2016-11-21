@@ -12,11 +12,11 @@ module Sinja
           unless relationship_link?
             allow :get=>:pluck
           else
-            allow :get=>:itself, :patch=>[:prune, :graft]
+            allow :get=>:show, :patch=>[:prune, :graft]
           end
         end
 
-        app.get '' do
+        app.get '', :actions=>:show do
           pass unless relationship_link?
 
           serialize_linkage

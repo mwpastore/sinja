@@ -61,7 +61,7 @@ module Sinja
     app.set :actions do |*actions|
       condition do
         actions.each do |action|
-          halt 403, 'You are not authorized to perform this action' unless can?(action)
+          halt 403, 'You are not authorized to perform this action' unless action == :find || can?(action)
           halt 405, 'Action or method not implemented or supported' unless respond_to?(action)
         end
         true

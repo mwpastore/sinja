@@ -97,20 +97,22 @@ module Sinja
       end
 
       app.register ResourceRoutes
+
+      # TODO: Define a default `show' action helper if `find' is defined?
     end
 
     %i[has_one has_many].each do |rel_type|
       define_method(rel_type) do |rel, &block|
         rel_path = rel.to_s.tr('_', '-')
 
-        namespace %r{/(?<resource_id>[^/]+)(?<r>/relationships)?/#{rel_path}}, :actions=>:show do
+        namespace %r{/(?<resource_id>[^/]+)(?<r>/relationships)?/#{rel_path}}, :actions=>:find do
           helpers do
             def relationship_link?
               !params[:r].nil?
             end
 
             def resource
-              super || self.resource = show(params[:resource_id]).first
+              super || self.resource = find(params[:resource_id])
             end
 
             def sanity_check!
