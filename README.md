@@ -255,6 +255,11 @@ end
 
 #### Public APIs
 
+**can?**
+: Takes the symbol of an action helper and returns true if the current user has
+  access to call that action helper for the current resource using the `role`
+  helper and role definitions detailed under "Authorization" below.
+
 **data**
 : Returns the `data` key of the deserialized request payload (with symbolized
   names).
