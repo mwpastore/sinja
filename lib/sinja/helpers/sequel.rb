@@ -27,13 +27,13 @@ module Sinja
       end
 
       # <= association, rios, block
-      def add_missing(*args)
-        add_remove(:add, :-, *args)
+      def add_missing(*args, &block)
+        add_remove(:add, :-, *args, &block)
       end
 
       # <= association, rios, block
-      def remove_present(*args)
-        add_remove(:remove, :&, *args)
+      def remove_present(*args, &block)
+        add_remove(:remove, :&, *args, &block)
       end
 
       private
@@ -43,7 +43,8 @@ module Sinja
         transaction do
           resource.lock!
           venn(operator, association, rios) do |subresource|
-            resource.send(meth, subresource)
+            resource.send(meth, subresource) \
+              unless block_given? && !yield(subresource)
           end
           resource.reload
         end
