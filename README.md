@@ -94,8 +94,8 @@ Assuming the presence of a `Post` model and serializer, running the above
 "classic"-style Sinatra application would enable the following endpoints (with
 all other JSON:API endpoints returning 404 or 405):
 
-* `GET /posts`
 * `GET /posts/<id>`
+* `GET /posts`
 * `POST /posts`
 
 The resource locator and other action helpers, documented below, enable other
@@ -165,7 +165,9 @@ all of Sinatra's usual features are available within your resource definitions.
 The action helpers blocks get compiled into Sinatra helpers, and the
 `resource`, `has_one`, and `has_many` keywords simply build
 [Sinatra::Namespace][21] blocks. You can manage caching directives, set
-headers, and even `halt` (or `not_found`) out of action helpers as desired.
+headers, and even `halt` (or `not_found`, although such cases are usually
+handled transparently by returning `nil` values or empty collections from
+action helpers) as desired.
 
 ```ruby
 class App < Sinatra::Base
@@ -400,8 +402,10 @@ configure_jsonapi do |c|
 end
 ```
 
-After Sinja is configured and all your resources are defined, you should call
-`freeze_jsonapi` to freeze the configuration store.
+The above structures are mutable (e.g. you can do `c.conflict_exceptions <<
+FooError` and `c.serializer_opts[:meta] = { foo: 'bar' }`) until you call
+`freeze_jsonapi` to freeze the configuration store. You should always freeze
+the store after Sinja is configured and all your resources are defined.
 
 ### Resource Locator
 
@@ -472,8 +476,8 @@ the exception of the `:id` filter, discussed under "Coalesced Find Requests"
 below).
 
 All arguments to action helpers are "tainted" and should be treated as
-potentially dangerous: IDs, attribute hashes, and [resource identifier
-objects][22].
+potentially dangerous: IDs, attribute hashes, and (arrays of) [resource
+identifier object][22] hashes.
 
 Finally, some routes will automatically invoke the resource locator on your
 behalf and make the selected resource available to the corresponding action
@@ -545,7 +549,7 @@ end
 
 ##### `graft {|rio| ..}` => TrueClass?
 
-Take a [resource identifier object][22] and update the relationship on
+Take a [resource identifier object][22] hash and update the relationship on
 `resource`. To serialize the updated linkage on the response, refresh or reload
 `resource` (if necessary) and return a truthy value.
 
@@ -576,17 +580,17 @@ end
 
 ##### `merge {|rios| ..}` => TrueClass?
 
-Take an array of [resource identifier objects][22] and update (add unless
+Take an array of [resource identifier object][22] hashes and update (add unless
 already present) the relationships on `resource`. To serialize the updated
 linkage on the response, refresh or reload `resource` (if necessary) and return
 a truthy value.
 
 ##### `subtract {|rios| ..}` => TrueClass?
 
-Take an array of [resource identifier objects][22] and update (remove unless
-already missing) the relationships on `resource`. To serialize the updated
-linkage on the response, refresh or reload `resource` (if necessary) and return
-a truthy value.
+Take an array of [resource identifier object][22] hashes and update (remove
+unless already missing) the relationships on `resource`. To serialize the
+updated linkage on the response, refresh or reload `resource` (if necessary)
+and return a truthy value.
 
 ### Action Helper Hooks &amp; Utilities
 
@@ -603,7 +607,8 @@ end
 ```
 
 You may invoke an action helper keyword without a block to modify the options
-(i.e. roles) of a previously-registered action helper:
+(i.e. roles) of a previously-registered action helper while preseving the
+existing behavior:
 
 ```ruby
 resource :bars do
@@ -615,8 +620,9 @@ resource :bars do
 end
 ```
 
-You may define a `before_<action>` helper (in the namespace scope or any of
-its parent scopes) that takes the same arguments as the corresponding block:
+You may define an ordinary helper method named `before_<action>` (in the
+resource or relationship scope or any parent scopes) that takes the same
+arguments as the corresponding block:
 
 ```ruby
 helpers do
@@ -632,8 +638,8 @@ resource :quxes do
 end
 ```
 
-Any changes made to attribute hashes or resource identifier objects in a
-`before` hook will be persisted to the action helper.
+Any changes made to attribute hashes or (arrays of) resource identifier object
+hashes in a `before` hook will be persisted to the action helper.
 
 ### Authorization
 
@@ -748,7 +754,7 @@ For example, using Sequel:
 
 ```ruby
 configure_jsonapi do |c|
-  c.conflict_exceptions = [Sequel::ConstraintViolation]
+  c.conflict_exceptions << Sequel::ConstraintViolation
 end
 ```
 
@@ -788,7 +794,7 @@ JSON:API [recommends][23] supporting patchless clients by using the
 `X-HTTP-Method-Override` request header to coerce a `POST` into a `PATCH`. To
 support this in Sinja, add the Sinja::MethodOverride middleware (which is a
 stripped-down version of [Rack::MethodOverride][24]) into your application (or
-your Rackup configuration):
+Rackup configuration):
 
 ```ruby
 require 'sinja'
