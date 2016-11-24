@@ -1,6 +1,10 @@
+# frozen_string_literal: true
 require 'bundler/gem_tasks'
-require 'rspec/core/rake_task'
+require 'rake/testtask'
 
-RSpec::Core::RakeTask.new(:spec)
+Rake::TestTask.new do |t|
+  t.test_files = FileList[File.expand_path('test/**/*_test.rb', __dir__)]
+  t.warning = false
+end
 
-task :default=>:spec
+task default: :test

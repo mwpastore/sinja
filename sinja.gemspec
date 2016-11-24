@@ -23,12 +23,18 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'json', '>= 1.8.3', '< 3'
   spec.add_dependency 'jsonapi-serializers', '~> 0.16'
   spec.add_dependency 'mustermann', '>= 1.0.0.beta2', '< 2'
-  spec.add_dependency 'sinatra', '>= 1.4.7', '< 3'
-  spec.add_dependency 'sinatra-contrib', '>= 1.4.7', '< 3'
+  spec.add_dependency 'sinatra', ">= #{ENV.fetch('sinatra', '1.4.7')}", '< 3'
+  spec.add_dependency 'sinatra-contrib', ">= #{ENV.fetch('sinatra', '1.4.7')}", '< 3'
 
-  spec.add_development_dependency 'bundler', '~> 1.13'
+  spec.add_development_dependency 'bundler', '~> 1.11'
+  spec.add_development_dependency 'minitest', '~> 5.9'
+  spec.add_development_dependency 'minitest-hooks', '~> 1.4'
+  #spec.add_development_dependency 'munson', '~> 0.4'
   spec.add_development_dependency 'rake', '~> 11.3'
-  spec.add_development_dependency 'rspec', '~> 3.5'
   spec.add_development_dependency 'sequel', '~> 4.38'
-  spec.add_development_dependency 'sqlite3', '~> 1.3'
+  if defined?(JRUBY_VERSION)
+    spec.add_development_dependency 'jdbc-sqlite3', '~> 3.8'
+  else
+    spec.add_development_dependency 'sqlite3', '~> 1.3'
+  end
 end
