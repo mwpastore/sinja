@@ -59,6 +59,11 @@ has not yet been thoroughly tested or vetted in a production environment.**
   - [Validations](#validations)
   - [Missing Records](#missing-records)
   - [Transactions](#transactions)
+  - [Working With Relationships](#working-with-relationships)
+    - [Avoiding Null Foreign Keys](#avoiding-null-foreign-keys)
+      - [Many-to-One](#many-to-one)
+      - [One-to-Many](#one-to-many)
+      - [Many-to-Many](#many-to-many)
   - [Coalesced Find Requests](#coalesced-find-requests)
   - [Patchless Clients](#patchless-clients)
   - [Module Namespaces](#module-namespaces)
@@ -297,6 +302,12 @@ end
 
 **dedasherize_names**
 : Takes a hash and returns the hash with its keys dedasherized (deeply).
+
+**passthru?**
+: Returns true if the request was invoked from another action helper. If so, it
+  takes an optional block to which is yielded the symbol of the invoking action
+  helper, and the return value of the block becomes the return value of the
+  method.
 
 ### Performance
 
@@ -815,6 +826,145 @@ helpers do
   end
 end
 ```
+
+### Working With Relationships
+
+Sinja works hard to DRY up your business logic. As mentioned above, when a
+request comes in to create or update a resource and that request includes
+relationships, Sinja will farm out the work to your defined relationship
+routes. Let's look at this example request from the JSON:API specification:
+
+```
+POST /photos HTTP/1.1
+Content-Type: application/vnd.api+json
+Accept: application/vnd.api+json
+```
+
+```json
+{
+  "data": {
+    "type": "photos",
+    "attributes": {
+      "title": "Ember Hamster",
+      "src": "http://example.com/images/productivity.png"
+    },
+    "relationships": {
+      "photographer": {
+        "data": { "type": "people", "id": "9" }
+      }
+    }
+  }
+}
+```
+
+Assuming a `:photos` resource with a `has_one :photographer` relationship in
+the application, Sinja will invoke the following action helpers in turn:
+
+1.  `create` on the Photos resource (with `data.attributes`)
+1.  `graft` on the Photographer relationship (with
+    `data.relationships.photographer.data`)
+
+If any step of the process fails&mdash;for example, if the `graft` action
+helper is not defined in the Photographer relationship, or if it raises an
+error&mdash;the entire request will fail and any database changes will be
+rolled back (given a `transaction` helper). Note that if the user's role
+granted them access to call `create` they will be able to call `graft`
+regardless of `graft`'s own restrictions, and the same is true for `update`
+and `merge`.
+
+#### Avoiding Null Foreign Keys
+
+Now, let's say our DBA is forward-thinking and wants to make the foreign key
+constraint between the `photographer_id` column on the Photos table and the
+People table non-nullable. Unfortunately, that will break Sinja, because the
+Photo will be inserted first, with a null Photographer. (Deferrable constraints
+would be a perfect solution to this problem, but `NOT NULL` constraints are not
+deferrable in Postgres, and constraints in general are not deferrable in
+MySQL.) Instead, we'll need to enforce our non-nullable relationships at the
+application level.
+
+To accomplish this, simply define an ordinary helper named `validate` (in the
+resource scope or any parent scopes). This method, if present, is invoked from
+within the transaction after the entire request has been processed, and so can
+abort the transaction (following your ORM's semantics). For example:
+
+```ruby
+resource :photos do
+  helpers do
+    def validate
+      fail 'Invalid Photographer for Photo' if resource.photographer.nil?
+    end
+  end
+end
+```
+
+If your ORM supports validation&mdash;and "deferred validation"&mdash;you can
+easily handle all such situations (as well as other types of validations) at
+the top-level of your application. For example, using Sequel:
+
+```ruby
+class Photo < Sequel::Model
+  many_to_one :photographer
+
+  # http://sequel.jeremyevans.net/rdoc/files/doc/validations_rdoc.html
+  def validate
+    super
+    errors.add(:photographer, 'cannot be null') if photographer.nil?
+  end
+end
+
+helpers do
+  def validate
+    raise Sequel::ValidationFailed, resource.errors unless resource.valid?
+  end
+end
+
+resource :photos do
+  create do |attr|
+    photo = Photo.new
+    photo.set(attr)
+    photo.save(validate: false) # defer validation
+  end
+
+  has_one :photographer do
+    graft do |rio|
+      resource.photographer = People.with_pk!(rio[:id].to_i)
+      resource.save_changes(validate: !passthru?) # defer validation (only if passthru)
+    end
+  end
+end
+```
+
+Note that the `validate` hook is _only_ invoked from within transactions
+involving the `create` and `update` action helpers (and any dependent `graft`
+and `merge` action helpers), so this deferred validation pattern is only
+appropriate in those cases. You must use immedate validation in all other
+cases. The `passthru?` helper is provided to help disambiguate.
+
+##### Many-to-One
+
+Example: Photo belongs to (has one) Photographer; Photo.Photographer cannot be
+null.
+
+* Don't define `prune` relationship action helper
+* Define `graft` relationship action helper to enable reassigning the Photographer
+* Define `destroy` resource action helper to enable removing the Photo
+* Use `validate` helper to check for nulls
+
+##### One-to-Many
+
+Example: Photographer has many Photos; Photo.Photographer cannot be null.
+
+* Don't define `clear` relationship action helper
+* Don't define `subtract` relationship action helper
+* Delegate removing Photos and reassigning Photographers to Photo resource
+
+##### Many-to-Many
+
+Example: Photo has many Tags.
+
+Nothing to worry about here! Feel free to use `NOT NULL` foreign key
+constraints on the join table.
 
 ### Coalesced Find Requests
 

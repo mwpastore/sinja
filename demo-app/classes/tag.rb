@@ -10,8 +10,8 @@ DB.create_table?(:tags) do
 end
 
 DB.create_table?(:posts_tags) do
-  foreign_key :post_id, :posts, :null=>false, :deferrable=>true, :on_delete=>:cascade
-  foreign_key :tag_id, :tags, :null=>false, :deferrable=>true, :on_delete=>:cascade
+  foreign_key :post_id, :posts, :null=>false, :on_delete=>:cascade
+  foreign_key :tag_id, :tags, :null=>false, :on_delete=>:cascade
   primary_key [:post_id, :tag_id]
   index [:tag_id, :post_id]
 end
@@ -44,7 +44,7 @@ TagController = proc do
   create(roles: :logged_in) do |attr|
     tag = Tag.new
     tag.set_fields(attr, %i[name])
-    tag.save
+    tag.save(validate: false)
   end
 
   destroy(roles: :superuser) do

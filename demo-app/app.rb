@@ -29,6 +29,10 @@ helpers do
   def transaction(&block)
     DB.transaction(&block)
   end
+
+  def validate
+    raise Sequel::ValidationFailed, resource unless resource.valid?
+  end
 end
 
 resource :authors, AuthorController

@@ -4,7 +4,7 @@ require_relative '../database'
 
 DB.create_table?(:posts) do
   String :slug, :primary_key=>true
-  foreign_key :author_id, :authors, :null=>false, :deferrable=>true, :on_delete=>:cascade
+  foreign_key :author_id, :authors, :on_delete=>:cascade
   String :title, :null=>false
   String :body, :text=>true, :null=>false
   DateTime :created_at
@@ -19,6 +19,11 @@ class Post < Sequel::Model
   many_to_one :author
   one_to_many :comments
   many_to_many :tags
+
+  def validate
+    super
+    validates_not_null :author
+  end
 end
 
 class PostSerializer < BaseSerializer
@@ -65,13 +70,13 @@ PostController = proc do
     post = Post.new
     post.set_fields(attr, %i[title body])
     post.slug = slug.to_s # set primary key
-    post.save
+    post.save(validate: false)
 
     next slug, post
   end
 
   update(roles: %i[owner superuser]) do |attr|
-    resource.update_fields(attr, %i[title body])
+    resource.update_fields(attr, %i[title body], validate: false)
   end
 
   destroy(roles: %i[owner superuser]) do
@@ -83,10 +88,9 @@ PostController = proc do
       resource.author
     end
 
-    graft do |rio|
-      halt 403 unless RoleList[:superuser] === role || resource.author.nil?
+    graft(roles: :superuser) do |rio|
       resource.author = Author.with_pk!(rio[:id].to_i)
-      resource.save_changes
+      resource.save_changes(validate: !passthru?)
     end
   end
 

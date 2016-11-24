@@ -61,7 +61,8 @@ module Sinja
     app.set :actions do |*actions|
       condition do
         actions.each do |action|
-          halt 403, 'You are not authorized to perform this action' unless action == :find || can?(action)
+          halt 403, 'You are not authorized to perform this action' unless action == :find || can?(action) ||
+            Set[:graft, :merge].include?(action) && passthru? { |parent| can?(parent) }
           halt 405, 'Action or method not implemented or supported' unless respond_to?(action)
         end
         true
@@ -123,6 +124,12 @@ module Sinja
         }.each { |k, v| params[k] ||= v }
       end
 
+      def passthru?
+        env.key?('sinja.passthru') && (
+          !block_given? || yield(env['sinja.passthru'].to_sym)
+        )
+      end
+
       def role
         nil
       end
@@ -141,11 +148,13 @@ module Sinja
     end
 
     app.before do
-      halt 406 unless request.preferred_type.entry == MIME_TYPE
+      unless passthru?
+        halt 406 unless request.preferred_type.entry == MIME_TYPE
 
-      if content?
-        halt 415 unless request.media_type == MIME_TYPE
-        halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }
+        if content?
+          halt 415 unless request.media_type == MIME_TYPE
+          halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }
+        end
       end
 
       normalize_params!

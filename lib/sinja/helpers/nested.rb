@@ -7,7 +7,7 @@ module Sinja
       end
 
       def resource
-        super || self.resource = find(params[:resource_id])
+        super || self.resource = env.fetch('sinja.resource', find(params[:resource_id]))
       end
 
       def sanity_check!

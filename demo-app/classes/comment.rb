@@ -4,8 +4,8 @@ require_relative '../database'
 
 DB.create_table?(:comments) do
   primary_key :id
-  foreign_key :author_id, :authors, :null=>false, :deferrable=>true, :on_delete=>:cascade
-  foreign_key :post_id, :posts, :null=>false, :deferrable=>true, :on_delete=>:cascade
+  foreign_key :author_id, :authors, :on_delete=>:cascade
+  foreign_key :post_id, :posts, :on_delete=>:cascade
   String :body, :text=>true, :null=>false
   DateTime :created_at
   DateTime :updated_at
@@ -16,6 +16,11 @@ class Comment < Sequel::Model
 
   many_to_one :author
   many_to_one :post
+
+  def validate
+    super
+    validates_not_null [:author, :post]
+  end
 end
 
 class CommentSerializer < BaseSerializer
@@ -47,11 +52,11 @@ CommentController = proc do
   create(roles: :logged_in) do |attr|
     comment = Comment.new
     comment.set_fields(attr, %i[body])
-    comment.save
+    comment.save(validate: false)
   end
 
   update(roles: %i[owner superuser]) do |attr|
-    resource.update_fields(attr, %i[body])
+    resource.update_fields(attr, %i[body], validate: false)
   end
 
   destroy(roles: %i[owner superuser]) do
@@ -63,10 +68,9 @@ CommentController = proc do
       resource.post
     end
 
-    graft do |rio|
-      halt 403 unless RoleList[:superuser] === role || resource.post.nil?
+    graft(roles: :superuser) do |rio|
       resource.post = Post.with_pk!(rio[:id].to_i)
-      resource.save_changes
+      resource.save_changes(validate: !passthru?)
     end
   end
 
@@ -75,10 +79,9 @@ CommentController = proc do
       resource.author
     end
 
-    graft do |rio|
-      halt 403 unless RoleList[:superuser] === role || resource.author.nil?
+    graft(roles: :superuser) do |rio|
       resource.author = Author.with_pk!(rio[:id].to_i)
-      resource.save_changes
+      resource.save_changes(validate: !passthru?)
     end
   end
 end

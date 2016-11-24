@@ -65,11 +65,11 @@ AuthorController = proc do
   create do |attr|
     author = Author.new
     author.set_fields(attr, fields)
-    author.save
+    author.save(validate: false)
   end
 
   update(roles: %i[self superuser]) do |attr|
-    resource.update_fields(attr, fields)
+    resource.update_fields(attr, fields, validate: false)
   end
 
   destroy(roles: %i[self superuser]) do
