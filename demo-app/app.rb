@@ -10,7 +10,7 @@ require_relative 'classes/tag'
 require 'sinja/helpers/sequel'
 
 configure_jsonapi do |c|
-  c.conflict_exceptions << Sequel::ConstraintViolation
+  Sinja::Helpers::Sequel.config(c)
 end
 
 helpers do

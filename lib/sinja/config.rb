@@ -37,40 +37,68 @@ module Sinja
       :resource_roles,
       :conflict_actions,
       :conflict_exceptions,
+      :not_found_exceptions,
+      :validation_exceptions,
+      :validation_formatter,
       :serializer_opts
 
     def initialize
       @default_roles = RolesConfig.new
       @resource_roles = Hash.new { |h, k| h[k] = @default_roles.dup }
 
-      self.conflict_actions = [
+      @conflict_actions = [
         ResourceRoutes::CONFLICT_ACTIONS,
         RelationshipRoutes::HasMany::CONFLICT_ACTIONS,
         RelationshipRoutes::HasOne::CONFLICT_ACTIONS
-      ].reduce([], :concat)
-      self.conflict_exceptions = []
+      ].reduce(Set.new, :merge)
+      @conflict_exceptions = Set.new
+      @not_found_exceptions = Set.new
+      @validation_exceptions = Set.new
+      @validation_formatter = ->{ Array.new }
 
       @opts = deep_copy(DEFAULT_OPTS)
-      self.serializer_opts = {}
+      @serializer_opts = {}
     end
 
     def conflict_actions=(e=[])
-      @conflict_actions = Set[*e]
+      @conflict_actions.replace(Set[*e])
     end
 
     def conflict_exceptions=(e=[])
-      @conflict_exceptions = Set[*e]
+      @conflict_exceptions.replace(Set[*e])
     end
 
-    def conflict?(action, exception_class)
+    def conflict_exception?(action, exception_class)
       @conflict_actions.include?(action) &&
-      @conflict_exceptions.include?(exception_class)
+        @conflict_exceptions.include?(exception_class)
     end
+
+    def not_found_exceptions=(e=[])
+      @not_found_exceptions.replace(Set[*e])
+    end
+
+    def_delegator :@not_found_exceptions, :include?, :not_found_exception?
+
+    def validation_exceptions=(e=[])
+      @validation_exceptions.replace(Set[*e])
+    end
+
+    def validation_formatter=(f)
+      fail "Invalid validation formatter #{f}" \
+        unless f.respond_to?(:call)
+
+      fail "Can't modify frozen proc" \
+        if @validation_formatter.frozen?
+
+      @validation_formatter = f
+    end
+
+    def_delegator :@validation_exceptions, :include?, :validation_exception?
 
     def_delegator :@default_roles, :merge!, :default_roles=
 
     def serializer_opts=(h={})
-      @serializer_opts = deep_copy(DEFAULT_SERIALIZER_OPTS).merge!(h)
+      @serializer_opts.replace(deep_copy(DEFAULT_SERIALIZER_OPTS).merge!(h))
     end
 
     DEFAULT_OPTS.keys.each do |k|
@@ -84,6 +112,9 @@ module Sinja
       deep_freeze(@resource_roles)
       @conflict_actions.freeze
       @conflict_exceptions.freeze
+      @not_found_exceptions.freeze
+      @validation_exceptions.freeze
+      @validation_formatter.freeze
       deep_freeze(@serializer_opts)
       @opts.freeze
       super

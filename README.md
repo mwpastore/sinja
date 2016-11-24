@@ -56,6 +56,8 @@ has not yet been thoroughly tested or vetted in a production environment.**
     - [`:roles` Action Helper option](#roles-action-helper-option)
     - [`role` helper](#role-helper)
   - [Conflicts](#conflicts)
+  - [Validations](#validations)
+  - [Missing Records](#missing-records)
   - [Transactions](#transactions)
   - [Coalesced Find Requests](#coalesced-find-requests)
   - [Patchless Clients](#patchless-clients)
@@ -387,6 +389,9 @@ their defaults shown):
 ```ruby
 configure_jsonapi do |c|
   #c.conflict_exceptions = [] # see "Conflicts" below
+  #c.validation_exceptions = [] # see "Validations" below
+  #c.validation_formatter = ->{ [] } # see "Validations" below
+  #c.not_found_exceptions = [] # see "Missing Records" below
 
   #c.default_roles = {} # see "Authorization" below
 
@@ -755,6 +760,38 @@ For example, using Sequel:
 ```ruby
 configure_jsonapi do |c|
   c.conflict_exceptions << Sequel::ConstraintViolation
+end
+```
+
+### Validations
+
+If your ORM raises exceptions on validation errors, you should specify which
+exception class(es) should be handled and return HTTP status code 422, along
+with a formatter proc that transforms the exception object into an array of
+two-element arrays containing the name or symbol of the attribute that failed
+validation and the detailed errror message for that attribute.
+
+For example, using Sequel:
+
+```ruby
+configure_jsonapi do |c|
+  c.validation_exceptions << Sequel::ValidationFailed
+  c.validation_formatter = ->(e) { e.errors.keys.zip(e.errors.full_messages) }
+end
+```
+
+### Missing Records
+
+If your database driver raises exceptions on missing records, you should
+specify which exception class(es) should be handled and return HTTP status code
+404. This is particularly useful for relationship action helpers, which don't
+have access to a dedicated subresource locator.
+
+For example, using Sequel:
+
+```ruby
+configure_jsonapi do |c|
+  c.not_found_exceptions << Sequel::NoMatchingRow
 end
 ```
 

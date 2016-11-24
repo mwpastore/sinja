@@ -7,11 +7,10 @@ module Sinja
       include ::Sequel::Inflections
 
       def self.config(c)
-        c.conflict_exceptions = [::Sequel::ConstraintViolation]
-        #c.not_found_exceptions = [::Sequel::RecordNotFound]
-        #c.validation_exceptions = [::Sequel::ValidationVailed], proc do
-        #  format exception to json:api source.pointer and detail
-        #end
+        c.conflict_exceptions << ::Sequel::ConstraintViolation
+        c.not_found_exceptions << ::Sequel::NoMatchingRow
+        c.validation_exceptions << ::Sequel::ValidationFailed
+        c.validation_formatter = ->(e) { e.errors.keys.zip(e.errors.full_messages) }
       end
 
       def database

@@ -29,9 +29,13 @@ module Sinja
             begin
               instance_exec(*block_args, &block)
             rescue Exception=>e
-              halt 409, e.message if settings._sinja.conflict?(action, e.class)
-              #halt 422, resource.errors if settings._sinja.invalid?(action, e.class) # TODO
-              #not_found if settings._sinja.not_found?(action, e.class) # TODO
+              halt 409, e.message \
+                if settings._sinja.conflict_exception?(action, e.class)
+              halt 422, settings._sinja.validation_formatter(e) \
+                if settings._sinja.validation_exception?(e.class)
+              not_found \
+                if settings._sinja.not_found_exception?(e.class)
+
               raise
             end
 

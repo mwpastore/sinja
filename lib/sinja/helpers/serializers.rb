@@ -6,6 +6,10 @@ require 'set'
 module Sinja
   module Helpers
     module Serializers
+      def dasherize(s=nil)
+        s.to_s.tr('_', '-').send(Symbol === s ? :to_sym : :itself)
+      end
+
       def dedasherize(s=nil)
         s.to_s.tr('-', '_').send(Symbol === s ? :to_sym : :itself)
       end
@@ -116,19 +120,34 @@ module Sinja
         body updated ? serialize_linkage(options) : serialize_models?([], options)
       end
 
-      def normalize_error
-        return body if body.is_a?(Hash)
+      def normalize_errors(&block)
+        return enum_for(__callee__) unless block
 
-        if not_found? && detail = [*body].first
-          title = 'Not Found'
-          detail = nil if detail == '<h1>Not Found</h1>'
+        if [*body].any? && [*body].all? { |error| Hash === error }
+          [*body].each(&block)
+        elsif status == 422
+          fail 'Validation exceptions not property formatted' \
+            unless [*body].all? { |e| e.length == 2 }
+
+          [*body].each do |attribute, detail|
+            yield \
+              :title=>'Validation Failed',
+              :detail=>detail,
+              :source=>{
+                :pointer=>(attribute ? "/data/attributes/#{dasherize(attribute)}" : '/data')
+              }
+          end
+        elsif not_found?
+          [*body].each do |detail|
+            yield :title=>'Not Found', :detail=>(detail unless detail == '<h1>Not Found</h1>')
+          end
         elsif env.key?('sinatra.error')
-          title = 'Unknown Error'
-          detail = env['sinatra.error'].message
-        elsif detail = [*body].first
+          yield :title=>'Unknown Error', :detail=>env['sinatra.error'].message
+        else
+          [*body].each do |detail|
+            yield :detail=>detail
+          end
         end
-
-        { :title=>title, :detail=>detail }
       end
 
       def error_hash(title: nil, detail: nil, source: nil)
@@ -140,11 +159,19 @@ module Sinja
         end
       end
 
-      def serialize_error
-        hash = error_hash(normalize_error)
-        logger.error(settings._sinja.logger_progname) { hash }
+      def gather_errors
+        return enum_for(__callee__) unless block_given?
+
+        normalize_errors do |error|
+          hash = error_hash(error)
+          logger.error(settings._sinja.logger_progname) { hash }
+          yield hash
+        end
+      end
+
+      def serialize_errors
         JSON.send settings._sinja.json_error_generator,
-          ::JSONAPI::Serializer.serialize_errors([hash])
+          ::JSONAPI::Serializer.serialize_errors(gather_errors.to_a)
       end
     end
   end

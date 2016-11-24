@@ -123,16 +123,16 @@ module Sinja
         }.each { |k, v| params[k] ||= v }
       end
 
+      def role
+        nil
+      end
+
       def sanity_check!(id=nil)
         halt 409, 'Resource type in payload does not match endpoint' \
           if data[:type] != request.path.split('/').last # TODO
 
         halt 409, 'Resource ID in payload does not match endpoint' \
           if id && data[:id].to_s != id.to_s
-      end
-
-      def role
-        nil
       end
 
       def transaction
@@ -158,7 +158,7 @@ module Sinja
     end
 
     app.error 400...600, nil do
-      serialize_error
+      serialize_errors
     end
   end
 end
