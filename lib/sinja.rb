@@ -98,7 +98,7 @@ module Sinja
 
       def can?(resource_name, action)
         roles = settings._sinja.resource_roles[resource_name][action]
-        roles.nil? || roles.empty? || roles === role
+        roles.nil? || roles.empty? || roles === memoized_role
       end
 
       def content?
@@ -111,6 +111,10 @@ module Sinja
         rescue NoMethodError, KeyError
           halt 400, 'Malformed JSON:API request payload'
         end
+      end
+
+      def memoized_role
+        @role ||= role
       end
 
       def normalize_params!
