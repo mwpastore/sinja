@@ -34,7 +34,7 @@ class AuthorSerializer < BaseSerializer
 end
 
 AuthorController = proc do
-  def helpers
+  helpers do
     def find(id)
       Author[id.to_i]
     end
