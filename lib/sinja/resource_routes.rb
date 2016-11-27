@@ -2,7 +2,6 @@
 module Sinja
   module ResourceRoutes
     ACTIONS = %i[index show create update destroy].freeze
-    CONFLICT_ACTIONS = %i[create update].freeze
 
     def self.registered(app)
       app.def_action_helpers(ACTIONS, app)

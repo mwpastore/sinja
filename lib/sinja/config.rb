@@ -34,7 +34,6 @@ module Sinja
       :error_logger,
       :default_roles,
       :resource_roles,
-      :conflict_actions,
       :conflict_exceptions,
       :not_found_exceptions,
       :validation_exceptions,
@@ -47,11 +46,6 @@ module Sinja
       @default_roles = RolesConfig.new
       @resource_roles = Hash.new { |h, k| h[k] = @default_roles.dup }
 
-      @conflict_actions = [
-        ResourceRoutes::CONFLICT_ACTIONS,
-        RelationshipRoutes::HasMany::CONFLICT_ACTIONS,
-        RelationshipRoutes::HasOne::CONFLICT_ACTIONS
-      ].reduce(Set.new, :merge)
       @conflict_exceptions = Set.new
       @not_found_exceptions = Set.new
       @validation_exceptions = Set.new
@@ -59,10 +53,6 @@ module Sinja
 
       @opts = deep_copy(DEFAULT_OPTS)
       @serializer_opts = {}
-    end
-
-    def conflict_actions=(e=[])
-      @conflict_actions.replace(Set[*e])
     end
 
     def error_logger=(f)
@@ -122,7 +112,6 @@ module Sinja
       @default_roles.freeze
       @resource_roles.default_proc = nil
       deep_freeze(@resource_roles)
-      @conflict_actions.freeze
       @conflict_exceptions.freeze
       @not_found_exceptions.freeze
       @validation_exceptions.freeze

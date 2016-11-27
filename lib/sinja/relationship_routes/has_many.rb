@@ -3,7 +3,6 @@ module Sinja
   module RelationshipRoutes
     module HasMany
       ACTIONS = %i[fetch clear merge subtract].freeze
-      CONFLICT_ACTIONS = %i[merge].freeze
 
       def self.registered(app)
         app.def_action_helpers(ACTIONS, app)

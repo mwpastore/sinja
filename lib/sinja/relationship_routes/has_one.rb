@@ -3,7 +3,6 @@ module Sinja
   module RelationshipRoutes
     module HasOne
       ACTIONS = %i[pluck prune graft].freeze
-      CONFLICT_ACTIONS = %i[graft].freeze
 
       def self.registered(app)
         app.def_action_helpers(ACTIONS, app)

@@ -11,6 +11,8 @@ require 'sinja/resource_routes'
 
 module Sinja
   module Resource
+    CONFLICT_ACTIONS = Set.new(%i[create update graft merge]).freeze
+
     def def_action_helper(action, context=nil)
       abort "JSONAPI action helpers can't be HTTP verbs!" \
         if Sinatra::Base.respond_to?(action)
