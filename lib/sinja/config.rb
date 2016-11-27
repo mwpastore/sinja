@@ -5,7 +5,6 @@ require 'set'
 require 'sinja/relationship_routes/has_many'
 require 'sinja/relationship_routes/has_one'
 require 'sinja/resource_routes'
-require 'sinja/role_list'
 
 module Sinja
   module ConfigUtils
@@ -134,6 +133,12 @@ module Sinja
     end
   end
 
+  class RoleList < Set
+    def ===(other)
+      self.intersect?(Set === other ? other : Set[*other])
+    end
+  end
+
   class RolesConfig
     include ConfigUtils
     extend Forwardable
@@ -143,7 +148,7 @@ module Sinja
         ResourceRoutes::ACTIONS,
         RelationshipRoutes::HasMany::ACTIONS,
         RelationshipRoutes::HasOne::ACTIONS
-      ].reduce([], :concat).map { |action| [action, RoleList.new] }.to_h
+      ].reduce(Set.new, :merge).map { |action| [action, RoleList.new] }.to_h
     end
 
     def_delegator :@data, :[]

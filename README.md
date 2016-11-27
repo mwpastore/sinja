@@ -785,6 +785,33 @@ index(roles: %i[user admin super]) do
 end
 ```
 
+You can append resource- or even relationship-specific roles by defining a
+nested helper and calling `super` (keeping in mind that `resource` may be
+`nil`).
+
+```ruby
+helpers do
+  def role
+    [:user] if logged_in_user
+  end
+end
+
+resource :foos do
+  helpers do
+    def role
+      if resource&.owner == logged_in_user
+        [*super].push(:owner)
+      else
+        super
+      end
+    end
+  end
+
+  create(roles: :user) { |attr| .. }
+  update(roles: :owner) { |attr| .. }
+end
+```
+
 ### Conflicts
 
 If your database driver raises exceptions on constraint violations, you should
