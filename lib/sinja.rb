@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'mustermann'
 require 'sinatra/base'
 require 'sinatra/namespace'
 
@@ -48,6 +49,7 @@ module Sinja
   end
 
   def self.registered(app)
+    app.register Mustermann unless app.extensions.include?(Mustermann)
     app.register Sinatra::Namespace
 
     app.disable :protection, :show_exceptions, :static

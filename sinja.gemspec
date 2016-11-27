@@ -20,10 +20,11 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 2.3.0'
 
-  spec.add_dependency 'json', '>= 1.8.3'
+  spec.add_dependency 'json', '>= 1.8.3', '< 3'
   spec.add_dependency 'jsonapi-serializers', '~> 0.16'
-  spec.add_dependency 'sinatra', '>= 2.0.0.beta2', '< 3'
-  spec.add_dependency 'sinatra-contrib', '>= 2.0.0.beta2', '< 3'
+  spec.add_dependency 'mustermann', '>= 1.0.0.beta2', '< 2'
+  spec.add_dependency 'sinatra', '>= 1.4.7', '< 3'
+  spec.add_dependency 'sinatra-contrib', '>= 1.4.7', '< 3'
 
   spec.add_development_dependency 'bundler', '~> 1.13'
   spec.add_development_dependency 'rake', '~> 11.3'

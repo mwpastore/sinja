@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
 [![Gem Version](https://badge.fury.io/rb/sinja.svg)](https://badge.fury.io/rb/sinja)
 
-Sinja is a [Sinatra 2.0][1] [extension][10] for quickly building [RESTful][11],
+Sinja is a [Sinatra][1] [extension][10] for quickly building [RESTful][11],
 [JSON:API][2]-[compliant][7] web services, leveraging the excellent
 [JSONAPI::Serializers][3] gem and [Sinatra::Namespace][21] extension. It
 enhances Sinatra's DSL to enable resource-, relationship-, and role-centric
@@ -402,7 +402,7 @@ elsewhere (e.g. with [Rack::URLMap][4]), or host them as a completely separate
 web service. It may not be feasible to have custom routes that don't conform to
 these settings.
 
-* Registers [Sinatra::Namespace][21]
+* Registers [Sinatra::Namespace][21] and [Mustermann][25]
 * Disables [Rack::Protection][6] (can be reenabled with `enable :protection` or
   by manually `use`-ing the Rack::Protection middleware)
 * Disables static file routes (can be reenabled with `enable :static`)
@@ -1171,3 +1171,4 @@ License](http://opensource.org/licenses/MIT).
 [22]: http://jsonapi.org/format/#document-resource-identifier-objects
 [23]: http://jsonapi.org/recommendations/#patchless-clients
 [24]: http://www.rubydoc.info/github/rack/rack/Rack/MethodOverride
+[25]: http://www.sinatrarb.com/mustermann/
