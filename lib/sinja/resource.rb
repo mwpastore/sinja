@@ -18,7 +18,7 @@ module Sinja
         if Sinatra::Base.respond_to?(action)
 
       context.define_singleton_method(action) do |**opts, &block|
-        can(action, opts[:roles]) if opts.key?(:roles)
+        resource_roles(action, opts[:roles]) if opts.key?(:roles)
 
         return unless block ||=
           case !method_defined?(action) && action

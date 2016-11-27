@@ -16,10 +16,11 @@ module Sinja
     abort "Must supply proc constant or block for `resource'" \
       unless block = (konst if konst.is_a?(Proc)) || block
 
-    _sinja.resource_roles[resource_name.to_sym] # trigger default proc
+    # trigger default procs
+    _sinja.resource_roles[resource_name.to_sym]
 
     namespace "/#{resource_name.to_s.tr('_', '-')}" do
-      define_singleton_method(:can) do |action, roles|
+      define_singleton_method(:resource_roles) do |action, roles|
         _sinja.resource_roles[resource_name.to_sym].merge!(action=>roles)
       end
 
