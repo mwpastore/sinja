@@ -33,9 +33,7 @@ TagController = proc do
     end
   end
 
-  show do |id|
-    find(id)
-  end
+  show
 
   index do
     Tag.all

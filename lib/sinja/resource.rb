@@ -18,7 +18,11 @@ module Sinja
       context.define_singleton_method(action) do |**opts, &block|
         can(action, opts[:roles]) if opts.key?(:roles)
 
-        return if block.nil?
+        return unless block ||=
+          case !method_defined?(action) && action
+          when :show
+            proc { |id| find(id) } if method_defined?(:find)
+          end
 
         define_method(action) do |*args|
           block_args = args.take(block.arity.abs)
@@ -78,8 +82,6 @@ module Sinja
       end
 
       app.register ResourceRoutes
-
-      # TODO: Define a default `show' action helper if `find' is defined?
     end
 
     %i[has_one has_many].each do |rel_type|

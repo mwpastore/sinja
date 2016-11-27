@@ -496,6 +496,10 @@ end
 
   Sinja will act as if you had not defined the action helper.
 
+As a bit of syntactic sugar, if you define a `find` helper and call `show`
+without a block, Sinja will generate a `show` action helper that simply
+delegates to `find`.
+
 ### Action Helpers
 
 Action helpers should be defined within the appropriate block contexts
