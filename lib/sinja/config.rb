@@ -27,12 +27,12 @@ module Sinja
     }.freeze
 
     DEFAULT_OPTS = {
-      :logger_progname=>'sinja',
       :json_generator=>(Sinatra::Base.development? ? :pretty_generate : :generate),
-      :json_error_generator=>(Sinatra::Base.development? ? :pretty_generate : :fast_generate)
+      :json_error_generator=>(Sinatra::Base.development? ? :pretty_generate : :generate)
     }.freeze
 
     attr_reader \
+      :error_logger,
       :default_roles,
       :resource_roles,
       :conflict_actions,
@@ -43,6 +43,8 @@ module Sinja
       :serializer_opts
 
     def initialize
+      @error_logger = ->(eh) { logger.error('sinja') { eh } }
+
       @default_roles = RolesConfig.new
       @resource_roles = Hash.new { |h, k| h[k] = @default_roles.dup }
 
@@ -62,6 +64,16 @@ module Sinja
 
     def conflict_actions=(e=[])
       @conflict_actions.replace(Set[*e])
+    end
+
+    def error_logger=(f)
+      fail "Invalid error formatter #{f}" \
+        unless f.respond_to?(:call)
+
+      fail "Can't modify frozen proc" \
+        if @error_logger.frozen?
+
+      @error_logger = f
     end
 
     def conflict_exceptions=(e=[])
@@ -107,6 +119,7 @@ module Sinja
     end
 
     def freeze
+      @error_logger.freeze
       @default_roles.freeze
       @resource_roles.default_proc = nil
       deep_freeze(@resource_roles)

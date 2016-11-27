@@ -165,12 +165,12 @@ module Sinja
     end
 
     app.not_found do
-      serialize_errors
+      serialize_errors(&settings._sinja.error_logger)
     end
 
     # TODO: Can/should we serialize other types of Exceptions?
     app.error StandardError, 400...600, nil do
-      serialize_errors
+      serialize_errors(&settings._sinja.error_logger)
     end
   end
 end

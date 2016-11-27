@@ -431,15 +431,15 @@ configure_jsonapi do |c|
 
   #c.default_roles = {} # see "Authorization" below
 
-  # Set the "progname" used by Sinja when accessing the logger
-  #c.logger_progname = 'sinja'
+  # Set the error logger used by Sinja
+  #c.error_logger = ->(error_hash) { logger.error('sinja') { error_hash } }
 
   # A hash of options to pass to JSONAPI::Serializer.serialize
   #c.serializer_opts = {}
 
   # JSON methods to use when serializing response bodies and errors
   #c.json_generator = development? ? :pretty_generate : :generate
-  #c.json_error_generator = development? ? :pretty_generate : :fast_generate
+  #c.json_error_generator = development? ? :pretty_generate : :generate
 end
 ```
 

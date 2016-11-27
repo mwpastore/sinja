@@ -129,7 +129,7 @@ module Sinja
         end
       end
 
-      def serialize_errors
+      def serialize_errors(&block)
         raise env['sinatra.error'] if env['sinatra.error'] && passthru?
 
         *error_hashes =
@@ -185,9 +185,7 @@ module Sinja
         # Ensure we don't send an empty errors collection
         error_hashes ||= [error_hash(:title=>'Unknown Error')]
 
-        error_hashes.each do |eh|
-          logger.error(settings._sinja.logger_progname) { eh }
-        end
+        error_hashes.each { |eh| instance_exec(eh, &block) } if block
 
         JSON.send settings._sinja.json_error_generator,
           ::JSONAPI::Serializer.serialize_errors(error_hashes)
