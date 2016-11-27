@@ -3,15 +3,13 @@ require 'sinatra/base'
 require 'sinatra/namespace'
 
 require 'sinja/config'
+require 'sinja/errors'
 require 'sinja/helpers/serializers'
 require 'sinja/resource'
 require 'sinja/version'
 
 module Sinja
   MIME_TYPE = 'application/vnd.api+json'
-
-  SinjaError = Class.new(StandardError)
-  ActionHelperError = Class.new(SinjaError)
 
   def resource(resource_name, konst=nil, &block)
     abort "Must supply proc constant or block for `resource'" \
@@ -52,18 +50,16 @@ module Sinja
   def self.registered(app)
     app.register Sinatra::Namespace
 
-    app.disable :protection, :static
+    app.disable :protection, :show_exceptions, :static
     app.set :_sinja, Sinja::Config.new
-    app.configure(:development) do |c|
-      c.set :show_exceptions, :after_handler
-    end
 
     app.set :actions do |*actions|
       condition do
         actions.each do |action|
-          halt 403, 'You are not authorized to perform this action' unless action == :find || can?(action) ||
-            Set[:graft, :merge].include?(action) && passthru? { |parent| can?(parent) }
-          halt 405, 'Action or method not implemented or supported' unless respond_to?(action)
+          raise ForbiddenError, 'You are not authorized to perform this action' \
+            unless action == :find || can?(action) || Set[:graft, :merge].include?(action) && passthru? { |parent| can?(parent) }
+          raise MethodNotAllowedError, 'Action or method not implemented or supported' \
+            unless respond_to?(action)
         end
         true
       end
@@ -109,7 +105,7 @@ module Sinja
         @data ||= begin
           deserialize_request_body.fetch(:data)
         rescue NoMethodError, KeyError
-          halt 400, 'Malformed JSON:API request payload'
+          raise BadRequestError, 'Malformed JSON:API request payload'
         end
       end
 
@@ -139,10 +135,10 @@ module Sinja
       end
 
       def sanity_check!(id=nil)
-        halt 409, 'Resource type in payload does not match endpoint' \
+        raise ConflictError, 'Resource type in payload does not match endpoint' \
           if data[:type] != request.path.split('/').last # TODO
 
-        halt 409, 'Resource ID in payload does not match endpoint' \
+        raise ConflictError, 'Resource ID in payload does not match endpoint' \
           if id && data[:id].to_s != id.to_s
       end
 
@@ -153,12 +149,10 @@ module Sinja
 
     app.before do
       unless passthru?
-        halt 406 unless request.preferred_type.entry == MIME_TYPE
-
-        if content?
-          halt 415 unless request.media_type == MIME_TYPE
-          halt 415 if request.media_type_params.keys.any? { |k| k != 'charset' }
-        end
+        raise NotAcceptibleError unless request.preferred_type.entry == MIME_TYPE
+        raise UnsupportedTypeError if content? && (
+          request.media_type != MIME_TYPE || request.media_type_params.keys.any? { |k| k != 'charset' }
+        )
       end
 
       normalize_params!
@@ -170,7 +164,12 @@ module Sinja
       body serialize_response_body if response.ok?
     end
 
-    app.error 400...600, nil do
+    app.not_found do
+      serialize_errors
+    end
+
+    # TODO: Can/should we serialize other types of Exceptions?
+    app.error StandardError, 400...600, nil do
       serialize_errors
     end
   end

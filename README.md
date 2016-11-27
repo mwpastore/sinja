@@ -151,8 +151,11 @@ $ gem install sinja
 * ORM-agnostic
 * Role-based authorization
 * To-one and to-many relationships
-* Side-loaded relationships on resource creation
-* Conflict (constraint violation) handling
+* Side-loaded relationships on resource creation and update
+* Error-handling
+  * Conflicts (constraint violations)
+  * Missing records
+  * Validation failures
 * Plus all the features of JSONAPI::Serializers!
 
 Its main competitors in the Ruby space are [ActiveModelSerializers][12] (AMS)
@@ -172,9 +175,27 @@ all of Sinatra's usual features are available within your resource definitions.
 The action helpers blocks get compiled into Sinatra helpers, and the
 `resource`, `has_one`, and `has_many` keywords simply build
 [Sinatra::Namespace][21] blocks. You can manage caching directives, set
-headers, and even `halt` (or `not_found`, although such cases are usually
-handled transparently by returning `nil` values or empty collections from
-action helpers) as desired.
+headers, etc. as desired.
+
+It is **strongly recommended** that you raise errors within your Sinja
+applications instead of using the `halt` and `not_found` keywords for the
+following reasons:
+
+1. Exceptions bubble up (i.e. when sideloading)
+1. Exceptions can wrap additional data and behavior
+1. Exceptions abort database transactions
+
+The following error classes&mdash;mapping to documented JSON:API error
+conditions&mdash;are available:
+
+* Sinja::BadRequestError (400)
+* Sinja::ForbiddenError (403)
+* Sinja::NotFoundError (404)
+* Sinja::MethodNotAllowedError (405)
+* Sinja::NotAcceptibleError (406)
+* Sinja::ConflictError (409)
+* Sinja::UnsupportedTypeError (415)
+* Sinja::UnprocessibleEntityError (422)
 
 ```ruby
 class App < Sinatra::Base
@@ -233,7 +254,7 @@ class App < Sinatra::Base
 
     show do |id|
       book = find(id)
-      not_found "Book #{id} not found!" unless book
+      raise Sinja::NotFoundError, "Book #{id} not found!" unless book
       headers 'X-ISBN'=>book.isbn
       last_modified book.updated_at
       next book, include: %w[author]
@@ -246,7 +267,7 @@ class App < Sinatra::Base
 
       before do
         cache_control :private
-        halt 403 unless foo || bar
+        raise Sinja::ForbiddenError unless foo || bar
       end
 
       pluck do
@@ -257,7 +278,7 @@ class App < Sinatra::Base
 
     # define a custom /books/top10 route
     get '/top10' do
-      halt 403 unless can?(:index) # restrict access to those with index rights
+      raise Sinja::ForbiddenError unless can?(:index) # restrict access to those with index rights
 
       serialize_models Book.where{}.reverse_order(:recent_sales).limit(10).all
     end
@@ -295,6 +316,10 @@ end
 : Takes an array of models (and optional hash of JSONAPI::Serializers options)
   and returns a serialized collection if non-empty, or the root metadata if
   present, or a HTTP status 204.
+
+**dasherize**
+: Takes a string or symbol and returns the string or symbol with any and all
+  underscores translitered to dashes transliterated.
 
 **dedasherize**
 : Takes a string or symbol and returns the string or symbol with any and all
@@ -643,7 +668,7 @@ arguments as the corresponding block:
 ```ruby
 helpers do
   def before_create(attr)
-    halt 400 unless validate(attr.delete(:special_key))
+    raise Sinja::BadRequestError unless validate(attr.delete(:special_key))
   end
 end
 
@@ -731,8 +756,8 @@ end
 Finally, define a `role` helper in your application that returns the user's
 role(s) (if any). You can handle login failures in your middleware, elsewhere
 in the application (i.e. a `before` filter), or within the helper, either by
-halting or raising an error or by simply letting Sinja halt 403 on restricted
-action helpers when `role` returns `nil` (the default behavior).
+raising an error or by simply letting Sinja raise an error on restricted action
+helpers when `role` returns `nil` (the default behavior).
 
 ```ruby
 helpers do

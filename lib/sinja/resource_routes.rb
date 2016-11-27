@@ -18,7 +18,7 @@ module Sinja
         opts = {}
         resources = [*ids].tap(&:uniq!).map! do |id|
           self.resource, opts = show(id)
-          not_found "Resource '#{id}' not found" unless resource
+          raise NotFoundError, "Resource '#{id}' not found" unless resource
           resource
         end
 
@@ -36,7 +36,7 @@ module Sinja
 
       app.post '', :actions=>:create do
         sanity_check!
-        halt 403, 'Client-generated IDs not supported' \
+        raise ForbiddenError, 'Client-generated IDs not supported' \
           if data[:id] && method(:create).arity != 2
 
         _, self.resource, opts = transaction do
@@ -66,14 +66,14 @@ module Sinja
 
       app.get '/:id', :actions=>:show do |id|
         self.resource, opts = show(id)
-        not_found "Resource '#{id}' not found" unless resource
+        raise NotFoundError, "Resource '#{id}' not found" unless resource
         serialize_model(resource, opts)
       end
 
       app.patch '/:id', :actions=>%i[find update] do |id|
         sanity_check!(id)
         self.resource = find(id)
-        not_found "Resource '#{id}' not found" unless resource
+        raise NotFoundError, "Resource '#{id}' not found" unless resource
         serialize_model?(transaction do
           update(attributes).tap do
             dispatch_relationship_requests!(id, :method=>:patch)
@@ -85,7 +85,7 @@ module Sinja
 
       app.delete '/:id', :actions=>%i[find destroy] do |id|
         self.resource = find(id)
-        not_found "Resource '#{id}' not found" unless resource
+        raise NotFoundError, "Resource '#{id}' not found" unless resource
         _, opts = destroy
         serialize_model?(nil, opts)
       end

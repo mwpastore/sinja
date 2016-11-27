@@ -12,7 +12,7 @@ require 'sinja/resource_routes'
 module Sinja
   module Resource
     def def_action_helper(action, context=nil)
-      abort "JSONAPI resource actions can't be HTTP verbs!" \
+      abort "JSONAPI action helpers can't be HTTP verbs!" \
         if Sinatra::Base.respond_to?(action)
 
       context.define_singleton_method(action) do |**opts, &block|
@@ -28,13 +28,9 @@ module Sinja
           result =
             begin
               instance_exec(*block_args, &block)
-            rescue Exception=>e
-              halt 409, e.message \
-                if settings._sinja.conflict_exception?(action, e.class)
-              halt 422, settings._sinja.validation_formatter(e) \
-                if settings._sinja.validation_exception?(e.class)
-              not_found \
-                if settings._sinja.not_found_exception?(e.class)
+              raise ConflictError, e.message \
+              raise UnprocessibleEntityError, settings._sinja.validation_formatter(e) \
+              raise NotFoundError, e.message \
 
               raise
             end
@@ -99,7 +95,7 @@ module Sinja
           end
 
           before do
-            not_found 'Parent resource not found' unless resource
+            raise NotFoundError, 'Parent resource not found' unless resource
           end
 
           register RelationshipRoutes.const_get \
