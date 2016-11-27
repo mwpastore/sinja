@@ -41,10 +41,10 @@ module Sinja
 
         _, self.resource, opts = transaction do
           create(attributes, data[:id]).tap do |id, *|
-            dispatch_relationship_requests!(id, :method=>:patch)
-          end
+            dispatch_relationship_requests!(id, :from=>:create, :method=>:patch)
 
-          validate if respond_to?(:validate)
+            validate if respond_to?(:validate)
+          end
         end
 
         if resource
@@ -76,10 +76,10 @@ module Sinja
         raise NotFoundError, "Resource '#{id}' not found" unless resource
         serialize_model?(transaction do
           update(attributes).tap do
-            dispatch_relationship_requests!(id, :method=>:patch)
-          end
+            dispatch_relationship_requests!(id, :from=>:update, :method=>:patch)
 
-          validate if respond_to?(:validate)
+            validate if respond_to?(:validate)
+          end
         end)
       end
 
