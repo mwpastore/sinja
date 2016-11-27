@@ -18,14 +18,23 @@ module Sinja
 
     # trigger default procs
     _sinja.resource_roles[resource_name.to_sym]
+    _sinja.resource_sideload[resource_name.to_sym]
 
     namespace "/#{resource_name.to_s.tr('_', '-')}" do
       define_singleton_method(:resource_roles) do |action, roles|
         _sinja.resource_roles[resource_name.to_sym].merge!(action=>roles)
       end
 
+      define_singleton_method(:resource_sideload) do |child, parents|
+        _sinja.resource_sideload[resource_name.to_sym].merge!(child=>parents)
+      end
+
       helpers do
         define_method(:can?) do |*args|
+          super(resource_name.to_sym, *args)
+        end
+
+        define_method(:sideload?) do |*args|
           super(resource_name.to_sym, *args)
         end
       end
@@ -60,7 +69,7 @@ module Sinja
       condition do
         actions.each do |action|
           raise ForbiddenError, 'You are not authorized to perform this action' \
-            unless action == :find || can?(action) || Set[:graft, :merge].include?(action) && passthru? { |parent| can?(parent) }
+            unless action == :find || can?(action) || sideload?(action)
           raise MethodNotAllowedError, 'Action or method not implemented or supported' \
             unless respond_to?(action)
         end
@@ -127,10 +136,15 @@ module Sinja
         }.each { |k, v| params[k] ||= v }
       end
 
-      def passthru?
-        env.key?('sinja.passthru') && (
-          !block_given? || yield(env['sinja.passthru'].to_sym)
-        )
+      def sideload?(resource_name, child)
+        return unless sideloaded?
+        parent = env.fetch('sinja.passthru', 'unknown').to_sym
+        settings._sinja.resource_sideload[resource_name][child].
+          include?(parent) && can?(parent)
+      end
+
+      def sideloaded?
+        env.key?('sinja.passthru')
       end
 
       def role
@@ -151,7 +165,7 @@ module Sinja
     end
 
     app.before do
-      unless passthru?
+      unless sideloaded?
         raise NotAcceptibleError unless request.preferred_type.entry == MIME_TYPE
         raise UnsupportedTypeError if content? && (
           request.media_type != MIME_TYPE || request.media_type_params.keys.any? { |k| k != 'charset' }

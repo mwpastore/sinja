@@ -66,7 +66,7 @@ has not yet been thoroughly tested or vetted in a production environment.**
       - [Many-to-Many](#many-to-many)
   - [Coalesced Find Requests](#coalesced-find-requests)
   - [Patchless Clients](#patchless-clients)
-  - [Module Namespaces](#module-namespaces)
+  - [Sinja or Sinatra::JSONAPI](#sinja-or-sinatrajsonapi)
   - [Code Organization](#code-organization)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -328,11 +328,8 @@ end
 **dedasherize_names**
 : Takes a hash and returns the hash with its keys dedasherized (deeply).
 
-**passthru?**
-: Returns true if the request was invoked from another action helper. If so, it
-  takes an optional block to which is yielded the symbol of the invoking action
-  helper, and the return value of the block becomes the return value of the
-  method.
+**sideloaded?**
+: Returns true if the request was invoked from another action helper.
 
 ### Performance
 
@@ -887,7 +884,7 @@ end
 
 Sinja works hard to DRY up your business logic. As mentioned above, when a
 request comes in to create or update a resource and that request includes
-relationships, Sinja will farm out the work to your defined relationship
+relationships, Sinja will try to farm out the work to your defined relationship
 routes. Let's look at this example request from the JSON:API specification:
 
 ```
@@ -914,19 +911,45 @@ Accept: application/vnd.api+json
 ```
 
 Assuming a `:photos` resource with a `has_one :photographer` relationship in
-the application, Sinja will invoke the following action helpers in turn:
+the application, and `graft` is configured to sideload on `create` (more on
+this in a moment), Sinja will invoke the following action helpers in turn:
 
-1.  `create` on the Photos resource (with `data.attributes`)
-1.  `graft` on the Photographer relationship (with
+1. `create` on the Photos resource (with `data.attributes`)
+1. `graft` on the Photographer relationship (with
     `data.relationships.photographer.data`)
 
 If any step of the process fails&mdash;for example, if the `graft` action
-helper is not defined in the Photographer relationship, or if it raises an
-error&mdash;the entire request will fail and any database changes will be
-rolled back (given a `transaction` helper). Note that if the user's role
-granted them access to call `create` they will be able to call `graft`
-regardless of `graft`'s own restrictions, and the same is true for `update`
-and `merge`.
+helper is not defined in the Photographer relationship, or if it does not
+permit sideloading from `create`, or if it raises an error&mdash;the entire
+request will fail and any database changes will be rolled back (given a
+`transaction` helper). Note that the user's role must grant them access to call
+either `graft` or `create`.
+
+`create` and `update` are the only two action helpers that trigger sideloading;
+`graft` and `merge` are the only two action helpers invoked by sideloading.
+You must indicate which combinations are valid using the `:sideload_on` action
+helper option. For example:
+
+```ruby
+resource :photos do
+  helpers do
+    def find(id) ..; end
+  end
+
+  create { |attr| .. }
+  update { |attr| .. }
+
+  has_one :photographer do
+    # Allow `create' to sideload the Photographer
+    graft(sideload_on: :create) { |rio| .. }
+  end
+
+  has_many :tags do
+    # Allow `create' and `update' to sideload Tags
+    merge(sideload_on: %i[create update]) { |rios| .. }
+  end
+end
+```
 
 #### Avoiding Null Foreign Keys
 
@@ -984,9 +1007,9 @@ resource :photos do
   end
 
   has_one :photographer do
-    graft do |rio|
+    graft(sideload_on: :create) do |rio|
       resource.photographer = People.with_pk!(rio[:id].to_i)
-      resource.save_changes(validate: !passthru?) # defer validation (only if passthru)
+      resource.save_changes(validate: !sideloaded?) # defer validation if sideloaded
     end
   end
 end
@@ -996,7 +1019,7 @@ Note that the `validate` hook is _only_ invoked from within transactions
 involving the `create` and `update` action helpers (and any dependent `graft`
 and `merge` action helpers), so this deferred validation pattern is only
 appropriate in those cases. You must use immedate validation in all other
-cases. The `passthru?` helper is provided to help disambiguate.
+cases. The `sideloaded?` helper is provided to help disambiguate edge cases.
 
 ##### Many-to-One
 
@@ -1053,7 +1076,7 @@ class MyApp < Sinatra::Base
 end
 ```
 
-### Module Namespaces
+### Sinja or Sinatra::JSONAPI
 
 Everything is dual-namespaced under both Sinatra::JSONAPI and Sinja, and Sinja
 requires Sinatra::Base, so this:

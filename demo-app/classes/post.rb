@@ -88,9 +88,9 @@ PostController = proc do
       resource.author
     end
 
-    graft(roles: :superuser) do |rio|
+    graft(roles: :superuser, sideload_on: :create) do |rio|
       resource.author = Author.with_pk!(rio[:id].to_i)
-      resource.save_changes(validate: !passthru?)
+      resource.save_changes(validate: !sideloaded?)
     end
   end
 
@@ -109,7 +109,7 @@ PostController = proc do
       resource.remove_all_tags
     end
 
-    merge(roles: %i[owner superuser]) do |rios|
+    merge(roles: %i[owner superuser], sideload_on: %i[create update]) do |rios|
       add_missing(:tags, rios)
     end
 

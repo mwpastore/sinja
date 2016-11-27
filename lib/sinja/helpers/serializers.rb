@@ -130,7 +130,7 @@ module Sinja
       end
 
       def serialize_errors(&block)
-        raise env['sinatra.error'] if env['sinatra.error'] && passthru?
+        raise env['sinatra.error'] if env['sinatra.error'] && sideloaded?
 
         *error_hashes =
           if [*body].any?

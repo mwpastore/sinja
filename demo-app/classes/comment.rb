@@ -68,9 +68,9 @@ CommentController = proc do
       resource.post
     end
 
-    graft(roles: :superuser) do |rio|
+    graft(roles: :superuser, sideload_on: :create) do |rio|
       resource.post = Post.with_pk!(rio[:id].to_i)
-      resource.save_changes(validate: !passthru?)
+      resource.save_changes(validate: !sideloaded?)
     end
   end
 
@@ -79,9 +79,9 @@ CommentController = proc do
       resource.author
     end
 
-    graft(roles: :superuser) do |rio|
+    graft(roles: :superuser, sideload_on: :create) do |rio|
       resource.author = Author.with_pk!(rio[:id].to_i)
-      resource.save_changes(validate: !passthru?)
+      resource.save_changes(validate: !sideloaded?)
     end
   end
 end

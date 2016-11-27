@@ -12,6 +12,7 @@ require 'sinja/resource_routes'
 module Sinja
   module Resource
     CONFLICT_ACTIONS = Set.new(%i[create update graft merge]).freeze
+    SIDELOAD_ACTIONS = Set.new(%i[graft merge]).freeze
 
     def def_action_helper(action, context=nil)
       abort "JSONAPI action helpers can't be HTTP verbs!" \
@@ -19,6 +20,7 @@ module Sinja
 
       context.define_singleton_method(action) do |**opts, &block|
         resource_roles(action, opts[:roles]) if opts.key?(:roles)
+        resource_sideload(action, opts[:sideload_on]) if opts.key?(:sideload_on)
 
         return unless block ||=
           case !method_defined?(action) && action

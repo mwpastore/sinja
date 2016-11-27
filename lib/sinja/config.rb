@@ -34,6 +34,7 @@ module Sinja
       :error_logger,
       :default_roles,
       :resource_roles,
+      :resource_sideload,
       :conflict_exceptions,
       :not_found_exceptions,
       :validation_exceptions,
@@ -45,6 +46,7 @@ module Sinja
 
       @default_roles = RolesConfig.new
       @resource_roles = Hash.new { |h, k| h[k] = @default_roles.dup }
+      @resource_sideload = Hash.new { |h, k| h[k] = SideloadConfig.new }
 
       @conflict_exceptions = Set.new
       @not_found_exceptions = Set.new
@@ -103,6 +105,8 @@ module Sinja
       @default_roles.freeze
       @resource_roles.default_proc = nil
       deep_freeze(@resource_roles)
+      @resource_sideload.default_proc = nil
+      deep_freeze(@resource_sideload)
       @conflict_exceptions.freeze
       @not_found_exceptions.freeze
       @validation_exceptions.freeze
@@ -145,6 +149,31 @@ module Sinja
     def initialize_copy(other)
       super
       @data = deep_copy(other.instance_variable_get(:@data))
+    end
+
+    def freeze
+      deep_freeze(@data)
+      super
+    end
+  end
+
+  class SideloadConfig
+    include ConfigUtils
+    extend Forwardable
+
+    def initialize
+      @data = Resource::SIDELOAD_ACTIONS.map { |child| [child, Set.new] }.to_h
+    end
+
+    def_delegator :@data, :[]
+
+    def merge!(h={})
+      h.each do |child, parents|
+        abort "Unknown or invalid action helper `#{child}' in configuration" \
+          unless @data.key?(child)
+        @data[child].replace(Set[*parents])
+      end
+      @data
     end
 
     def freeze
