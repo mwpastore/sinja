@@ -29,16 +29,20 @@ module Sinja
         define_method(action) do |*args|
           block_args = args.take(block.arity.abs)
 
-          send("before_#{action}", *block_args) if respond_to?("before_#{action}")
+          public_send("before_#{action}", *block_args) \
+            if respond_to?("before_#{action}")
 
           result =
             begin
               instance_exec(*block_args, &block)
-              raise ConflictError, e.message \
-              raise UnprocessibleEntityError, settings._sinja.validation_formatter(e) \
-              raise NotFoundError, e.message \
+            rescue *settings._sinja.not_found_exceptions=>e
+              raise NotFoundError, e.message
+            rescue *settings._sinja.conflict_exceptions=>e
+              raise(e) unless CONFLICT_ACTIONS.include?(action)
 
-              raise
+              raise ConflictError, e.message
+            rescue *settings._sinja.validation_exceptions=>e
+              raise UnprocessibleEntityError, settings._sinja.validation_formatter(e)
             end
 
           # TODO: Move this to a constant or configurable?

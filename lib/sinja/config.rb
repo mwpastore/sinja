@@ -69,16 +69,9 @@ module Sinja
       @conflict_exceptions.replace(Set[*e])
     end
 
-    def conflict_exception?(action, exception_class)
-      @conflict_actions.include?(action) &&
-        @conflict_exceptions.include?(exception_class)
-    end
-
     def not_found_exceptions=(e=[])
       @not_found_exceptions.replace(Set[*e])
     end
-
-    def_delegator :@not_found_exceptions, :include?, :not_found_exception?
 
     def validation_exceptions=(e=[])
       @validation_exceptions.replace(Set[*e])
@@ -93,8 +86,6 @@ module Sinja
 
       @validation_formatter = f
     end
-
-    def_delegator :@validation_exceptions, :include?, :validation_exception?
 
     def_delegator :@default_roles, :merge!, :default_roles=
 

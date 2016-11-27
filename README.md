@@ -939,10 +939,10 @@ deferrable in Postgres, and constraints in general are not deferrable in
 MySQL.) Instead, we'll need to enforce our non-nullable relationships at the
 application level.
 
-To accomplish this, simply define an ordinary helper named `validate` (in the
-resource scope or any parent scopes). This method, if present, is invoked from
-within the transaction after the entire request has been processed, and so can
-abort the transaction (following your ORM's semantics). For example:
+To accomplish this, define an ordinary helper named `validate` (in the resource
+scope or any parent scopes). This method, if present, is invoked from within
+the transaction after the entire request has been processed, and so can abort
+the transaction (following your ORM's semantics). For example:
 
 ```ruby
 resource :photos do
@@ -956,7 +956,8 @@ end
 
 If your ORM supports validation&mdash;and "deferred validation"&mdash;you can
 easily handle all such situations (as well as other types of validations) at
-the top-level of your application. For example, using Sequel:
+the top-level of your application. (Make sure to define your validation
+exceptions and formatter as described above.) For example, using Sequel:
 
 ```ruby
 class Photo < Sequel::Model
