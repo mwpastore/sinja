@@ -6,7 +6,7 @@ require 'set'
 module Sinja
   module Helpers
     module Serializers
-      def dasherize(s=nil)
+      module_function def dasherize(s=nil)
         s.to_s.tr('_', '-').send(Symbol === s ? :to_sym : :itself)
       end
 

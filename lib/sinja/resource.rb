@@ -94,7 +94,7 @@ module Sinja
 
     %i[has_one has_many].each do |rel_type|
       define_method(rel_type) do |rel, &block|
-        rel_path = rel.to_s.tr('_', '-')
+        rel_path = Helpers::Serializers.dasherize(rel.to_s)
 
         namespace %r{/(?<resource_id>[^/]+)(?<r>/relationships)?/#{rel_path}}, :actions=>:find do
           helpers Helpers::Nested do

@@ -31,7 +31,7 @@ module Sinja
     _sinja.resource_roles[resource_name.to_sym]
     _sinja.resource_sideload[resource_name.to_sym]
 
-    namespace "/#{resource_name.to_s.tr('_', '-')}" do
+    namespace "/#{Helpers::Serializers.dasherize(resource_name.to_s)}" do
       define_singleton_method(:resource_roles) do |action, roles|
         _sinja.resource_roles[resource_name.to_sym].merge!(action=>roles)
       end
