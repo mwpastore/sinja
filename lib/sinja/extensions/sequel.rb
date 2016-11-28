@@ -19,7 +19,7 @@ module Sinja
         graft do |rio|
           klass = resource.class.association_reflection(rel).associated_class
           resource.send("#{rel}=", klass.with_pk!(rio[:id]))
-          resource.save_changes
+          resource.save_changes(validate: !sideloaded?)
         end
 
         instance_eval(&block) if block

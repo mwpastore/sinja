@@ -13,6 +13,10 @@ module Sinja
         c.validation_formatter = ->(e) { e.errors.keys.zip(e.errors.full_messages) }
       end
 
+      def validate
+        raise Sequel::ValidationFailed, resource.errors if resource && !resource.valid?
+      end
+
       def database
         ::Sequel::DATABASES.first
       end
