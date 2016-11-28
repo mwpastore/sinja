@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 require 'forwardable'
 require 'set'
+require 'sinatra/base'
 
+require 'sinja/resource'
 require 'sinja/relationship_routes/has_many'
 require 'sinja/relationship_routes/has_one'
 require 'sinja/resource_routes'
@@ -54,7 +56,7 @@ module Sinja
       @validation_formatter = ->{ Array.new }
 
       @opts = deep_copy(DEFAULT_OPTS)
-      @serializer_opts = {}
+      @serializer_opts = deep_copy(DEFAULT_SERIALIZER_OPTS)
     end
 
     def error_logger=(f)
@@ -137,6 +139,10 @@ module Sinja
 
     def_delegator :@data, :[]
 
+    def ==(other)
+      @data == other.instance_variable_get(:@data)
+    end
+
     def merge!(h={})
       h.each do |action, roles|
         abort "Unknown or invalid action helper `#{action}' in configuration" \
@@ -166,6 +172,10 @@ module Sinja
     end
 
     def_delegator :@data, :[]
+
+    def ==(other)
+      @data == other.instance_variable_get(:@data)
+    end
 
     def merge!(h={})
       h.each do |child, parents|
