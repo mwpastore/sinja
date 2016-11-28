@@ -19,7 +19,7 @@ module Sinja
       end
 
       private def _dedasherize_names(hash={})
-        return enum_for(__callee__) unless block_given?
+        return enum_for(__callee__, hash) unless block_given?
 
         hash.each do |k, v|
           yield dedasherize(k), Hash === v ? dedasherize_names(v) : v
