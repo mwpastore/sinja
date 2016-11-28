@@ -385,7 +385,6 @@ these settings.
 * Disables [Rack::Protection][6] (can be reenabled with `enable :protection` or
   by manually `use`-ing the Rack::Protection middleware)
 * Disables static file routes (can be reenabled with `enable :static`)
-* Disables X-Cascade (can be reenabled with `enable :x_cascade`)
 * Disables "classy" error pages (in favor of "classy" JSON:API error documents)
 * Adds an `:api_json` MIME-type (`Sinja::MIME_TYPE`)
 * Enforces strict checking of the `Accept` and `Content-Type` request headers

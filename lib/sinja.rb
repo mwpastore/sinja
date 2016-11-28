@@ -73,7 +73,7 @@ module Sinja
     app.register Mustermann unless app.extensions.include?(Mustermann)
     app.register Sinatra::Namespace
 
-    app.disable :protection, :show_exceptions, :static, :x_cascade
+    app.disable :protection, :show_exceptions, :static
     app.set :_sinja, Sinja::Config.new
 
     app.set :actions do |*actions|
