@@ -173,11 +173,10 @@ on the resource definitions.
 The "power" of implementing this functionality as a Sinatra extension is that
 all of Sinatra's usual features are available within your resource definitions.
 The action helpers blocks get compiled into Sinatra helpers, and the
-`resource`, `has_one`, and `has_many` keywords simply build
-[Sinatra::Namespace][21] blocks. You can manage caching directives, set
-headers, and even `halt` (or `not_found`, although such cases are usually
-handled transparently by returning `nil` values or empty collections from
-action helpers) as desired.
+`resource`, `has_one`, and `has_many` keywords build [Sinatra::Namespace][21]
+blocks. You can manage caching directives, set headers, and even `halt` (or
+`not_found`, although such cases are usually handled transparently by returning
+`nil` values or empty collections from action helpers) as desired.
 
 ```ruby
 class App < Sinatra::Base
@@ -189,14 +188,14 @@ class App < Sinatra::Base
     # <- This is a Sinatra::Namespace block.
 
     show do |id|
-      # <- This is a special Sinatra helper, scoped to the resource namespace.
+      # <- This is a "special" Sinatra helper, scoped to the resource namespace.
     end
 
     has_one :author do
       # <- This is a Sinatra::Namespace block, nested under the resource namespace.
 
       pluck do
-        # <- This is a special Sinatra helper, scoped to the nested namespace.
+        # <- This is a "special" Sinatra helper, scoped to the nested namespace.
       end
     end
   end
@@ -364,11 +363,11 @@ You'll need a database schema and models (using the engine and ORM of your
 choice) and [serializers][3] to get started. Create a new Sinatra application
 (classic or modular) to hold all your JSON:API endpoints and (if modular)
 register this extension. Instead of defining routes with `get`, `post`, etc. as
-you normally would, simply define `resource` blocks with action helpers and
-`has_one` and `has_many` relationship blocks (with their own action helpers).
-Sinja will draw and enable the appropriate routes based on the defined
-resources, relationships, and action helpers. Other routes will return the
-appropriate HTTP status codes: 403, 404, or 405.
+you normally would, define `resource` blocks with action helpers and `has_one`
+and `has_many` relationship blocks (with their own action helpers). Sinja will
+draw and enable the appropriate routes based on the defined resources,
+relationships, and action helpers. Other routes will return the appropriate
+HTTP status codes: 403, 404, or 405.
 
 ### Configuration
 
@@ -394,8 +393,8 @@ these settings.
   (this may be strictly enforced in future versions of Sinja)
 * Formats all errors to the proper JSON:API structure
 * Serializes all response bodies (including errors) to JSON
-* Modifies `halt` and `not_found` to raise exceptions and not simply set the
-  status code and body of the response
+* Modifies `halt` and `not_found` to raise exceptions instead of just setting
+  the status code and body of the response
 
 #### Sinja
 
@@ -431,13 +430,12 @@ the store after Sinja is configured and all your resources are defined.
 
 ### Resource Locator
 
-Much of Sinja's advanced functionality (i.e. updating and destroying resources
-and resource relationships) is dependent upon its ability to locate the
-corresponding resource for a request. To enable these features, simply define
-an ordinary helper method named `find` in your resource definition that takes a
-single ID argument and returns the corresponding object. You can, of course,
-use this helper method elsewhere in your definition, such as in your `show`
-action helper (if present).
+Much of Sinja's advanced functionality (e.g. updating and destroying resources,
+relationship routes) is dependent upon its ability to locate the corresponding
+resource for a request. To enable these features, define an ordinary helper
+method named `find` in your resource definition that takes a single ID argument
+and returns the corresponding object. You can, of course, use this helper
+method elsewhere in your application, such as in your `show` action helper.
 
 ```ruby
 resource :posts
@@ -455,8 +453,8 @@ end
 
 * What's the difference between `find` and `show`?
 
-  You can think of it as the difference between a Model and a View. `find`
-  retrieves the record; `show` presents it.
+  You can think of it as the difference between a Model and a View: `find`
+  retrieves the record, `show` presents it.
 
 * Why separate the two? Why not use `show` as the resource locator?
 
@@ -464,7 +462,7 @@ end
   a resource are not always the same as those for updating and/or destroying a
   resource, and vice-versa. For example, a user may be able to delete a
   resource or subtract a relationship link without being able to see the
-  resource or its full relationship linkage.
+  resource or its relationship linkage.
 
 * How do I control access to the resource locator?
 
@@ -477,8 +475,8 @@ end
 
   Sinja will act as if you had not defined the action helper.
 
-As a bit of syntactic sugar, if you define a `find` helper and call `show`
-without a block, Sinja will generate a `show` action helper that simply
+As a bit of syntactic sugar, if you define a `find` helper and subsequently
+call `show` without a block, Sinja will generate a `show` action helper that
 delegates to `find`.
 
 ### Action Helpers
@@ -562,7 +560,7 @@ Remove the relationship from `resource`. To serialize the updated linkage on
 the response, refresh or reload `resource` (if necessary) and return a truthy
 value.
 
-For example, using Sequel:
+For example, using [Sequel][13]:
 
 ```ruby
 has_one :qux do
@@ -594,7 +592,7 @@ Remove all relationships from `resource`. To serialize the updated linkage on
 the response, refresh or reload `resource` (if necessary) and return a truthy
 value.
 
-For example, using Sequel:
+For example, using [Sequel][13]:
 
 ```ruby
 has_many :bars do
@@ -711,10 +709,10 @@ end
 
 #### `:roles` Action Helper option
 
-To override the default roles for any given action helper, simply specify a
-`:roles` option when defining it. To remove all restrictions from an action
-helper, set `:roles` to an empty array. For example, to manage access to
-`show` at different levels of granularity (with the above `default_roles`):
+To override the default roles for any given action helper, specify a `:roles`
+option when defining it. To remove all restrictions from an action helper, set
+`:roles` to an empty array. For example, to manage access to `show` at
+different levels of granularity (with the above `default_roles`):
 
 ```ruby
 resource :foos do
@@ -741,7 +739,7 @@ end
 Finally, define a `role` helper in your application that returns the user's
 role(s) (if any). You can handle login failures in your middleware, elsewhere
 in the application (i.e. a `before` filter), or within the helper, either by
-raising an error or by simply letting Sinja raise an error on restricted action
+raising an error or by letting Sinja raise an error on restricted action
 helpers when `role` returns `nil` (the default behavior).
 
 ```ruby
@@ -803,7 +801,7 @@ If your database driver raises exceptions on constraint violations, you should
 specify which exception class(es) should be handled and return HTTP status code
 409.
 
-For example, using Sequel:
+For example, using [Sequel][13]:
 
 ```ruby
 configure_jsonapi do |c|
@@ -819,7 +817,7 @@ with a formatter proc that transforms the exception object into an array of
 two-element arrays containing the name or symbol of the attribute that failed
 validation and the detailed errror message for that attribute.
 
-For example, using Sequel:
+For example, using [Sequel][13]:
 
 ```ruby
 configure_jsonapi do |c|
@@ -835,7 +833,7 @@ specify which exception class(es) should be handled and return HTTP status code
 404. This is particularly useful for relationship action helpers, which don't
 have access to a dedicated subresource locator.
 
-For example, using Sequel:
+For example, using [Sequel][13]:
 
 ```ruby
 configure_jsonapi do |c|
@@ -854,7 +852,8 @@ If any step in that process fails, ideally the parent resource and any
 relationships would be rolled back before returning an error message to the
 requester.
 
-For example, using Sequel with the database handle stored in the constant `DB`:
+For example, using [Sequel][13] with the database handle stored in the constant
+`DB`:
 
 ```ruby
 helpers do
@@ -930,7 +929,7 @@ resource :photos do
 
   has_many :tags do
     # Allow `create' and `update' to sideload Tags
-    merge(sideload_on: %i[create update]) { |rios| .. }
+    merge(sideload_on: [:create, :update]) { |rios| .. }
   end
 end
 ```
@@ -943,13 +942,14 @@ People table non-nullable. Unfortunately, that will break Sinja, because the
 Photo will be inserted first, with a null Photographer. (Deferrable constraints
 would be a perfect solution to this problem, but `NOT NULL` constraints are not
 deferrable in Postgres, and constraints in general are not deferrable in
-MySQL.) Instead, we'll need to enforce our non-nullable relationships at the
-application level.
+MySQL.)
 
-To accomplish this, define an ordinary helper named `validate` (in the resource
-scope or any parent scopes). This method, if present, is invoked from within
-the transaction after the entire request has been processed, and so can abort
-the transaction (following your ORM's semantics). For example:
+Instead, we'll need to enforce our non-nullable relationships at the
+application level. To accomplish this, define an ordinary helper named
+`validate` (in the resource scope or any parent scopes). This method, if
+present, is invoked from within the transaction after the entire request has
+been processed, and so can abort the transaction (following your ORM's
+semantics). For example:
 
 ```ruby
 resource :photos do
@@ -964,7 +964,7 @@ end
 If your ORM supports validation&mdash;and "deferred validation"&mdash;you can
 easily handle all such situations (as well as other types of validations) at
 the top-level of your application. (Make sure to define your validation
-exceptions and formatter as described above.) For example, using Sequel:
+exceptions and formatter as described above.) For example, using [Sequel][13]:
 
 ```ruby
 class Photo < Sequel::Model
@@ -1004,6 +1004,8 @@ involving the `create` and `update` action helpers (and any dependent `graft`
 and `merge` action helpers), so this deferred validation pattern is only
 appropriate in those cases. You must use immedate validation in all other
 cases. The `sideloaded?` helper is provided to help disambiguate edge cases.
+
+> TODO: The following three sections are a little confusing. Rewrite them.
 
 ##### Many-to-One
 

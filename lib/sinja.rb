@@ -174,7 +174,7 @@ module Sinja
 
       def sanity_check!(id=nil)
         raise ConflictError, 'Resource type in payload does not match endpoint' \
-          if data[:type] != request.path.split('/').last # TODO
+          if data[:type] != request.path.split('/').last # TODO?
 
         raise ConflictError, 'Resource ID in payload does not match endpoint' \
           if id && data[:id].to_s != id.to_s
@@ -206,7 +206,7 @@ module Sinja
       serialize_errors(&settings._sinja.error_logger)
     end
 
-    # TODO: Can/should we serialize other types of Exceptions?
+    # TODO: Can/should we serialize other types of Exceptions? Catch-all?
     app.error StandardError, 400...600, nil do
       serialize_errors(&settings._sinja.error_logger)
     end
