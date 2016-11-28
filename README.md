@@ -756,15 +756,15 @@ end
 ```
 
 If you need more fine-grained control, for example if your action helper logic
-varies by the user's role, you can use a simple switch statement along with the
-`Sinja::RoleList` utility class:
+varies by the user's role, you can use a switch statement on `role` along with
+the `Sinja::Roles` utility class:
 
 ```ruby
-index(roles: %i[user admin super]) do
+index(roles: [:user, :admin, :super]) do
   case role
-  when Sinja::RoleList[:user]
+  when Sinja::Roles[:user]
     # logic specific to the `user' role
-  when Sinja::RoleList[:admin, :super]
+  when Sinja::Roles[:admin, :super]
     # logic specific to administrative roles
   end
 end

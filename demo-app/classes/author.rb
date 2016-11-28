@@ -49,7 +49,7 @@ AuthorController = proc do
 
     def fields
       %i[email real_name display_name].tap do |a|
-        a << :admin if RoleList[:superuser] === role
+        a << :admin if Sinja::Roles[:superuser] === role
       end
     end
   end

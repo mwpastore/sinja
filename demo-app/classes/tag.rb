@@ -56,13 +56,13 @@ TagController = proc do
 
     merge(roles: :logged_in) do |rios|
       add_missing(:posts, rios) do |post|
-        RoleList[:superuser] === role || post.author == current_user
+        Sinja::Roles[:superuser] === role || post.author == current_user
       end
     end
 
     subtract(roles: :logged_in) do |rios|
       remove_present(:posts, rios) do |post|
-        RoleList[:superuser] === role || post.author == current_user
+        Sinja::Roles[:superuser] === role || post.author == current_user
       end
     end
   end

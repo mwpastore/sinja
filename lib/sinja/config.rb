@@ -117,7 +117,7 @@ module Sinja
     end
   end
 
-  class RoleList < Set
+  class Roles < Set
     def ===(other)
       self.intersect?(Set === other ? other : Set[*other])
     end
@@ -132,7 +132,7 @@ module Sinja
         ResourceRoutes::ACTIONS,
         RelationshipRoutes::HasMany::ACTIONS,
         RelationshipRoutes::HasOne::ACTIONS
-      ].reduce(Set.new, :merge).map { |action| [action, RoleList.new] }.to_h
+      ].reduce(Set.new, :merge).map { |action| [action, Roles.new] }.to_h
     end
 
     def_delegator :@data, :[]
@@ -141,7 +141,7 @@ module Sinja
       h.each do |action, roles|
         abort "Unknown or invalid action helper `#{action}' in configuration" \
           unless @data.key?(action)
-        @data[action].replace(RoleList[*roles])
+        @data[action].replace(Roles[*roles])
       end
       @data
     end
