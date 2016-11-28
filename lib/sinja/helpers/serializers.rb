@@ -121,22 +121,24 @@ module Sinja
       end
 
       def error_hash(title: nil, detail: nil, source: nil)
-        { id: SecureRandom.uuid }.tap do |hash|
-          hash[:title] = title if title
-          hash[:detail] = detail if detail
-          hash[:status] = status.to_s if status
-          hash[:source] = source if source
-        end
+        [
+          { id: SecureRandom.uuid }.tap do |hash|
+            hash[:title] = title if title
+            hash[:detail] = detail if detail
+            hash[:status] = status.to_s if status
+            hash[:source] = source if source
+          end
+        ]
       end
 
       def serialize_errors(&block)
         raise env['sinatra.error'] if env['sinatra.error'] && sideloaded?
 
-        *error_hashes =
+        error_hashes =
           if [*body].any?
             if [*body].all? { |error| Hash === error }
               # `halt' with a hash or array of hashes
-              [*body].map { |error| error_hash(error) }
+              [*body].flat_map { |error| error_hash(error) }
             elsif not_found?
               # `not_found' or `halt 404'
               message = [*body].first.to_s
@@ -158,7 +160,7 @@ module Sinja
         error_hashes ||=
           case e = env['sinatra.error']
           when UnprocessibleEntityError
-            e.tuples.map do |attribute, full_message|
+            e.tuples.flat_map do |attribute, full_message|
               error_hash \
                 :title=>e.title,
                 :detail=>full_message.to_s,
@@ -174,16 +176,13 @@ module Sinja
                 e.class.name.split('::').last.split(/(?=[[:upper:]])/).join(' ')
               end
 
-            [
-              error_hash(
-                :title=>title,
-                :detail=>(e.message.to_s unless e.message == e.class.name)
-              )
-            ]
+            error_hash \
+              :title=>title,
+              :detail=>(e.message.to_s unless e.message == e.class.name)
           end
 
         # Ensure we don't send an empty errors collection
-        error_hashes ||= [error_hash(:title=>'Unknown Error')]
+        error_hashes ||= error_hash(:title=>'Unknown Error')
 
         error_hashes.each { |eh| instance_exec(eh, &block) } if block
 
