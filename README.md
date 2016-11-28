@@ -493,13 +493,13 @@ along to JSONAPI::Serializer.serialize (will be merged into the global
 `serializer_opts` described above).
 
 The `:include` and `:fields` query parameters are automatically passed through
-to JSONAPI::Serializers. You may also use the special `:exclude` option to
-prevent specific relationships from being included in the response. This
-accepts the same formats as JSONAPI::Serializers does for `:include`. If you
-exclude a relationship, any sub-relationships will also be excluded. The
-`:sort`, `:page`, and `:filter` query parameters must be handled manually (with
-the exception of the `:id` filter, discussed under "Coalesced Find Requests"
-below).
+to JSONAPI::Serializers. You may specify a default `:include` option (the query
+parameter will be merged into this list if present). You may also use the
+special `:exclude` option to prevent specific relationships from being included
+in the response. This accepts the same formats as JSONAPI::Serializers does for
+`:include`. If you exclude a relationship, any sub-relationships will also be
+excluded. The `:sort`, `:page`, and `:filter` query parameters must be handled
+manually (with one exception, discussed under "Coalesced Find Requests" below).
 
 All arguments to action helpers are "tainted" and should be treated as
 potentially dangerous: IDs, attribute hashes, and (arrays of) [resource

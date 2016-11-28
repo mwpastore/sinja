@@ -41,10 +41,25 @@ module Sinja
         raise BadRequestError, 'Unserializable entities in the response body'
       end
 
-      def exclude!(options)
-        included, excluded = options.delete(:include), options.delete(:exclude)
+      def include_exclude!(options)
+        default, extra = options.delete(:include), params[:include]
 
-        included = Set.new(included.is_a?(Array) ? included : included.split(','))
+        default =
+          if Array === default then default
+          elsif default then default.split(',')
+          else []
+          end
+
+        extra =
+          if Array === extra then extra
+          elsif extra then extra.split(',')
+          else []
+          end
+
+        included, excluded = default | extra, options.delete(:exclude)
+
+        return included unless included.any? && excluded
+
         excluded = Set.new(excluded.is_a?(Array) ? excluded : excluded.split(','))
 
         included.delete_if do |termstr|
@@ -53,19 +68,13 @@ module Sinja
             excluded.include?(terms.take(i.succ).join('.'))
           end
         end
-
-        options[:include] = included.to_a unless included.empty?
       end
 
       def serialize_model(model=nil, options={})
         options[:is_collection] = false
         options[:skip_collection_check] = defined?(::Sequel) && model.is_a?(::Sequel::Model)
-        # TODO: This should allow a default include, take the param value if
-        # present, and support disabling passthru.
-        options[:include] ||= params[:include] unless params[:include].empty?
+        options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
-
-        exclude!(options) if options[:include] && options[:exclude]
 
         ::JSONAPI::Serializer.serialize model,
           settings._sinja.serializer_opts.merge(options)
@@ -83,12 +92,8 @@ module Sinja
 
       def serialize_models(models=[], options={})
         options[:is_collection] = true
-        # TODO: This should allow a default include, take the param value if
-        # present, and support disabling passthru.
-        options[:include] ||= params[:include] unless params[:include].empty?
+        options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
-
-        exclude!(options) if options[:include] && options[:exclude]
 
         ::JSONAPI::Serializer.serialize [*models],
           settings._sinja.serializer_opts.merge(options)
