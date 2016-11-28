@@ -11,6 +11,17 @@ require 'sinja/version'
 
 module Sinja
   MIME_TYPE = 'application/vnd.api+json'
+  ERROR_CODES = [
+    BadRequestError,
+    ForbiddenError,
+    NotFoundError,
+    MethodNotAllowedError,
+    NotAcceptibleError,
+    ConflictError,
+    UnsupportedTypeError
+  ].map! { |c| [c.new.http_status, c] }.to_h.tap do |h|
+    h[422] = UnprocessibleEntityError
+  end.freeze
 
   def resource(resource_name, konst=nil, &block)
     abort "Must supply proc constant or block for `resource'" \
@@ -62,7 +73,7 @@ module Sinja
     app.register Mustermann unless app.extensions.include?(Mustermann)
     app.register Sinatra::Namespace
 
-    app.disable :protection, :show_exceptions, :static
+    app.disable :protection, :show_exceptions, :static, :x_cascade
     app.set :_sinja, Sinja::Config.new
 
     app.set :actions do |*actions|
@@ -118,6 +129,16 @@ module Sinja
           deserialize_request_body.fetch(:data)
         rescue NoMethodError, KeyError
           raise BadRequestError, 'Malformed JSON:API request payload'
+        end
+      end
+
+      def halt(code, body=nil)
+        if exception_class = ERROR_CODES[code]
+          raise exception_class, body
+        elsif (400...600).include?(code.to_i)
+          raise HttpError.new(code.to_i, body)
+        else
+          super
         end
       end
 

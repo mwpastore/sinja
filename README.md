@@ -175,27 +175,9 @@ all of Sinatra's usual features are available within your resource definitions.
 The action helpers blocks get compiled into Sinatra helpers, and the
 `resource`, `has_one`, and `has_many` keywords simply build
 [Sinatra::Namespace][21] blocks. You can manage caching directives, set
-headers, etc. as desired.
-
-It is **strongly recommended** that you raise errors within your Sinja
-applications instead of using the `halt` and `not_found` keywords for the
-following reasons:
-
-1. Exceptions bubble up (i.e. when sideloading)
-1. Exceptions can wrap additional data and behavior
-1. Exceptions abort database transactions
-
-The following error classes&mdash;mapping to documented JSON:API error
-conditions&mdash;are available:
-
-* Sinja::BadRequestError (400)
-* Sinja::ForbiddenError (403)
-* Sinja::NotFoundError (404)
-* Sinja::MethodNotAllowedError (405)
-* Sinja::NotAcceptibleError (406)
-* Sinja::ConflictError (409)
-* Sinja::UnsupportedTypeError (415)
-* Sinja::UnprocessibleEntityError (422)
+headers, and even `halt` (or `not_found`, although such cases are usually
+handled transparently by returning `nil` values or empty collections from
+action helpers) as desired.
 
 ```ruby
 class App < Sinatra::Base
@@ -254,7 +236,7 @@ class App < Sinatra::Base
 
     show do |id|
       book = find(id)
-      raise Sinja::NotFoundError, "Book #{id} not found!" unless book
+      not_found "Book #{id} not found!" unless book
       headers 'X-ISBN'=>book.isbn
       last_modified book.updated_at
       next book, include: %w[author]
@@ -267,7 +249,7 @@ class App < Sinatra::Base
 
       before do
         cache_control :private
-        raise Sinja::ForbiddenError unless foo || bar
+        halt 403 unless foo || bar
       end
 
       pluck do
@@ -278,7 +260,7 @@ class App < Sinatra::Base
 
     # define a custom /books/top10 route
     get '/top10' do
-      raise Sinja::ForbiddenError unless can?(:index) # restrict access to those with index rights
+      halt 403 unless can?(:index) # restrict access to those with index rights
 
       serialize_models Book.where{}.reverse_order(:recent_sales).limit(10).all
     end
@@ -319,7 +301,7 @@ end
 
 **dasherize**
 : Takes a string or symbol and returns the string or symbol with any and all
-  underscores translitered to dashes transliterated.
+  underscores translitered to dashes.
 
 **dedasherize**
 : Takes a string or symbol and returns the string or symbol with any and all
@@ -403,7 +385,8 @@ these settings.
 * Disables [Rack::Protection][6] (can be reenabled with `enable :protection` or
   by manually `use`-ing the Rack::Protection middleware)
 * Disables static file routes (can be reenabled with `enable :static`)
-* Sets `:show_exceptions` to `:after_handler`
+* Disables X-Cascade (can be reenabled with `enable :x_cascade`)
+* Disables "classy" error pages (in favor of "classy" JSON:API error documents)
 * Adds an `:api_json` MIME-type (`Sinja::MIME_TYPE`)
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
 * Sets the `Content-Type` response header to `:api_json` (can be overriden with
@@ -412,6 +395,8 @@ these settings.
   (this may be strictly enforced in future versions of Sinja)
 * Formats all errors to the proper JSON:API structure
 * Serializes all response bodies (including errors) to JSON
+* Modifies `halt` and `not_found` to raise exceptions and not simply set the
+  status code and body of the response
 
 #### Sinja
 
@@ -669,7 +654,7 @@ arguments as the corresponding block:
 ```ruby
 helpers do
   def before_create(attr)
-    raise Sinja::BadRequestError unless validate(attr.delete(:special_key))
+    halt 400 unless validate(attr.delete(:special_key))
   end
 end
 

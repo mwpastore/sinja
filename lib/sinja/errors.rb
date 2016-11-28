@@ -8,45 +8,53 @@ module Sinja
   class ActionHelperError < SinjaError
   end
 
-  class SideloadError < SinjaError
-    attr_reader :http_status, :error_hashes
+  class HttpError < SinjaError
+    attr_reader :http_status
 
-    def initialize(http_status, json)
-      @http_status = http_status.to_i
-      @error_hashes = JSON.parse(json, :symbolize_names=>true).fetch(:errors)
-      super()
+    def initialize(http_status, message=nil)
+      @http_status = http_status
+      super(message)
     end
   end
 
-  class BadRequestError < defined?(Sinatra::BadRequest) ? Sinatra::BadRequest : TypeError
-    def http_status; 400 end
+  class SideloadError < HttpError
+    attr_reader :error_hashes
+
+    def initialize(http_status, json)
+      @error_hashes = JSON.parse(json, :symbolize_names=>true).fetch(:errors)
+      super(http_status)
+    end
   end
 
-  class ForbiddenError < RuntimeError
-    def http_status; 403 end
+  class BadRequestError < HttpError
+    def initialize(*args) super(400, *args) end
   end
 
-  class NotFoundError < Sinatra::NotFound
-    def http_status; 404 end
+  class ForbiddenError < HttpError
+    def initialize(*args) super(403, *args) end
   end
 
-  class MethodNotAllowedError < NameError
-    def http_status; 405 end
+  class NotFoundError < HttpError
+    def initialize(*args) super(404, *args) end
   end
 
-  class NotAcceptibleError < StandardError
-    def http_status; 406 end
+  class MethodNotAllowedError < HttpError
+    def initialize(*args) super(405, *args) end
   end
 
-  class ConflictError < StandardError
-    def http_status; 409 end
+  class NotAcceptibleError < HttpError
+    def initialize(*args) super(406, *args) end
   end
 
-  class UnsupportedTypeError < TypeError
-    def http_status; 415 end
+  class ConflictError < HttpError
+    def initialize(*args) super(409, *args) end
   end
 
-  class UnprocessibleEntityError < StandardError
+  class UnsupportedTypeError < HttpError
+    def initialize(*args) super(415, *args) end
+  end
+
+  class UnprocessibleEntityError < HttpError
     attr_reader :tuples
 
     def initialize(tuples=[])
@@ -54,9 +62,8 @@ module Sinja
 
       fail 'Tuples not properly formatted' \
         unless @tuples.any? && @tuples.all? { |t| Array === t && t.length == 2 }
-    end
 
-    def http_status; 422 end
-    def title; 'Validation Error' end
+      super(422)
+    end
   end
 end
