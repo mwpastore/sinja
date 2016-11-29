@@ -119,6 +119,13 @@ module Sinja
         dedasherize_names(data.fetch(:attributes, {}))
       end
 
+      if method_defined?(:bad_request?)
+        # This screws up our error-handling logic in Sinatra 2.0, so monkeypatch it.
+        def bad_request?
+          false
+        end
+      end
+
       def can?(resource_name, action, rel_type=nil, rel=nil)
         lookup = settings._sinja.resource_roles[resource_name]
         # TODO: This is... problematic.
