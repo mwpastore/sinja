@@ -5,7 +5,7 @@ require 'sinja/config'
 
 class TestRolesConfig < Minitest::Test
   def setup
-    @config = Sinja::RolesConfig.new
+    @config = Sinja::RolesConfig.new([:create])
   end
 
   def test_it_inits_and_delegates
@@ -17,8 +17,8 @@ end
 
 class TestRolesConfig1 < Minitest::Test
   def setup
-    @config = Sinja::RolesConfig.new
-    @config.merge!(:create=>:update)
+    @config = Sinja::RolesConfig.new([:create])
+    @config.merge!(:create=>:user)
     @config.merge!(:create=>:admin)
   end
 
@@ -42,7 +42,7 @@ end
 
 class TestRolesConfig2 < Minitest::Test
   def setup
-    @config = Sinja::RolesConfig.new.freeze
+    @config = Sinja::RolesConfig.new([:create]).freeze
   end
 
   def test_it_freezes_deeply

@@ -32,12 +32,16 @@ module Sinja
     _sinja.resource_sideload[resource_name.to_sym]
 
     namespace "/#{Helpers::Serializers.dasherize(resource_name)}" do
-      define_singleton_method(:resource_roles) do |action, roles|
-        _sinja.resource_roles[resource_name.to_sym].merge!(action=>roles)
+      define_singleton_method(:_resource_roles) do
+        _sinja.resource_roles[resource_name.to_sym]
       end
 
-      define_singleton_method(:resource_sideload) do |child, parents|
-        _sinja.resource_sideload[resource_name.to_sym].merge!(child=>parents)
+      define_singleton_method(:resource_roles) do
+        _resource_roles[:resource]
+      end
+
+      define_singleton_method(:resource_sideload) do
+        _sinja.resource_sideload[resource_name.to_sym]
       end
 
       helpers do
@@ -115,8 +119,10 @@ module Sinja
         dedasherize_names(data.fetch(:attributes, {}))
       end
 
-      def can?(resource_name, action)
-        roles = settings._sinja.resource_roles[resource_name][action]
+      def can?(resource_name, action, rel_type=nil, rel=nil)
+        lookup = settings._sinja.resource_roles[resource_name]
+        # TODO: This is... problematic.
+        roles = (lookup[rel_type][rel][action] if rel_type && rel) || lookup[:resource][action]
         roles.nil? || roles.empty? || roles === memoized_role
       end
 

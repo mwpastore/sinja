@@ -10,25 +10,44 @@ class TestConfig < Minitest::Test
 
   def test_it_sets_sane_defaults
     assert_respond_to @config.error_logger, :call
+
     assert_kind_of Sinja::RolesConfig, @config.default_roles
+    assert_kind_of Sinja::RolesConfig, @config.default_has_many_roles
+    assert_kind_of Sinja::RolesConfig, @config.default_has_one_roles
+
     assert_kind_of Hash, @config.resource_roles
     assert_respond_to @config.resource_roles.default_proc, :call
+
     assert_kind_of Hash, @config.resource_sideload
     assert_respond_to @config.resource_sideload.default_proc, :call
+
     assert_equal Set.new, @config.conflict_exceptions
     assert_equal Set.new, @config.not_found_exceptions
     assert_equal Set.new, @config.validation_exceptions
     assert_respond_to @config.validation_formatter, :call
+
     assert_kind_of Hash, @config.serializer_opts
+
     assert_equal :generate, @config.json_generator
     assert_equal :generate, @config.json_error_generator
   end
 
   def test_resource_roles_default_proc
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos]
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:bars]
-    assert_equal @config.resource_roles[:foos], @config.resource_roles[:bars]
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:resource]
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:has_many][:bars]
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:has_one][:qux]
+
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:bars][:resource]
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:bars][:has_one][:foo]
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:bars][:has_one][:qux]
+
     refute_same @config.resource_roles[:foos], @config.resource_roles[:bars]
+
+    assert_equal @config.resource_roles[:foos][:resource], @config.resource_roles[:bars][:resource]
+    refute_same @config.resource_roles[:foos][:resource], @config.resource_roles[:bars][:resource]
+
+    assert_equal @config.resource_roles[:foos][:has_one][:qux], @config.resource_roles[:bars][:has_one][:qux]
+    refute_same @config.resource_roles[:foos][:has_one][:qux], @config.resource_roles[:bars][:has_one][:qux]
   end
 
   def test_resource_sideload_default_proc
@@ -56,6 +75,30 @@ class TestConfig < Minitest::Test
     assert_equal Sinja::Roles[:admin], @config.default_roles[:create]
     assert_equal Sinja::Roles[:user], @config.default_roles[:update]
     assert_equal Sinja::Roles.new, @config.default_roles[:destroy]
+  end
+
+  def test_default_has_many_roles_setter
+    assert_raises SystemExit do
+      capture_io { @config.default_has_many_roles = { :i_am_not_valid=>:foo } }
+    end
+
+    roles = { :clear=>:admin, :merge=>:user }
+    @config.default_has_many_roles = roles
+    assert_equal Sinja::Roles[:admin], @config.default_has_many_roles[:clear]
+    assert_equal Sinja::Roles[:user], @config.default_has_many_roles[:merge]
+    assert_equal Sinja::Roles.new, @config.default_has_many_roles[:subtract]
+  end
+
+  def test_default_has_one_roles_setter
+    assert_raises SystemExit do
+      capture_io { @config.default_has_one_roles = { :i_am_not_valid=>:foo } }
+    end
+
+    roles = { :prune=>:admin, :graft=>:user }
+    @config.default_has_one_roles = roles
+    assert_equal Sinja::Roles[:admin], @config.default_has_one_roles[:prune]
+    assert_equal Sinja::Roles[:user], @config.default_has_one_roles[:graft]
+    assert_equal Sinja::Roles.new, @config.default_has_one_roles[:pluck]
   end
 
   def test_conflict_exceptions_setter
@@ -100,16 +143,41 @@ class TestConfig < Minitest::Test
     @config.freeze
 
     assert_predicate @config.error_logger, :frozen?
+
     assert_predicate @config.default_roles, :frozen?
+    assert_predicate @config.default_has_one_roles, :frozen?
+    assert_predicate @config.default_has_many_roles, :frozen?
+
     assert_predicate @config.resource_roles, :frozen?
     assert_nil @config.resource_roles.default_proc
+
     assert_predicate @config.resource_sideload, :frozen?
     assert_nil @config.resource_sideload.default_proc
+
     assert_predicate @config.conflict_exceptions, :frozen?
     assert_predicate @config.not_found_exceptions, :frozen?
     assert_predicate @config.validation_exceptions, :frozen?
     assert_predicate @config.validation_formatter, :frozen?
+
     assert_predicate @config.serializer_opts, :frozen?
+
     assert_predicate @config.instance_variable_get(:@opts), :frozen?
+  end
+
+  def test_it_freezes_resource_role_deeply
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:resource]
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:has_many][:bars]
+    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:has_one][:qux]
+
+    @config.freeze
+
+    assert_predicate @config.resource_roles[:foos], :frozen?
+    assert_predicate @config.resource_roles[:foos][:resource], :frozen?
+    assert_predicate @config.resource_roles[:foos][:has_many], :frozen?
+    assert_nil @config.resource_roles[:foos][:has_many].default_proc
+    assert_predicate @config.resource_roles[:foos][:has_many][:bars], :frozen?
+    assert_predicate @config.resource_roles[:foos][:has_one], :frozen?
+    assert_nil @config.resource_roles[:foos][:has_one].default_proc
+    assert_predicate @config.resource_roles[:foos][:has_one][:qux], :frozen?
   end
 end

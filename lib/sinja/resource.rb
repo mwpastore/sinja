@@ -14,13 +14,13 @@ module Sinja
     CONFLICT_ACTIONS = Set.new(%i[create update graft merge]).freeze
     SIDELOAD_ACTIONS = Set.new(%i[graft merge]).freeze
 
-    def def_action_helper(action, context=nil)
+    def def_action_helper(action, context)
       abort "JSONAPI action helpers can't be HTTP verbs!" \
         if Sinatra::Base.respond_to?(action)
 
       context.define_singleton_method(action) do |**opts, &block|
-        resource_roles(action, opts[:roles]) if opts.key?(:roles)
-        resource_sideload(action, opts[:sideload_on]) if opts.key?(:sideload_on)
+        resource_roles.merge!(action=>opts[:roles]) if opts.key?(:roles)
+        resource_sideload.merge!(action=>opts[:sideload_on]) if opts.key?(:sideload_on)
 
         return unless block ||=
           case !method_defined?(action) && action
@@ -96,8 +96,18 @@ module Sinja
       define_method(rel_type) do |rel, &block|
         rel_path = Helpers::Serializers.dasherize(rel.to_s)
 
+        _resource_roles[rel_type][rel.to_sym] # trigger default proc
+
         namespace %r{/(?<resource_id>[^/]+)(?<r>/relationships)?/#{rel_path}}, :actions=>:find do
+          define_singleton_method(:resource_roles) do
+            _resource_roles[rel_type][rel.to_sym]
+          end
+
           helpers Helpers::Nested do
+            define_method(:can?) do |*args|
+              super(*args, rel_type, rel.to_sym)
+            end
+
             define_method(:linkage) do
               # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
               serialize_model(resource, :include=>rel_path)['data']['relationships'][rel_path]

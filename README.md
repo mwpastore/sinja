@@ -52,7 +52,7 @@ has not yet been thoroughly tested or vetted in a production environment.**
       - [`subtract {|rios| ..}` => TrueClass?](#subtract-rios---trueclass)
   - [Action Helper Hooks &amp; Utilities](#action-helper-hooks-amp-utilities)
   - [Authorization](#authorization)
-    - [`default_roles` configurable](#default_roles-configurable)
+    - [`default_roles` configurables](#default_roles-configurables)
     - [`:roles` Action Helper option](#roles-action-helper-option)
     - [`role` helper](#role-helper)
   - [Conflicts](#conflicts)
@@ -405,11 +405,17 @@ their defaults shown):
 ```ruby
 configure_jsonapi do |c|
   #c.conflict_exceptions = [] # see "Conflicts" below
-  #c.validation_exceptions = [] # see "Validations" below
-  #c.validation_formatter = ->{ [] } # see "Validations" below
+
+  # see "Validations" below
+  #c.validation_exceptions = []
+  #c.validation_formatter = ->{ [] }
+
   #c.not_found_exceptions = [] # see "Missing Records" below
 
-  #c.default_roles = {} # see "Authorization" below
+  # see "Authorization" below
+  #c.default_roles = {}
+  #c.default_has_one_roles = {}
+  #c.default_has_many_roles = {}
 
   # Set the error logger used by Sinja
   #c.error_logger = ->(error_hash) { logger.error('sinja') { error_hash } }
@@ -677,7 +683,7 @@ Users can be in one or more roles, and action helpers can be restricted to one
 or more roles for maximum flexibility. There are three main components to the
 scheme:
 
-#### `default_roles` configurable
+#### `default_roles` configurables
 
 You set the default roles for the entire Sinja application in the top-level
 configuration. Action helpers without any default roles are unrestricted by
@@ -685,20 +691,24 @@ default.
 
 ```ruby
 configure_jsonapi do |c|
+  # Resource roles
   c.default_roles = {
-    # Resource roles
     index: :user,
     show: :user,
     create: :admin,
     update: :admin,
-    destroy: :super,
+    destroy: :super
+  }
 
-    # To-one relationship roles
+  # To-one relationship roles
+  c.default_has_one_roles = {
     pluck: :user,
     prune: :admin,
-    graft: :admin,
+    graft: :admin
+  }
 
-    # To-many relationship roles
+  # To-many relationship roles
+  c.default_has_many_roles = {
     fetch: :user,
     clear: :admin,
     merge: :admin,
@@ -712,7 +722,7 @@ end
 To override the default roles for any given action helper, specify a `:roles`
 option when defining it. To remove all restrictions from an action helper, set
 `:roles` to an empty array. For example, to manage access to `show` at
-different levels of granularity (with the above `default_roles`):
+different levels of granularity (with the above default roles):
 
 ```ruby
 resource :foos do

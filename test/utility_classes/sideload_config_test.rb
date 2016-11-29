@@ -5,7 +5,7 @@ require 'sinja/config'
 
 class TestSideloadConfig < Minitest::Test
   def setup
-    @config = Sinja::SideloadConfig.new
+    @config = Sinja::SideloadConfig.new([:graft])
   end
 
   def test_it_inits_and_delegates
@@ -17,7 +17,7 @@ end
 
 class TestSideloadConfig1 < Minitest::Test
   def setup
-    @config = Sinja::SideloadConfig.new
+    @config = Sinja::SideloadConfig.new([:graft])
     @config.merge!(:graft=>:update)
     @config.merge!(:graft=>:create)
   end
@@ -36,7 +36,7 @@ end
 
 class TestSideloadConfig2 < Minitest::Test
   def setup
-    @config = Sinja::SideloadConfig.new.freeze
+    @config = Sinja::SideloadConfig.new([:graft]).freeze
   end
 
   def test_it_freezes_deeply
