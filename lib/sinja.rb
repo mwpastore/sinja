@@ -31,7 +31,7 @@ module Sinja
     _sinja.resource_roles[resource_name.to_sym]
     _sinja.resource_sideload[resource_name.to_sym]
 
-    namespace "/#{Helpers::Serializers.dasherize(resource_name.to_s)}" do
+    namespace "/#{Helpers::Serializers.dasherize(resource_name)}" do
       define_singleton_method(:resource_roles) do |action, roles|
         _sinja.resource_roles[resource_name.to_sym].merge!(action=>roles)
       end
@@ -70,7 +70,7 @@ module Sinja
   end
 
   def self.registered(app)
-    app.register Mustermann unless app.extensions.include?(Mustermann)
+    app.register Mustermann if Sinatra::VERSION[/^\d+/].to_i < 2
     app.register Sinatra::Namespace
 
     app.disable :protection, :show_exceptions, :static
