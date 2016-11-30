@@ -50,7 +50,10 @@ class SerializersApp < MyAppBase
   end
 end
 
-class TestSerializers < MyAppTest
+class TestSerializers < Minitest::Test
+  include MyAppTest
+  include Rack::Test::Methods
+
   def app
     SerializersApp.new
   end

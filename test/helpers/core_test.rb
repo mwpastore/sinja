@@ -33,7 +33,10 @@ class HelpersApp < MyAppBase
   get('/transaction') {{ :yielded=>transaction { 11 } }}
 end
 
-class TestHelpers < MyAppTest
+class TestHelpers < Minitest::Test
+  include MyAppTest
+  include Rack::Test::Methods
+
   def app
     HelpersApp.new
   end
