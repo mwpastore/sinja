@@ -49,6 +49,10 @@ module Sinja
           super(resource_name.to_sym, *args)
         end
 
+        define_method(:sanity_check!) do |*args|
+          super(resource_name.to_sym, *args)
+        end
+
         define_method(:sideload?) do |*args|
           super(resource_name.to_sym, *args)
         end
@@ -189,9 +193,9 @@ module Sinja
         Roles[*roles] === role
       end
 
-      def sanity_check!(id=nil)
+      def sanity_check!(resource_name, id=nil)
         raise ConflictError, 'Resource type in payload does not match endpoint' \
-          if data[:type] != request.path.split('/').last # TODO?
+          if data[:type].to_sym != resource_name
 
         raise ConflictError, 'Resource ID in payload does not match endpoint' \
           if id && data[:id].to_s != id.to_s
