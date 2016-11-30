@@ -13,7 +13,7 @@ configure_jsonapi do |c|
   Sinja::Helpers::Sequel.config(c)
 end
 
-helpers do
+helpers Sinja::Helpers::Sequel do
   def current_user
     # TESTING/DEMO PURPOSES ONLY -- DO NOT DO THIS IN PRODUCTION
     Author.first_by_email(env['HTTP_X_EMAIL']) if env.key?('HTTP_X_EMAIL')
@@ -26,12 +26,8 @@ helpers do
     end
   end
 
-  def transaction(&block)
-    DB.transaction(&block)
-  end
-
-  def validate
-    raise Sequel::ValidationFailed, resource unless resource.valid?
+  def database
+    DB
   end
 end
 

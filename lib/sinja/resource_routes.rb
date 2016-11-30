@@ -42,7 +42,7 @@ module Sinja
           create(attributes, data[:id]).tap do |id, *|
             dispatch_relationship_requests!(id, :from=>:create, :method=>:patch)
 
-            validate if respond_to?(:validate)
+            validate! if respond_to?(:validate!)
           end
         end
 
@@ -77,7 +77,7 @@ module Sinja
           update(attributes).tap do
             dispatch_relationship_requests!(id, :from=>:update, :method=>:patch)
 
-            validate if respond_to?(:validate)
+            validate! if respond_to?(:validate!)
           end
         end)
       end

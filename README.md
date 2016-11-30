@@ -657,7 +657,7 @@ arguments as the corresponding block:
 ```ruby
 helpers do
   def before_create(attr)
-    halt 400 unless validate(attr.delete(:special_key))
+    halt 400 unless valid_key?(attr.delete(:special_key))
   end
 end
 
@@ -956,7 +956,7 @@ MySQL.)
 
 Instead, we'll need to enforce our non-nullable relationships at the
 application level. To accomplish this, define an ordinary helper named
-`validate` (in the resource scope or any parent scopes). This method, if
+`validate!` (in the resource scope or any parent scopes). This method, if
 present, is invoked from within the transaction after the entire request has
 been processed, and so can abort the transaction (following your ORM's
 semantics). For example:
@@ -964,7 +964,7 @@ semantics). For example:
 ```ruby
 resource :photos do
   helpers do
-    def validate
+    def validate!
       fail 'Invalid Photographer for Photo' if resource.photographer.nil?
     end
   end
@@ -988,7 +988,7 @@ class Photo < Sequel::Model
 end
 
 helpers do
-  def validate
+  def validate!
     raise Sequel::ValidationFailed, resource.errors unless resource.valid?
   end
 end
@@ -1009,7 +1009,7 @@ resource :photos do
 end
 ```
 
-Note that the `validate` hook is _only_ invoked from within transactions
+Note that the `validate!` hook is _only_ invoked from within transactions
 involving the `create` and `update` action helpers (and any dependent `graft`
 and `merge` action helpers), so this deferred validation pattern is only
 appropriate in those cases. You must use immedate validation in all other
@@ -1025,7 +1025,7 @@ null.
 * Don't define `prune` relationship action helper
 * Define `graft` relationship action helper to enable reassigning the Photographer
 * Define `destroy` resource action helper to enable removing the Photo
-* Use `validate` helper to check for nulls
+* Use `validate!` helper to check for nulls
 
 ##### One-to-Many
 
