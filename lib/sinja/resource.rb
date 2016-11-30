@@ -98,7 +98,7 @@ module Sinja
 
         _resource_roles[rel_type][rel.to_sym] # trigger default proc
 
-        namespace %r{/(?<resource_id>[^/]+)(?<r>/relationships)?/#{rel_path}}, :actions=>:find do
+        namespace %r{/[^/]+(?<r>/relationships)?/#{rel_path}} do
           define_singleton_method(:resource_roles) do
             _resource_roles[rel_type][rel.to_sym]
           end
@@ -112,10 +112,6 @@ module Sinja
               # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
               serialize_model(resource, :include=>rel_path)['data']['relationships'][rel_path]
             end
-          end
-
-          before do
-            raise NotFoundError, 'Parent resource not found' unless resource
           end
 
           register RelationshipRoutes.const_get \

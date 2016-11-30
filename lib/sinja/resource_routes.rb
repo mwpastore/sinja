@@ -16,9 +16,9 @@ module Sinja
 
         opts = {}
         resources = [*ids].tap(&:uniq!).map! do |id|
-          self.resource, opts = show(id)
-          raise NotFoundError, "Resource '#{id}' not found" unless resource
-          resource
+          tmp, opts = show(id)
+          raise NotFoundError, "Resource '#{id}' not found" unless tmp
+          tmp
         end
 
         # TODO: Serialize collection with opts from last model found?
@@ -38,12 +38,11 @@ module Sinja
         raise ForbiddenError, 'Client-generated IDs not supported' \
           if data[:id] && method(:create).arity != 2
 
-        _, self.resource, opts = transaction do
-          create(attributes, data[:id]).tap do |id, *|
-            dispatch_relationship_requests!(id, :from=>:create, :method=>:patch)
-
-            validate! if respond_to?(:validate!)
-          end
+        opts = {}
+        transaction do
+          id, self.resource, opts = create(attributes, data[:id])
+          dispatch_relationship_requests!(id, :from=>:create, :method=>:patch)
+          validate! if respond_to?(:validate!)
         end
 
         if resource
@@ -60,31 +59,27 @@ module Sinja
       end
 
       app.head '/:id' do
-        allow :get=>:show, :patch=>[:find, :update], :delete=>[:find, :destroy]
+        allow :get=>:show, :patch=>:update, :delete=>:destroy
       end
 
       app.get '/:id', :actions=>:show do |id|
-        self.resource, opts = show(id)
-        raise NotFoundError, "Resource '#{id}' not found" unless resource
-        serialize_model(resource, opts)
+        tmp, opts = show(id)
+        raise NotFoundError, "Resource '#{id}' not found" unless tmp
+        serialize_model(tmp, opts)
       end
 
-      app.patch '/:id', :actions=>%i[find update] do |id|
+      app.patch '/:id', :actions=>:update do |id|
         sanity_check!(id)
-        self.resource = find(id)
-        raise NotFoundError, "Resource '#{id}' not found" unless resource
-        serialize_model?(transaction do
+        tmp, opts = transaction do
           update(attributes).tap do
             dispatch_relationship_requests!(id, :from=>:update, :method=>:patch)
-
             validate! if respond_to?(:validate!)
           end
-        end)
+        end
+        serialize_model?(tmp, opts)
       end
 
-      app.delete '/:id', :actions=>%i[find destroy] do |id|
-        self.resource = find(id)
-        raise NotFoundError, "Resource '#{id}' not found" unless resource
+      app.delete '/:id', :actions=>:destroy do |id|
         _, opts = destroy
         serialize_model?(nil, opts)
       end

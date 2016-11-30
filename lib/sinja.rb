@@ -58,6 +58,17 @@ module Sinja
         end
       end
 
+      before %r{/(?<id>[^/]+)(?:/.*)?} do |id|
+        self.resource =
+          if env.key?('sinja.resource')
+            env['sinja.resource']
+          elsif respond_to?(:find)
+            find(id)
+          end
+
+        raise NotFoundError, "Resource '#{id}' not found" unless resource
+      end
+
       register Resource
 
       instance_eval(&block)
@@ -88,7 +99,7 @@ module Sinja
       condition do
         actions.each do |action|
           raise ForbiddenError, 'You are not authorized to perform this action' \
-            unless action == :find || can?(action) || sideload?(action)
+            unless can?(action) || sideload?(action)
           raise MethodNotAllowedError, 'Action or method not implemented or supported' \
             unless respond_to?(action)
         end
@@ -220,7 +231,7 @@ module Sinja
     end
 
     app.after do
-      body serialize_response_body if response.ok?
+      body serialize_response_body if response.ok? || response.created?
     end
 
     app.not_found do
