@@ -185,6 +185,10 @@ module Sinja
         nil
       end
 
+      def role?(*roles)
+        Roles[*roles] === role
+      end
+
       def sanity_check!(id=nil)
         raise ConflictError, 'Resource type in payload does not match endpoint' \
           if data[:type] != request.path.split('/').last # TODO?

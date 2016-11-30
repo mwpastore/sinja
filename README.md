@@ -778,6 +778,17 @@ index(roles: [:user, :admin, :super]) do
 end
 ```
 
+Or use the `role?` helper:
+
+```ruby
+show do |id|
+  exclude = []
+  exclude << 'secrets' unless role?(:admin)
+
+  next find(id), exclude: exclude
+end
+```
+
 You can append resource- or even relationship-specific roles by defining a
 nested helper and calling `super` (keeping in mind that `resource` may be
 `nil`).

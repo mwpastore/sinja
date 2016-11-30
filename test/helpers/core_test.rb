@@ -28,6 +28,8 @@ class HelpersApp < MyAppBase
 
   get('/role') {{ :role=>memoized_role }}
 
+  get('/role_q') {{ :role_q=>role?(params[:roles].split(',')) }}
+
   get('/sideloaded') {{ :sideloaded=>sideloaded? }}
 
   get('/transaction') {{ :yielded=>transaction { 11 } }}
@@ -107,6 +109,12 @@ class TestHelpers < Minitest::Test
     get '/role'
     assert last_response.ok?
     assert_equal nil, json[:role]
+  end
+
+  def test_role_q
+    get '/role_q', :roles=>'any'
+    assert last_response.ok?
+    refute json[:role_q]
   end
 
   def test_sanity_check
