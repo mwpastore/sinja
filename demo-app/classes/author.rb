@@ -52,22 +52,30 @@ AuthorController = proc do
         a << :admin if role?(:superuser)
       end
     end
+
+    def exclude
+      %w[].tap do |e|
+        e << 'comments' unless role?(:logged_in)
+      end
+    end
   end
 
-  show
+  show do |id|
+    next find(id), exclude: exclude
+  end
 
   index do
-    Author.all
+    next Author.all, exclude: exclude
   end
 
   create do |attr|
     author = Author.new
     author.set_fields(attr, fields)
-    author.save(validate: false)
+    next_pk author.save(validate: false)
   end
 
   update(roles: %i[self superuser]) do |attr|
-    resource.update_fields(attr, fields, validate: false)
+    resource.update_fields(attr, fields, validate: false, missing: :skip)
   end
 
   destroy(roles: %i[self superuser]) do

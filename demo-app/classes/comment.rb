@@ -5,7 +5,7 @@ require_relative '../database'
 DB.create_table?(:comments) do
   primary_key :id
   foreign_key :author_id, :authors, :on_delete=>:cascade
-  foreign_key :post_id, :posts, :on_delete=>:cascade
+  foreign_key :post_slug, :posts, :on_delete=>:cascade
   String :body, :text=>true, :null=>false
   DateTime :created_at
   DateTime :updated_at
@@ -53,10 +53,11 @@ CommentController = proc do
     comment = Comment.new
     comment.set_fields(attr, %i[body])
     comment.save(validate: false)
+    next_pk comment
   end
 
   update(roles: %i[owner superuser]) do |attr|
-    resource.update_fields(attr, %i[body], validate: false)
+    resource.update_fields(attr, %i[body], validate: false, missing: :skip)
   end
 
   destroy(roles: %i[owner superuser]) do

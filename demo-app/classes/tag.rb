@@ -43,6 +43,7 @@ TagController = proc do
     tag = Tag.new
     tag.set_fields(attr, %i[name])
     tag.save(validate: false)
+    next_pk tag
   end
 
   destroy(roles: :superuser) do

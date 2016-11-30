@@ -27,6 +27,10 @@ class Post < Sequel::Model
 end
 
 class PostSerializer < BaseSerializer
+  def id
+    object.slug
+  end
+
   attributes :title, :body
 
   has_one :author
@@ -71,12 +75,11 @@ PostController = proc do
     post.set_fields(attr, %i[title body])
     post.slug = slug.to_s # set primary key
     post.save(validate: false)
-
-    next slug, post
+    next_pk post
   end
 
   update(roles: %i[owner superuser]) do |attr|
-    resource.update_fields(attr, %i[title body], validate: false)
+    resource.update_fields(attr, %i[title body], validate: false, missing: :skip)
   end
 
   destroy(roles: %i[owner superuser]) do
