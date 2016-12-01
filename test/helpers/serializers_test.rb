@@ -6,11 +6,6 @@ class SerializersApp < MyAppBase
     env['sinja.passthru'] = true # let exceptions propagate
   end
 
-  get '/dasherize' do
-    res = dasherize(params.fetch('str') { params.fetch('sym').to_sym })
-    { :class_name=>res.class.name, :output=>res }
-  end
-
   get '/dedasherize' do
     res = dedasherize(params.fetch('str') { params.fetch('sym').to_sym })
     { :class_name=>res.class.name, :output=>res }
@@ -58,20 +53,6 @@ class TestSerializers < Minitest::Test
     SerializersApp.new
   end
 
-  def test_dasherize
-    get '/dasherize', :str=>"hello_world"
-    assert last_response.ok?
-    assert_equal 'String', json[:class_name]
-    assert_equal 'hello-world', json[:output]
-  end
-
-  def test_dasherize_sym
-    get '/dasherize', :sym=>"hello_world"
-    assert last_response.ok?
-    assert_equal 'Symbol', json[:class_name]
-    assert_equal 'hello-world', json[:output]
-  end
-
   def test_dedasherize
     get '/dedasherize', :str=>"hello-world"
     assert last_response.ok?
@@ -115,7 +96,7 @@ class TestSerializers < Minitest::Test
   def test_include_exclude_param
     get '/include_exclude', :_include=>'foo,bar', :include=>'bar,qux'
     assert last_response.ok?
-    assert_equal %w[foo bar qux], json
+    assert_equal %w[bar qux], json
   end
 
   def test_include_exclude_full

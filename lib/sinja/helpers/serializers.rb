@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'active_support/inflector'
 require 'json'
 require 'jsonapi-serializers'
 require 'set'
@@ -6,10 +7,6 @@ require 'set'
 module Sinja
   module Helpers
     module Serializers
-      module_function def dasherize(s=nil)
-        s.to_s.tr('_', '-').send(Symbol === s ? :to_sym : :itself)
-      end
-
       def dedasherize(s=nil)
         s.to_s.tr('-', '_').send(Symbol === s ? :to_sym : :itself)
       end
@@ -42,37 +39,54 @@ module Sinja
       end
 
       def include_exclude!(options)
-        default, extra = options.delete(:include), params[:include]
+        client, default, excluded =
+          params[:include],
+          options.delete(:include) || [],
+          options.delete(:exclude) || []
 
-        default =
-          if Array === default then default
-          elsif default then default.split(',')
-          else []
+        included = Array === client ? client : client.split(',')
+        if included.empty?
+          included = Array === default ? default : default.split(',')
+        end
+
+        return included if included.empty?
+
+        excluded = Array === excluded ? excluded : excluded.split(',')
+        unless excluded.empty?
+          excluded = Set.new(excluded)
+          included.delete_if do |termstr|
+            terms = termstr.split('.')
+            terms.length.times.any? do |i|
+              excluded.include?(terms.take(i.succ).join('.'))
+            end
           end
 
-        extra =
-          if Array === extra then extra
-          elsif extra then extra.split(',')
-          else []
-          end
+          return included if included.empty?
+        end
 
-        included, excluded = default | extra, options.delete(:exclude)
+        return included unless settings._resource_roles
 
-        return included unless included.any? && excluded
+        # Walk the tree and try to exclude based on fetch and pluck permissions
+        included.keep_if do |termstr|
+          roles = settings._resource_roles
 
-        excluded = Set.new(excluded.is_a?(Array) ? excluded : excluded.split(','))
+          termstr.split('.').each do |term|
+            rel_roles =
+              roles.dig(:has_many, term.to_sym, :fetch) ||
+              roles.dig(:has_one, term.to_sym, :pluck)
 
-        included.delete_if do |termstr|
-          terms = termstr.split('.')
-          terms.length.times.any? do |i|
-            excluded.include?(terms.take(i.succ).join('.'))
+            break \
+              unless rel_roles && (rel_roles.empty? || rel_roles === memoized_role)
+
+            break true \
+              unless roles = settings._sinja.resource_roles[term.pluralize.to_sym]
           end
         end
       end
 
       def serialize_model(model=nil, options={})
         options[:is_collection] = false
-        options[:skip_collection_check] = defined?(::Sequel) && model.is_a?(::Sequel::Model)
+        options[:skip_collection_check] = defined?(::Sequel) && ::Sequel::Model === model
         options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
 
@@ -109,11 +123,19 @@ module Sinja
         end
       end
 
-      def serialize_linkage(options={})
-        options = settings._sinja.serializer_opts.merge(options)
-        linkage.tap do |c|
-          c[:meta] = options[:meta] if options.key?(:meta)
-          c[:jsonapi] = options[:jsonapi] if options.key?(:jsonapi)
+      def serialize_linkage(model, rel_path, options={})
+        options[:is_collection] = false
+        options[:skip_collection_check] = defined?(::Sequel) && ::Sequel::Model === model
+        options[:include] = rel_path.to_s
+
+        content = ::JSONAPI::Serializer.serialize model,
+          settings._sinja.serializer_opts.merge(options)
+
+        # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
+        content['data']['relationships'][rel_path.to_s].tap do |linkage|
+          %w[meta jsonapi].each do |key|
+            linkage[key] = content[key] if content.key?(key)
+          end
         end
       end
 
@@ -170,7 +192,7 @@ module Sinja
                 :title=>e.title,
                 :detail=>full_message.to_s,
                 :source=>{
-                  :pointer=>(attribute ? "/data/attributes/#{dasherize(attribute)}" : '/data')
+                  :pointer=>(attribute ? "/data/attributes/#{attribute.to_s.dasherize}" : '/data')
                 }
             end
           when Exception

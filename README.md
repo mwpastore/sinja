@@ -59,7 +59,8 @@ has not yet been thoroughly tested or vetted in a production environment.**
   - [Validations](#validations)
   - [Missing Records](#missing-records)
   - [Transactions](#transactions)
-  - [Working With Relationships](#working-with-relationships)
+  - [Side-Unloading Related Resources](#side-unloading-related-resources)
+  - [Side-Loading Relationships](#side-loading-relationships)
     - [Avoiding Null Foreign Keys](#avoiding-null-foreign-keys)
       - [Many-to-One](#many-to-one)
       - [One-to-Many](#one-to-many)
@@ -150,7 +151,7 @@ $ gem install sinja
 
 * ORM-agnostic
 * Role-based authorization
-* To-one and to-many relationships
+* To-one and to-many relationships and related resources
 * Side-loaded relationships on resource creation and update
 * Error-handling
   * Conflicts (constraint violations)
@@ -297,10 +298,6 @@ end
 : Takes an array of models (and optional hash of JSONAPI::Serializers options)
   and returns a serialized collection if non-empty, or the root metadata if
   present, or a HTTP status 204.
-
-**dasherize**
-: Takes a string or symbol and returns the string or symbol with any and all
-  underscores translitered to dashes.
 
 **dedasherize**
 : Takes a string or symbol and returns the string or symbol with any and all
@@ -496,14 +493,10 @@ omitted entirely. Any helper may additionally return an options hash to pass
 along to JSONAPI::Serializer.serialize (will be merged into the global
 `serializer_opts` described above).
 
-The `:include` and `:fields` query parameters are automatically passed through
-to JSONAPI::Serializers. You may specify a default `:include` option (the query
-parameter will be merged into this list if present). You may also use the
-special `:exclude` option to prevent specific relationships from being included
-in the response. This accepts the same formats as JSONAPI::Serializers does for
-`:include`. If you exclude a relationship, any sub-relationships will also be
-excluded. The `:sort`, `:page`, and `:filter` query parameters must be handled
-manually (with one exception, discussed under "Coalesced Find Requests" below).
+The `:include` (see "Side-Unloading Related Resources" below) and `:fields`
+query parameters are automatically passed through to JSONAPI::Serializers. The
+`:sort`, `:page`, and `:filter` query parameters must be handled manually (with
+one exception, discussed under "Coalesced Find Requests" below).
 
 All arguments to action helpers are "tainted" and should be treated as
 potentially dangerous: IDs, attribute hashes, and (arrays of) [resource
@@ -884,7 +877,29 @@ helpers do
 end
 ```
 
-### Working With Relationships
+### Side-Unloading Related Resources
+
+You may pass an `:include` serializer option (which can be either a
+comma-delimited string or array of strings) when returning resources from
+action helpers. This instructs JSONAPI::Serializers to include a default set of
+related resources along with the primary resource. If the client specifies an
+`include` query parameter, Sinja will automatically pass it to
+JSONAPI::Serializer.serialize, replacing any default value. You may also pass a
+Sinja-specific `:exclude` option to prevent certain related resources from
+being included in the response. If you exclude a resource, its descendents will
+be automatically excluded as well. Feedback welcome.
+
+Sinja will attempt to automatically exclude related resources based on the
+current user's role(s) and any available `pluck` and `fetch` action helper
+roles. For example, if resource Foo has many Bars and the current user does not
+have access to Foo.Bars#fetch, the user will not be able to include Bars. It
+will traverse the roles configuration, so if the current user has access to
+Foo.Bars#fetch but not Bars.Qux#pluck, the user will be able to include Bars
+but not Bars.Qux. This feature is experimental. Note that in contrast to the
+`:exclude` option, if a related resource is excluded by this mechanism, its
+descendents will _not_ be automatically excluded.
+
+### Side-Loading Relationships
 
 Sinja works hard to DRY up your business logic. As mentioned above, when a
 request comes in to create or update a resource and that request includes

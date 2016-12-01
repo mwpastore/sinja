@@ -2,6 +2,7 @@ PATH
   remote: ..
   specs:
     sinja (0.2.0.beta2)
+      activesupport (>= 4.2.7.1, < 6)
       json (>= 1.8.3, < 3)
       jsonapi-serializers (~> 0.16)
       mustermann (>= 1.0.0.beta2, < 2)
@@ -22,7 +23,7 @@ GEM
     json (2.0.2)
     jsonapi-serializers (0.16.1)
       activesupport
-    minitest (5.9.1)
+    minitest (5.10.0)
     minitest-hooks (1.4.0)
     multi_json (1.12.1)
     mustermann (1.0.0.beta2)

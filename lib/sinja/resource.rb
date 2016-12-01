@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'active_support/inflector'
 require 'set'
 require 'sinatra/base'
 require 'sinatra/namespace'
@@ -94,7 +95,10 @@ module Sinja
 
     %i[has_one has_many].each do |rel_type|
       define_method(rel_type) do |rel, &block|
-        rel_path = Helpers::Serializers.dasherize(rel.to_s)
+        rel_path = rel.to_s
+          .send(rel_type == :has_one ? :singularize : :pluralize)
+          .dasherize
+          .to_sym
 
         _resource_roles[rel_type][rel.to_sym] # trigger default proc
 
@@ -108,9 +112,8 @@ module Sinja
               super(*args, rel_type, rel.to_sym)
             end
 
-            define_method(:linkage) do
-              # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
-              serialize_model(resource, :include=>rel_path)['data']['relationships'][rel_path]
+            define_method(:serialize_linkage) do |*args|
+              super(resource, rel_path, *args)
             end
           end
 

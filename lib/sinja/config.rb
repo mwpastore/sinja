@@ -163,7 +163,7 @@ module Sinja
       @data = actions.map { |action| [action, Roles.new] }.to_h
     end
 
-    def_delegator :@data, :[]
+    def_delegators :@data, :[], :dig
 
     def ==(other)
       @data == other.instance_variable_get(:@data)
@@ -197,7 +197,7 @@ module Sinja
       @data = actions.map { |child| [child, Set.new] }.to_h
     end
 
-    def_delegator :@data, :[]
+    def_delegators :@data, :[], :dig
 
     def ==(other)
       @data == other.instance_variable_get(:@data)

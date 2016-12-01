@@ -108,7 +108,7 @@ class TestHelpers < Minitest::Test
   def test_role
     get '/role'
     assert last_response.ok?
-    assert_equal nil, json[:role]
+    assert_nil json[:role]
   end
 
   def test_role_q

@@ -52,20 +52,12 @@ AuthorController = proc do
         a << :admin if role?(:superuser)
       end
     end
-
-    def exclude
-      %w[].tap do |e|
-        e << 'comments' unless role?(:logged_in)
-      end
-    end
   end
 
-  show do |id|
-    next find(id), exclude: exclude
-  end
+  show
 
   index do
-    next Author.all, exclude: exclude
+    Author.all
   end
 
   create do |attr|

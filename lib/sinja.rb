@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'active_support/inflector'
 require 'mustermann'
 require 'sinatra/base'
 require 'sinatra/namespace'
@@ -27,13 +28,18 @@ module Sinja
     abort "Must supply proc constant or block for `resource'" \
       unless block = (konst if konst.is_a?(Proc)) || block
 
-    # trigger default procs
-    _sinja.resource_roles[resource_name.to_sym]
-    _sinja.resource_sideload[resource_name.to_sym]
+    resource_name = resource_name.to_s
+      .pluralize
+      .dasherize
+      .to_sym
 
-    namespace "/#{Helpers::Serializers.dasherize(resource_name)}" do
+    # trigger default procs
+    _sinja.resource_roles[resource_name]
+    _sinja.resource_sideload[resource_name]
+
+    namespace "/#{resource_name}" do
       define_singleton_method(:_resource_roles) do
-        _sinja.resource_roles[resource_name.to_sym]
+        _sinja.resource_roles[resource_name]
       end
 
       define_singleton_method(:resource_roles) do
@@ -41,20 +47,20 @@ module Sinja
       end
 
       define_singleton_method(:resource_sideload) do
-        _sinja.resource_sideload[resource_name.to_sym]
+        _sinja.resource_sideload[resource_name]
       end
 
       helpers do
         define_method(:can?) do |*args|
-          super(resource_name.to_sym, *args)
+          super(resource_name, *args)
         end
 
         define_method(:sanity_check!) do |*args|
-          super(resource_name.to_sym, *args)
+          super(resource_name, *args)
         end
 
         define_method(:sideload?) do |*args|
-          super(resource_name.to_sym, *args)
+          super(resource_name, *args)
         end
       end
 
@@ -75,6 +81,8 @@ module Sinja
     end
   end
 
+  alias_method :resources, :resource
+
   def sinja
     if block_given?
       yield _sinja
@@ -94,6 +102,7 @@ module Sinja
 
     app.disable :protection, :show_exceptions, :static
     app.set :_sinja, Sinja::Config.new
+    app.set :_resource_roles, nil # dummy value overridden in each resource
 
     app.set :actions do |*actions|
       condition do
@@ -201,7 +210,7 @@ module Sinja
       end
 
       def role?(*roles)
-        Roles[*roles] === role
+        Roles[*roles] === memoized_role
       end
 
       def sanity_check!(resource_name, id=nil)
