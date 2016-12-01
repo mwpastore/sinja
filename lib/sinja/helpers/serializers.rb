@@ -68,18 +68,20 @@ module Sinja
 
         # Walk the tree and try to exclude based on fetch and pluck permissions
         included.keep_if do |termstr|
+          # Start cursor at root of current resource
           roles = settings._resource_roles
 
-          termstr.split('.').each do |term|
+          termstr.split('.').all? do |term|
+            break true unless roles
+
             rel_roles =
               roles.dig(:has_many, term.to_sym, :fetch) ||
               roles.dig(:has_one, term.to_sym, :pluck)
 
-            break \
-              unless rel_roles && (rel_roles.empty? || rel_roles === memoized_role)
+            # Move cursor ahead for next iteration (if necessary), avoiding default proc
+            roles = settings._sinja.resource_roles.fetch(term.pluralize.to_sym, nil)
 
-            break true \
-              unless roles = settings._sinja.resource_roles[term.pluralize.to_sym]
+            rel_roles && (rel_roles.empty? || rel_roles === memoized_role)
           end
         end
       end
