@@ -277,6 +277,17 @@ end
 : Returns the `data` key of the deserialized request payload (with symbolized
   names).
 
+**dedasherize**
+: Takes a string or symbol and returns the string or symbol with any and all
+  dashes transliterated to underscores.
+
+**dedasherize_names**
+: Takes a hash and returns the hash with its keys dedasherized (deeply).
+
+**role?**
+: Takes a list of role(s) and returns true if it has members in common with the
+  current user's role(s).
+
 **serialize_model**
 : Takes a model (and optional hash of JSONAPI::Serializers options) and returns
   a serialized model.
@@ -294,13 +305,6 @@ end
 : Takes an array of models (and optional hash of JSONAPI::Serializers options)
   and returns a serialized collection if non-empty, or the root metadata if
   present, or a HTTP status 204.
-
-**dedasherize**
-: Takes a string or symbol and returns the string or symbol with any and all
-  dashes transliterated to underscores.
-
-**dedasherize_names**
-: Takes a hash and returns the hash with its keys dedasherized (deeply).
 
 **sideloaded?**
 : Returns true if the request was invoked from another action helper.
@@ -626,8 +630,8 @@ end
 ```
 
 You may invoke an action helper keyword without a block to modify the options
-(i.e. roles) of a previously-registered action helper while preseving the
-existing behavior:
+(i.e. roles and sideloading) of a previously-registered action helper while
+preseving the existing behavior:
 
 ```ruby
 resource :bars do
