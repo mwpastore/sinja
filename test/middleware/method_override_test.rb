@@ -5,7 +5,7 @@ require 'rack/test'
 require 'sinatra/base'
 require 'sinja/method_override'
 
-class MyApp < Sinatra::Base
+class MyPatchlessApp < Sinatra::Base
   use Sinja::MethodOverride
 
   %i[get post patch].each do |meth|
@@ -13,11 +13,11 @@ class MyApp < Sinatra::Base
   end
 end
 
-class TestMyApp < Minitest::Test
+class TestMyPatchlessApp < Minitest::Test
   include Rack::Test::Methods
 
   def app
-    MyApp.new
+    MyPatchlessApp.new
   end
 
   def test_normal_post

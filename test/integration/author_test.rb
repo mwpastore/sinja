@@ -10,6 +10,17 @@ class AuthorTest < SequelTest
     Sinatra::Application.new
   end
 
+  def test_disallow_client_generated_id
+    post '/authors', JSON.generate(:data=>{
+      :type=>'authors',
+      :id=>9999999,
+      :attributes=>{
+        :email=>'bad@mammajamba.com'
+      }
+    })
+    assert_error 403, /not supported/
+  end
+
   def test_register
     id = register 'foo@example.com', 'Foo Bar'
     assert_ok
@@ -58,10 +69,10 @@ class AuthorTest < SequelTest
   def test_update_self
     id = register 'foo@example.com', 'Foo Bar'
     login 'foo@example.com'
-    patch "/authors/#{id}", JSON.generate(data: { type: 'authors', id: id, attributes: {
-      admin: true,
-      'real-name': 'Bar Qux Foo',
-      'display-name': 'Bar Qux'
+    patch "/authors/#{id}", JSON.generate(:data=>{ :type=>'authors', :id=>id, :attributes=>{
+      :admin=>true,
+      'real-name'=>'Bar Qux Foo',
+      'display-name'=>'Bar Qux'
     }})
     assert_ok
     assert_equal 'Bar Qux', json[:data][:attributes][:'display-name']
@@ -77,8 +88,8 @@ class AuthorTest < SequelTest
   def test_superuser_update
     id = register 'foo@example.com', 'Foo Bar'
     login 'all@yourbase.com'
-    patch "/authors/#{id}", JSON.generate(data: { type: 'authors', id: id, attributes: {
-      admin: true
+    patch "/authors/#{id}", JSON.generate(:data=>{ :type=>'authors', :id=>id, :attributes=>{
+      :admin=>true
     }})
     assert_ok
 
@@ -91,14 +102,14 @@ class AuthorTest < SequelTest
     author_id = register 'foo@example.com', 'Foo Bar'
     post_slug = 'foo-post'
     DB[:posts].insert \
-      slug: post_slug,
-      author_id: author_id,
-      title: 'I am a little teapot',
-      body: 'short and stout!'
+      :slug=>post_slug,
+      :author_id=>author_id,
+      :title=>'I am a little teapot',
+      :body=>'short and stout!'
     comment_id = DB[:comments].insert \
-      author_id: author_id,
-      post_slug: post_slug,
-      body: 'you are no teapot'
+      :author_id=>author_id,
+      :post_slug=>post_slug,
+      :body=>'you are no teapot'
 
     [author_id, post_slug, comment_id]
   end
@@ -148,7 +159,7 @@ class AuthorTest < SequelTest
 
   def test_sideunload_forbidden
     author, post, comment = prep_posts_comments
-    get "/authors/#{author}", include: 'comments,posts'
+    get "/authors/#{author}", :include=>'comments,posts'
     assert_ok
     assert json[:included].any? { |d| d[:type] == 'posts' && d[:id] == post }
     refute json[:included].any? { |d| d[:type] == 'comments' && d[:id] == comment.to_s }
@@ -157,9 +168,16 @@ class AuthorTest < SequelTest
   def test_sideunload_allowed
     login 'foo@example.com'
     author, post, comment = prep_posts_comments
-    get "/authors/#{author}", include: 'comments,posts'
+    get "/authors/#{author}", :include=>'comments,posts'
     assert_ok
     assert json[:included].any? { |d| d[:type] == 'posts' && d[:id] == post }
     assert json[:included].any? { |d| d[:type] == 'comments' && d[:id] == comment.to_s }
+  end
+
+  def test_conflict_exception
+    register 'foo@example.com', 'Foo Bar'
+    @json = nil
+    register 'foo@example.com', 'Bar Qux'
+    assert_error 409
   end
 end

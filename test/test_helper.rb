@@ -15,16 +15,14 @@ module MyAppTest
 
   def register(email, real_name, display_name=nil)
     attr = {
-      email: email,
-      'real-name': real_name
+      :email=>email,
+      'real-name'=>real_name
     }.tap do |h|
       h[:'display-name'] = display_name if display_name
     end
 
-    post '/authors', JSON.generate(data: { type: 'authors', attributes: attr })
-    json[:data][:id].tap do
-      @json = nil
-    end
+    post '/authors', JSON.generate(:data=>{ :type=>'authors', :attributes=>attr })
+    json.dig(:data, :id)
   end
 
   def login(email)
@@ -32,7 +30,9 @@ module MyAppTest
   end
 
   def json
-    @json ||=
+    @json ||= {}
+    @json[last_request.request_method] ||= {}
+    @json[last_request.request_method][last_request.path] ||=
       if last_response.body.size > 0
         JSON.parse(last_response.body, :symbolize_names=>true)
       else
@@ -50,6 +50,7 @@ module MyAppTest
 
   def assert_error(status, re=nil)
     assert_equal status, last_response.status
+    assert_equal Sinja::MIME_TYPE, last_response.content_type
     unless last_request.head?
       assert_kind_of Array, json[:errors]
       refute_empty json[:errors]
