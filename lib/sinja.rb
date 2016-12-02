@@ -162,7 +162,8 @@ module Sinja
       end
 
       def data
-        @data ||= begin
+        @data ||= {}
+        @data[request.path] ||= begin
           deserialize_request_body.fetch(:data)
         rescue NoMethodError, KeyError
           raise BadRequestError, 'Malformed JSON:API request payload'

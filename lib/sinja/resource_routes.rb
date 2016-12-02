@@ -41,7 +41,7 @@ module Sinja
         opts = {}
         transaction do
           id, self.resource, opts = create(attributes, data[:id])
-          dispatch_relationship_requests!(id, :from=>:create, :method=>:patch)
+          dispatch_relationship_requests!(id, :from=>:create, :methods=>{ :has_many=>:post })
           validate! if respond_to?(:validate!)
         end
 
@@ -72,7 +72,7 @@ module Sinja
         sanity_check!(id)
         tmp, opts = transaction do
           update(attributes).tap do
-            dispatch_relationship_requests!(id, :from=>:update, :method=>:patch)
+            dispatch_relationship_requests!(id, :from=>:update)
             validate! if respond_to?(:validate!)
           end
         end
