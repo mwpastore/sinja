@@ -13,10 +13,6 @@ Sinja aims to be lightweight (to the extent that Sinatra is), ORM-agnostic (to
 the extent that JSONAPI::Serializers is), and opinionated (to the extent that
 the JSON:API specification is).
 
-**CAVEAT EMPTOR: This gem is still very new and under active development. The
-API is mostly stable, but there still may be significant breaking changes. It
-has not yet been thoroughly tested or vetted in a production environment.**
-
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 

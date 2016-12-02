@@ -81,6 +81,9 @@ CommentController = proc do
     end
 
     graft(roles: :superuser, sideload_on: :create) do |rio|
+      halt 403, 'You may only assign yourself as comment author!' \
+        unless role?(:superuser) || rio[:id].to_i == current_user.id
+
       resource.author = Author.with_pk!(rio[:id].to_i)
       resource.save_changes(validate: !sideloaded?)
     end

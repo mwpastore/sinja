@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Sinja
-  VERSION = '0.2.0.beta2'.freeze
+  VERSION = '1.0.0.pre1'
 end
