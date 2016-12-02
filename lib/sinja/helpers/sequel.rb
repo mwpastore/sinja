@@ -14,7 +14,7 @@ module Sinja
       end
 
       def validate!
-        raise Sequel::ValidationFailed, resource.errors unless resource.valid?
+        raise ::Sequel::ValidationFailed, resource unless resource.valid?
       end
 
       def database
@@ -55,10 +55,11 @@ module Sinja
 
       def venn(operator, association, rios)
         dataset = resource.send("#{association}_dataset")
+        klass = dataset.association_reflection.associated_class
         # does not / will not work with composite primary keys
         rios.map { |rio| rio[:id].to_i }
           .send(operator, dataset.select_map(:id))
-          .each { |id| yield dataset.with_pk!(id) }
+          .each { |id| yield klass.with_pk!(id) }
       end
     end
   end
