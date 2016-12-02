@@ -945,9 +945,10 @@ request will fail and any database changes will be rolled back (given a
 either `graft` or `create`.
 
 `create` and `update` are the only two action helpers that trigger sideloading;
-`graft` and `merge` are the only two action helpers invoked by sideloading.
-You must indicate which combinations are valid using the `:sideload_on` action
-helper option. For example:
+`graft`, `merge`, and `clear` are the only action helpers invoked by
+sideloading.  You must indicate which combinations are valid using the
+`:sideload_on` action helper option. (Note that if you want to sideload `merge`
+on `update`, you must define a `clear` action helper as well.) For example:
 
 ```ruby
 resource :photos do
@@ -966,6 +967,9 @@ resource :photos do
   has_many :tags do
     # Allow `create' and `update' to sideload Tags
     merge(sideload_on: [:create, :update]) { |rios| .. }
+
+    # Allow `update' to clear Tags before sideloading them
+    clear(sideload_on: :update) { .. }
   end
 end
 ```

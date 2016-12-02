@@ -13,7 +13,7 @@ require 'sinja/resource_routes'
 module Sinja
   module Resource
     CONFLICT_ACTIONS = Set.new(%i[create update graft merge]).freeze
-    SIDELOAD_ACTIONS = Set.new(%i[graft merge]).freeze
+    SIDELOAD_ACTIONS = Set.new(%i[graft merge clear]).freeze
 
     def def_action_helper(action, context)
       abort "JSONAPI action helpers can't be HTTP verbs!" \

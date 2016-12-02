@@ -197,7 +197,7 @@ module Sinja
       def sideload?(resource_name, child)
         return unless sideloaded?
         parent = env.fetch('sinja.passthru', 'unknown').to_sym
-        settings._sinja.resource_sideload[resource_name][child].
+        settings._sinja.resource_sideload[resource_name][child]&.
           include?(parent) && can?(parent)
       end
 
