@@ -244,12 +244,24 @@ module Sinja
       body serialize_response_body if response.ok? || response.created?
     end
 
-    app.not_found do
+    app.error 400...600 do
       serialize_errors(&settings._sinja.error_logger)
     end
 
-    # TODO: Can/should we serialize other types of Exceptions? Catch-all?
-    app.error StandardError, 400...600, nil do
+    app.error StandardError do
+      env['sinatra.error'].tap do |e|
+        boom =
+          if settings._sinja.not_found_exceptions.any? { |c| c === e }
+            NotFoundError.new(e.message) unless NotFoundError === e
+          elsif settings._sinja.conflict_exceptions.any? { |c| c === e }
+            ConflictError.new(e.message) unless ConflictError === e
+          elsif settings._sinja.validation_exceptions.any? { |c| c === e }
+            UnprocessibleEntityError.new(settings._sinja.validation_formatter.(e)) unless UnprocessibleEntityError === e
+          end
+
+        handle_exception!(boom) if boom # re-throw the re-packaged exception
+      end
+
       serialize_errors(&settings._sinja.error_logger)
     end
   end

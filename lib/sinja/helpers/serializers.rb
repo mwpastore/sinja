@@ -160,6 +160,14 @@ module Sinja
         ]
       end
 
+      def exception_title(e)
+        if e.respond_to?(:title)
+          e.title
+        else
+          e.class.name.split('::').last.split(/(?=[[:upper:]])/).join(' ')
+        end
+      end
+
       def serialize_errors(&block)
         raise env['sinatra.error'] if env['sinatra.error'] && sideloaded?
 
@@ -191,30 +199,24 @@ module Sinja
           when UnprocessibleEntityError
             e.tuples.flat_map do |attribute, full_message|
               error_hash \
-                :title=>e.title,
+                :title=>exception_title(e),
                 :detail=>full_message.to_s,
                 :source=>{
                   :pointer=>(attribute ? "/data/attributes/#{attribute.to_s.dasherize}" : '/data')
                 }
             end
           when Exception
-            title =
-              if e.respond_to?(:title)
-                e.title
-              else
-                e.class.name.split('::').last.split(/(?=[[:upper:]])/).join(' ')
-              end
-
             error_hash \
-              :title=>title,
+              :title=>exception_title(e),
               :detail=>(e.message.to_s unless e.message == e.class.name)
+          else
+            error_hash \
+              :title=>'Unknown Error'
           end
 
-        # Ensure we don't send an empty errors collection
-        error_hashes ||= error_hash(:title=>'Unknown Error')
+        error_hashes.each { |h| instance_exec(h, &block) } if block
 
-        error_hashes.each { |eh| instance_exec(eh, &block) } if block
-
+        content_type :api_json
         JSON.send settings._sinja.json_error_generator,
           ::JSONAPI::Serializer.serialize_errors(error_hashes)
       end

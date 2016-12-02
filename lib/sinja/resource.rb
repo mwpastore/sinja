@@ -12,7 +12,6 @@ require 'sinja/resource_routes'
 
 module Sinja
   module Resource
-    CONFLICT_ACTIONS = Set.new(%i[create update graft merge]).freeze
     SIDELOAD_ACTIONS = Set.new(%i[graft merge clear]).freeze
 
     def def_action_helper(action, context)
@@ -29,33 +28,20 @@ module Sinja
             proc { |id| find(id) } if method_defined?(:find)
           end
 
+        # TODO: Move this to a constant or configurable?
+        required_arity = {
+          :create=>2,
+          :index=>-1,
+          :fetch=>-1
+        }.freeze[action] || 1
+
         define_method(action) do |*args|
-          block_args = args.take(block.arity.abs)
+          raise ArgumentError, "Unexpected block signature for `#{action}' action helper" \
+            unless args.length == block.arity
 
-          public_send("before_#{action}", *block_args) \
-            if respond_to?("before_#{action}")
+          public_send("before_#{action}", *args) if respond_to?("before_#{action}")
 
-          result =
-            begin
-              instance_exec(*block_args, &block)
-            rescue *settings._sinja.not_found_exceptions=>e
-              raise NotFoundError, e.message
-            rescue *settings._sinja.conflict_exceptions=>e
-              raise(e) unless CONFLICT_ACTIONS.include?(action)
-
-              raise ConflictError, e.message
-            rescue *settings._sinja.validation_exceptions=>e
-              raise UnprocessibleEntityError, settings._sinja.validation_formatter(e)
-            end
-
-          # TODO: Move this to a constant or configurable?
-          required_arity = {
-            :create=>2,
-            :index=>-1,
-            :fetch=>-1
-          }.freeze[action] || 1
-
-          case result
+          case result = instance_exec(*args, &block)
           when Array
             opts = {}
             if Hash === result.last

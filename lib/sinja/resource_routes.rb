@@ -35,12 +35,22 @@ module Sinja
 
       app.post '', :actions=>:create do
         sanity_check!
-        raise ForbiddenError, 'Client-generated IDs not supported' \
-          if data[:id] && method(:create).arity != 2
 
         opts = {}
         transaction do
-          id, self.resource, opts = create(attributes, data[:id])
+          id, self.resource, opts =
+            begin
+              args = [attributes]
+              args << data[:id] if data.key?(:id)
+              create(*args)
+            rescue ArgumentError
+              if data.key?(:id)
+                raise ForbiddenError, 'Client-generated ID not supported'
+              else
+                raise ForbiddenError, 'Client-generated ID not provided'
+              end
+            end
+
           dispatch_relationship_requests!(id, :from=>:create, :methods=>{ :has_many=>:post })
           validate! if respond_to?(:validate!)
         end
@@ -51,7 +61,7 @@ module Sinja
             headers 'Location'=>self_link
           end
           [201, content]
-        elsif data[:id]
+        elsif data.key?(:id)
           204
         else
           raise ActionHelperError, "Unexpected return value(s) from `create' action helper"
