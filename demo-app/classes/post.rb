@@ -18,7 +18,7 @@ class Post < Sequel::Model
 
   many_to_one :author
   one_to_many :comments
-  many_to_many :tags
+  many_to_many :tags, :left_key=>:post_slug
 
   def validate
     super
@@ -58,16 +58,8 @@ PostController = proc do
   end
 
   index do
-    dataset =
-      if author_id = params[:filter][:author]
-        Post.where(author: Author.with_pk!(author_id.to_i))
-      elsif tag_id = params[:filter][:tag]
-        Post.where(tag: Tag.with_pk!(tag_id.to_i))
-      else
-        Post
-      end
-
-    dataset.all
+    # TODO: Filter/sort by created_at and/or updated_at?
+    Post.all
   end
 
   create(roles: :logged_in) do |attr, slug|
@@ -92,6 +84,9 @@ PostController = proc do
     end
 
     graft(roles: :superuser, sideload_on: :create) do |rio|
+      halt 403, 'You may only assign yourself as post author!' \
+        unless role?(:superuser) || rio[:id].to_i == current_user.id
+
       resource.author = Author.with_pk!(rio[:id].to_i)
       resource.save_changes(validate: !sideloaded?)
     end

@@ -5,7 +5,7 @@ require_relative '../database'
 DB.create_table?(:comments) do
   primary_key :id
   foreign_key :author_id, :authors, :on_delete=>:cascade
-  foreign_key :post_slug, :posts, :on_delete=>:cascade
+  foreign_key :post_slug, :posts, :on_delete=>:cascade, :type=>String
   String :body, :text=>true, :null=>false
   DateTime :created_at
   DateTime :updated_at

@@ -10,10 +10,10 @@ DB.create_table?(:tags) do
 end
 
 DB.create_table?(:posts_tags) do
-  foreign_key :post_id, :posts, :null=>false, :on_delete=>:cascade
+  foreign_key :post_slug, :posts, :null=>false, :on_delete=>:cascade, :type=>String
   foreign_key :tag_id, :tags, :null=>false, :on_delete=>:cascade
-  primary_key [:post_id, :tag_id]
-  index [:tag_id, :post_id]
+  primary_key [:post_slug, :tag_id]
+  index [:tag_id, :post_slug]
 end
 
 class Tag < Sequel::Model
