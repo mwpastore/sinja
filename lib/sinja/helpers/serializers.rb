@@ -39,17 +39,16 @@ module Sinja
       end
 
       def include_exclude!(options)
-        client, default, excluded =
+        included, default, excluded =
           params[:include],
           options.delete(:include) || [],
           options.delete(:exclude) || []
 
-        included = Array === client ? client : client.split(',')
         if included.empty?
           included = Array === default ? default : default.split(',')
-        end
 
-        return included if included.empty?
+          return included if included.empty?
+        end
 
         excluded = Array === excluded ? excluded : excluded.split(',')
         unless excluded.empty?

@@ -9,6 +9,7 @@ class TestConfig < Minitest::Test
   end
 
   def test_it_sets_sane_defaults
+    assert_kind_of Hash, @config.query_params
     assert_respond_to @config.error_logger, :call
 
     assert_kind_of Sinja::RolesConfig, @config.default_roles
@@ -153,6 +154,7 @@ class TestConfig < Minitest::Test
   def test_it_freezes_deeply
     @config.freeze
 
+    assert_predicate @config.query_params, :frozen?
     assert_predicate @config.error_logger, :frozen?
 
     assert_predicate @config.default_roles, :frozen?

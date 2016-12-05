@@ -57,6 +57,15 @@ module Sinja
       :serializer_opts
 
     def initialize
+      @query_params = {
+        :fields=>{}, # passthru to JAS
+        :include=>[], # passthru to JAS
+        :filter=>{},
+        :page=>{},
+        :sort=>[],
+        :capture=>nil
+      }
+
       @error_logger = ->(h) { logger.error('sinja') { h } }
 
       @default_roles = {
@@ -153,6 +162,7 @@ module Sinja
     end
 
     def freeze
+      @query_params.freeze
       @error_logger.freeze
 
       deep_freeze(@default_roles)

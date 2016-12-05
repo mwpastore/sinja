@@ -15,7 +15,7 @@ class SerializersApp < MyAppBase
     dedasherize_names(deserialize_request_body)
   end
 
-  get '/include_exclude' do
+  get '/include_exclude', :qparams=>:include do
     opts = {
       :include=>params.delete('_include'),
       :exclude=>params.delete('_exclude')

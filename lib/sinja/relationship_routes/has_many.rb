@@ -22,7 +22,7 @@ module Sinja
           serialize_linkage
         end
 
-        app.get '', :actions=>:fetch do
+        app.get '', :qparams=>%i[include fields], :actions=>:fetch do
           serialize_models(*fetch)
         end
 

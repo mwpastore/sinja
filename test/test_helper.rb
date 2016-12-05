@@ -32,7 +32,7 @@ module MyAppTest
   def json
     @json ||= {}
     @json[last_request.request_method] ||= {}
-    @json[last_request.request_method][last_request.path] ||=
+    @json[last_request.request_method][last_request.url] ||=
       if last_response.body.size > 0
         JSON.parse(last_response.body, :symbolize_names=>true)
       else

@@ -8,13 +8,13 @@ module Sinja
       app.def_action_helper(app, :update, :roles)
       app.def_action_helper(app, :destroy, :roles)
 
-      app.head '', :pfilters=>:id do
+      app.head '', :qcapture=>{ :filter=>:id } do
         allow :get=>:show
       end
 
-      app.get '', :pfilters=>:id, :actions=>:show do
-        ids = params['filter'].delete('id')
-        ids = ids.split(',') if ids.respond_to?(:split)
+      app.get '', :qcapture=>{ :filter=>:id }, :qparams=>%i[include fields], :actions=>:show do
+        ids = @qcaptures.first # TODO: Get this as a block parameter?
+        ids = ids.split(',') if String === ids
 
         opts = {}
         resources = [*ids].tap(&:uniq!).map! do |id|
@@ -31,11 +31,11 @@ module Sinja
         allow :get=>:index, :post=>:create
       end
 
-      app.get '', :actions=>:index do
+      app.get '', :qparams=>%i[include fields], :actions=>:index do
         serialize_models(*index)
       end
 
-      app.post '', :actions=>:create do
+      app.post '', :qparams=>:include, :actions=>:create do
         sanity_check!
 
         opts = {}
@@ -74,13 +74,13 @@ module Sinja
         allow :get=>:show, :patch=>:update, :delete=>:destroy
       end
 
-      app.get '/:id', :actions=>:show do |id|
+      app.get '/:id', :qparams=>%i[include fields], :actions=>:show do |id|
         tmp, opts = show(id)
         raise NotFoundError, "Resource '#{id}' not found" unless tmp
         serialize_model(tmp, opts)
       end
 
-      app.patch '/:id', :actions=>:update do |id|
+      app.patch '/:id', :qparams=>:include, :actions=>:update do |id|
         sanity_check!(id)
         tmp, opts = transaction do
           update(attributes).tap do

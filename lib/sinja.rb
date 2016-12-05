@@ -97,15 +97,58 @@ module Sinja
           raise MethodNotAllowedError, 'Action or method not implemented or supported' \
             unless respond_to?(action)
         end
+
         true
       end
     end
 
-    app.set :pfilters do |*pfilters|
+    app.set :qcapture do |*index|
       condition do
-        pfilters.all? do |pfilter|
-          params.key?('filter') && params['filter'].key?(pfilter.to_s)
+        @qcaptures ||= []
+        index.to_h.all? do |key, subkeys|
+          params.key?(key.to_s) && [*subkeys].all? do |subkey|
+            @qcaptures << params[key.to_s].delete(subkey.to_s) \
+              if params[key.to_s].key?(subkey.to_s)
+          end
         end
+      end
+    end
+
+    app.set :qparams do |*allow_params|
+      allow_params = allow_params.to_set
+
+      abort "Unexpected query parameter(s) in route definiton" \
+        unless allow_params.subset?(settings._sinja.query_params.keys.to_set)
+
+      condition do
+        params.each do |key, value|
+          key = key.to_sym
+
+          next if settings._sinja.query_params[key].nil?
+
+          raise BadRequestError, "`#{key}' query parameter not allowed" \
+            unless allow_params.include?(key) || value.empty?
+
+          if Array === settings._sinja.query_params[key] && String === value
+            value = (params[key.to_s] = value.split(','))
+          elsif !(settings._sinja.query_params[key].class === value)
+            raise BadRequestError, "`#{key}' query parameter malformed"
+          end
+        end
+
+        settings._sinja.query_params.each do |key, value|
+          next if value.nil?
+
+          key = key.to_s
+
+          if respond_to?("normalize_#{key}_params")
+            params[key] = send("normalize_#{key}_params")
+          else
+            params[key] ||= value
+          end
+        end
+
+        true
       end
     end
 
@@ -170,17 +213,6 @@ module Sinja
         @role ||= role
       end
 
-      def normalize_params!
-        # TODO: halt 400 if other params, or params not implemented?
-        {
-          :fields=>{}, # passthru
-          :include=>[], # passthru
-          :filter=>{},
-          :page=>{},
-          :sort=>''
-        }.each { |k, v| params[k] ||= v }
-      end
-
       def sideload?(resource_name, child)
         return unless sideloaded?
         parent = env['sinja.passthru'].to_sym
@@ -220,8 +252,6 @@ module Sinja
         )
       end
 
-      normalize_params!
-
       content_type :api_json
     end
 
@@ -248,6 +278,14 @@ module Sinja
       end
 
       serialize_errors(&settings._sinja.error_logger)
+    end
+  end
+
+  def self.extended(base)
+    def base.route(*, **opts)
+      opts[:qparams] ||= []
+
+      super
     end
   end
 end

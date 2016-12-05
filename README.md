@@ -388,8 +388,8 @@ these settings.
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
 * Sets the `Content-Type` response header to `:api_json` (can be overriden with
   the `content_type` helper)
-* Normalizes query parameters to reflect the features supported by JSON:API
-  (this may be strictly enforced in future versions of Sinja)
+* Normalizes and strictly enforces query parameters to reflect the features
+  supported by JSON:API
 * Formats all errors to the proper JSON:API structure
 * Serializes all response bodies (including errors) to JSON
 * Modifies `halt` and `not_found` to raise exceptions instead of just setting
@@ -415,6 +415,11 @@ configure_jsonapi do |c|
   #c.default_roles = {}
   #c.default_has_one_roles = {}
   #c.default_has_many_roles = {}
+
+  # see "Query Parameters" below
+  #c.query_params = {
+    :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>[]
+  #}
 
   # Set the error logger used by Sinja
   #c.error_logger = ->(error_hash) { logger.error('sinja') { error_hash } }
@@ -662,6 +667,33 @@ end
 
 Any changes made to attribute hashes or (arrays of) resource identifier object
 hashes in a `before` hook will be persisted to the action helper.
+
+### Query Parameters
+
+The JSON:API specification states that any unhandled query parameters should
+cause the request to abort with HTTP status 400. To enforce this requirement,
+Sinja maintains a global "whitelist" of acceptable query parameters as well as
+a per-route whitelist, and interrogates your application to see which features
+it supports; for example, a route may allow a `filter` query parameter, but you
+may not have defined a `filter` helper.
+
+To allow a custom query parameter through, add it to the `query_params`
+configurable with a `nil` value:
+
+```ruby
+configure_jsonapi do |c|
+  c.query_params[:foo] = nil
+end
+```
+
+To let a custom route accept standard query parameters, add a `:qparams` route
+condition:
+
+```ruby
+get '/top10', qparams: [:include, :fields] do
+  # ..
+end
+```
 
 ### Authorization
 

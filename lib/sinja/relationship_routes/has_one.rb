@@ -21,7 +21,7 @@ module Sinja
           serialize_linkage
         end
 
-        app.get '', :actions=>:pluck do
+        app.get '', :qparams=>%i[include fields], :actions=>:pluck do
           serialize_model(*pluck)
         end
 
