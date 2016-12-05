@@ -1,7 +1,7 @@
 # Sinja (Sinatra::JSONAPI)
 
-[![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
 [![Gem Version](https://badge.fury.io/rb/sinja.svg)](https://badge.fury.io/rb/sinja)
+[![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
 
 Sinja is a [Sinatra][1] [extension][10] for quickly building [RESTful][11],
 [JSON:API][2]-[compliant][7] web services, leveraging the excellent
@@ -153,17 +153,19 @@ $ gem install sinja
   * Conflicts (constraint violations)
   * Missing records
   * Validation failures
+* Filtering, sorting, and paging collections
 * Plus all the features of JSONAPI::Serializers!
 
 Its main competitors in the Ruby space are [ActiveModelSerializers][12] (AMS)
-with the JsonApi adapter and [JSONAPI::Resources][8] (JR), both of which are
-designed to work with [Rails][16] and [ActiveRecord][17]/[ActiveModel][18]
-(although they may work with [Sequel][13] via [sequel-rails][14] and Sequel's
-[`:active_model` plugin][15]). Otherwise, you might use something like Sinatra,
-[Roda][20], or [Grape][19] with JSONAPI::Serializers, your own routes, and a
-ton of boilerplate. The goal of this extension is to provide most or all of the
-boilerplate for a Sintara application and automate the drawing of routes based
-on the resource definitions.
+with the JsonApi adapter, [JSONAPI::Resources][8] (JR), and
+[jsonapi-utils][26], all of which are designed to work with [Rails][16] and
+[ActiveRecord][17]/[ActiveModel][18] (although they may work with [Sequel][13]
+via [sequel-rails][14] and Sequel's [`:active_model` plugin][15]). Otherwise,
+you might use something like Sinatra, [Roda][20], or [Grape][19] with
+JSONAPI::Serializers (or another (de)serialization library), your own routes,
+and a ton of boilerplate. The goal of this extension is to provide most or all
+of the boilerplate for a Sintara application and automate the drawing of routes
+based on the resource definitions.
 
 ### Extensibility
 
@@ -327,8 +329,8 @@ welcome.
 | Routing         | ActionDispatch::Routing      | Mustermann                                        |
 | Caching         | ActiveSupport::Cache         | BYO                                               |
 | ORM             | ActiveRecord/ActiveModel     | BYO                                               |
-| Authorization   | [Pundit][9]                  | Role-based (`roles` keyword and `role` helper)    |
-| Immutability    | `immutable` method           | Omit mutator action helpers                       |
+| Authorization   | [Pundit][9]                  | Role-based                                        |
+| Immutability    | `immutable` method           | Omit mutator action helpers (e.g. `update`)       |
 | Fetchability    | `fetchable_fields` method    | Omit attributes in Serializer                     |
 | Creatability    | `creatable_fields` method    | Handle in `create` action helper or Model\*       |
 | Updatability    | `updatable_fields` method    | Handle in `update` action helper or Model\*       |
@@ -364,7 +366,7 @@ you normally would, define `resource` blocks with action helpers and `has_one`
 and `has_many` relationship blocks (with their own action helpers). Sinja will
 draw and enable the appropriate routes based on the defined resources,
 relationships, and action helpers. Other routes will return the appropriate
-HTTP status codes: 403, 404, or 405.
+HTTP statuses: 403, 404, or 405.
 
 ### Configuration
 
@@ -490,13 +492,10 @@ below. Implicitly return the expected values as described below (as an array if
 necessary) or use the `next` keyword (instead of `return` or `break`) to exit
 the action helper. Return values marked with a question mark below may be
 omitted entirely. Any helper may additionally return an options hash to pass
-along to JSONAPI::Serializer.serialize (will be merged into the global
-`serializer_opts` described above).
-
-The `:include` (see "Side-Unloading Related Resources" below) and `:fields`
-query parameters are automatically passed through to JSONAPI::Serializers. The
-`:sort`, `:page`, and `:filter` query parameters must be handled manually (with
-one exception, discussed under "Coalesced Find Requests" below).
+along to JSONAPI::Serializer.serialize (which will be merged into the global
+`serializer_opts` described above). The `:include` (see "Side-Unloading
+Related Resources" below) and `:fields` query parameters are automatically
+passed through to JSONAPI::Serializers.
 
 All arguments to action helpers are "tainted" and should be treated as
 potentially dangerous: IDs, attribute hashes, and (arrays of) [resource
@@ -812,8 +811,7 @@ end
 ### Conflicts
 
 If your database driver raises exceptions on constraint violations, you should
-specify which exception class(es) should be handled and return HTTP status code
-409.
+specify which exception class(es) should be handled and return HTTP status 409.
 
 For example, using [Sequel][13]:
 
@@ -826,7 +824,7 @@ end
 ### Validations
 
 If your ORM raises exceptions on validation errors, you should specify which
-exception class(es) should be handled and return HTTP status code 422, along
+exception class(es) should be handled and return HTTP status 422, along
 with a formatter proc that transforms the exception object into an array of
 two-element arrays containing the name or symbol of the attribute that failed
 validation and the detailed errror message for that attribute.
@@ -843,9 +841,9 @@ end
 ### Missing Records
 
 If your database driver raises exceptions on missing records, you should
-specify which exception class(es) should be handled and return HTTP status code
-404. This is particularly useful for relationship action helpers, which don't
-have access to a dedicated subresource locator.
+specify which exception class(es) should be handled and return HTTP status 404.
+This is particularly useful for relationship action helpers, which don't have
+access to a dedicated subresource locator.
 
 For example, using [Sequel][13]:
 
@@ -1079,7 +1077,7 @@ be invoked once for each ID in the `:id` filter, and the resulting collection
 will be serialized on the response. Both query parameter syntaxes for arrays
 are supported: `?filter[id]=1,2` and `?filter[id][]=1&filter[id][]=2`. If any
 ID is not found (i.e. `show` returns `nil`), the route will halt with HTTP
-status code 404.
+status 404.
 
 ### Patchless Clients
 
@@ -1226,3 +1224,4 @@ License](http://opensource.org/licenses/MIT).
 [23]: http://jsonapi.org/recommendations/#patchless-clients
 [24]: http://www.rubydoc.info/github/rack/rack/Rack/MethodOverride
 [25]: http://www.sinatrarb.com/mustermann/
+[26]: https://github.com/tiagopog/jsonapi-utils

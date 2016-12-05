@@ -33,6 +33,7 @@ module Sinja
     }.freeze
 
     attr_reader \
+      :query_params,
       :error_logger,
       :default_roles,
       :default_has_many_roles,
