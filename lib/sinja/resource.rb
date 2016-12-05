@@ -12,15 +12,17 @@ require 'sinja/resource_routes'
 
 module Sinja
   module Resource
-    SIDELOAD_ACTIONS = Set.new(%i[graft merge clear]).freeze
-
-    def def_action_helper(action, context)
-      abort "JSONAPI action helpers can't be HTTP verbs!" \
+    def def_action_helper(context, action, allow_opts=[])
+      abort "Action helper names can't overlap with Sinatra DSL" \
         if Sinatra::Base.respond_to?(action)
 
       context.define_singleton_method(action) do |**opts, &block|
-        resource_roles.merge!(action=>opts[:roles]) if opts.key?(:roles)
-        resource_sideload.merge!(action=>opts[:sideload_on]) if opts.key?(:sideload_on)
+        abort "Unexpected option(s) for `#{action}' action helper" \
+          unless (opts.keys - [*allow_opts]).empty?
+
+        resource_config[action].each do |k, v|
+          v.replace([*opts[k]]) if opts.key?(k)
+        end
 
         return unless block ||=
           case !method_defined?(action) && action
@@ -36,7 +38,7 @@ module Sinja
         }.freeze[action] || 1
 
         define_method(action) do |*args|
-          raise ArgumentError, "Unexpected block signature for `#{action}' action helper" \
+          raise ArgumentError, "Unexpected argument(s) for `#{action}' action helper" \
             unless args.length == block.arity
 
           public_send("before_#{action}", *args) if respond_to?("before_#{action}")
@@ -67,10 +69,6 @@ module Sinja
       end
     end
 
-    def def_action_helpers(actions, context=nil)
-      [*actions].each { |action| def_action_helper(action, context) }
-    end
-
     def self.registered(app)
       app.helpers Helpers::Relationships do
         attr_accessor :resource
@@ -81,25 +79,23 @@ module Sinja
 
     %i[has_one has_many].each do |rel_type|
       define_method(rel_type) do |rel, &block|
-        rel_path = rel.to_s
+        rel = rel.to_s
           .send(rel_type == :has_one ? :singularize : :pluralize)
           .dasherize
           .to_sym
 
-        _resource_roles[rel_type][rel.to_sym] # trigger default proc
+        config = _resource_config[rel_type][rel] # trigger default proc
 
-        namespace %r{/[^/]+(?<r>/relationships)?/#{rel_path}} do
-          define_singleton_method(:resource_roles) do
-            _resource_roles[rel_type][rel.to_sym]
-          end
+        namespace %r{/[^/]+(?<r>/relationships)?/#{rel}} do
+          define_singleton_method(:resource_config) { config }
 
           helpers Helpers::Nested do
             define_method(:can?) do |*args|
-              super(*args, rel_type, rel.to_sym)
+              super(*args, rel_type, rel)
             end
 
             define_method(:serialize_linkage) do |*args|
-              super(resource, rel_path, *args)
+              super(resource, rel, *args)
             end
           end
 

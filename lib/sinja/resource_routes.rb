@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 module Sinja
   module ResourceRoutes
-    ACTIONS = %i[index show create update destroy].freeze
-
     def self.registered(app)
-      app.def_action_helpers(ACTIONS, app)
+      app.def_action_helper(app, :show, :roles)
+      app.def_action_helper(app, :index, %i[roles filter_by sort_by])
+      app.def_action_helper(app, :create, :roles)
+      app.def_action_helper(app, :update, :roles)
+      app.def_action_helper(app, :destroy, :roles)
 
       app.head '', :pfilters=>:id do
         allow :get=>:show

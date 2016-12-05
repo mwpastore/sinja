@@ -2,10 +2,11 @@
 module Sinja
   module RelationshipRoutes
     module HasMany
-      ACTIONS = %i[fetch clear merge subtract].freeze
-
       def self.registered(app)
-        app.def_action_helpers(ACTIONS, app)
+        app.def_action_helper(app, :fetch, %i[roles filter_by sort_by])
+        app.def_action_helper(app, :clear, %i[roles sideload_on])
+        app.def_action_helper(app, :merge, %i[roles sideload_on])
+        app.def_action_helper(app, :subtract, :roles)
 
         app.head '' do
           unless relationship_link?

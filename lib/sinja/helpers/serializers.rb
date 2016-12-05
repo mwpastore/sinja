@@ -64,7 +64,7 @@ module Sinja
           return included if included.empty?
         end
 
-        return included unless settings._resource_roles
+        return included unless settings._resource_config
 
         # Walk the tree and try to exclude based on fetch and pluck permissions
         included.keep_if do |termstr|
@@ -72,18 +72,19 @@ module Sinja
             *terms, last_term = termstr.split('.')
 
             # Start cursor at root of current resource
-            roles = settings._resource_roles
+            config = settings._resource_config
             terms.each do |term|
               # Move cursor through each term, avoiding the default proc,
               # halting if no roles found, i.e. client asked to include
               # something that Sinja doesn't know about
               throw :keep?, true \
-                unless roles = settings._sinja.resource_roles.fetch(term.pluralize.to_sym, nil)
+                unless config = settings._sinja.resource_config.fetch(term.pluralize.to_sym, nil)
             end
 
-            roles =
-              roles.dig(:has_many, last_term.pluralize.to_sym, :fetch) ||
-              roles.dig(:has_one, last_term.singularize.to_sym, :pluck)
+            roles = (
+              config.dig(:has_many, last_term.pluralize.to_sym, :fetch) ||
+              config.dig(:has_one, last_term.singularize.to_sym, :pluck)
+            )[:roles]
 
             throw :keep?, roles && (roles.empty? || roles === memoized_role)
           end

@@ -19,9 +19,11 @@ module Sinja
       end
 
       def dispatch_relationship_requests!(id, methods: {}, **opts)
-        data.fetch(:relationships, {}).each do |path, body|
-          method = methods.fetch(settings._resource_roles[:has_one].key?(path.to_sym) ? :has_one : :has_many, :patch)
-          code, _, *json = dispatch_relationship_request(id, path, opts.merge(:body=>body, :method=>method))
+        data.fetch(:relationships, {}).each do |rel, body|
+          rel_type = settings._resource_config[:has_one].key?(rel) ? :has_one : :has_many
+          code, _, *json = dispatch_relationship_request id, rel,
+            opts.merge(:body=>body, :method=>methods.fetch(rel_type, :patch))
+
           # TODO: Gather responses and report all errors instead of only first?
           # `halt' was called (instead of raise); rethrow it as best as possible
           raise SideloadError.new(code, json) unless (200...300).cover?(code)

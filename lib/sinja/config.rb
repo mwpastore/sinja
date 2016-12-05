@@ -15,7 +15,21 @@ module Sinja
     end
 
     def deep_freeze(c)
-      c.tap { |i| i.values.each(&:freeze) }.freeze
+      if c.respond_to?(:default_proc)
+        c.default_proc = nil
+      end
+
+      if c.respond_to?(:values)
+        c.values.each do |i|
+          if Hash === i
+            deep_freeze(i)
+          else
+            i.freeze
+          end
+        end
+      end
+
+      c.freeze
     end
   end
 
@@ -35,11 +49,7 @@ module Sinja
     attr_reader \
       :query_params,
       :error_logger,
-      :default_roles,
-      :default_has_many_roles,
-      :default_has_one_roles,
-      :resource_roles,
-      :resource_sideload,
+      :resource_config,
       :conflict_exceptions,
       :not_found_exceptions,
       :validation_exceptions,
@@ -47,21 +57,26 @@ module Sinja
       :serializer_opts
 
     def initialize
-      @error_logger = ->(eh) { logger.error('sinja') { eh } }
+      @error_logger = ->(h) { logger.error('sinja') { h } }
 
-      @default_roles = RolesConfig.new(ResourceRoutes::ACTIONS)
-      @default_has_many_roles = RolesConfig.new(RelationshipRoutes::HasMany::ACTIONS)
-      @default_has_one_roles = RolesConfig.new(RelationshipRoutes::HasOne::ACTIONS)
+      @default_roles = {
+        :resource=>RolesConfig.new(%i[show index create update destroy]),
+        :has_many=>RolesConfig.new(%i[fetch merge subtract clear]),
+        :has_one=>RolesConfig.new(%i[pluck graft prune])
+      }
 
-      @resource_roles = Hash.new { |h, k| h[k] = {
-        :resource=>@default_roles.dup,
-        :has_many=>Hash.new { |rh, rk| rh[rk] = @default_has_many_roles.dup },
-        :has_one=>Hash.new { |rh, rk| rh[rk] = @default_has_one_roles.dup }
+      action_proc = proc { |type, hash, action| hash[action] = {
+        :roles=>@default_roles[type][action].dup,
+        :sideload_on=>Set.new,
+        :filter_by=>Set.new,
+        :sort_by=>Set.new
+      }}.curry
+
+      @resource_config = Hash.new { |h, k| h[k] = {
+        :resource=>Hash.new(&action_proc[:resource]),
+        :has_many=>Hash.new { |rh, rk| rh[rk] = Hash.new(&action_proc[:has_many]) },
+        :has_one=>Hash.new { |rh, rk| rh[rk] = Hash.new(&action_proc[:has_one]) }
       }}
-
-      @resource_sideload = Hash.new do |h, k|
-        h[k] = SideloadConfig.new(Resource::SIDELOAD_ACTIONS)
-      end
 
       @conflict_exceptions = Set.new
       @not_found_exceptions = Set.new
@@ -83,15 +98,15 @@ module Sinja
     end
 
     def conflict_exceptions=(e=[])
-      @conflict_exceptions.replace(Set[*e])
+      @conflict_exceptions.replace([*e])
     end
 
     def not_found_exceptions=(e=[])
-      @not_found_exceptions.replace(Set[*e])
+      @not_found_exceptions.replace([*e])
     end
 
     def validation_exceptions=(e=[])
-      @validation_exceptions.replace(Set[*e])
+      @validation_exceptions.replace([*e])
     end
 
     def validation_formatter=(f)
@@ -104,12 +119,28 @@ module Sinja
       @validation_formatter = f
     end
 
-    def_delegator :@default_roles, :merge!, :default_roles=
-    def_delegator :@default_has_many_roles, :merge!, :default_has_many_roles=
-    def_delegator :@default_has_one_roles, :merge!, :default_has_one_roles=
+    def default_roles
+      @default_roles[:resource]
+    end
 
-    def serializer_opts=(h={})
-      @serializer_opts.replace(deep_copy(DEFAULT_SERIALIZER_OPTS).merge!(h))
+    def default_roles=(other={})
+      @default_roles[:resource].merge!(other)
+    end
+
+    def default_has_many_roles
+      @default_roles[:has_many]
+    end
+
+    def default_has_many_roles=(other={})
+      @default_roles[:has_many].merge!(other)
+    end
+
+    def default_has_one_roles
+      @default_roles[:has_one]
+    end
+
+    def default_has_one_roles=(other={})
+      @default_roles[:has_one].merge!(other)
     end
 
     DEFAULT_OPTS.keys.each do |k|
@@ -117,34 +148,23 @@ module Sinja
       define_method("#{k}=") { |v| @opts[k] = v }
     end
 
+    def serializer_opts=(h={})
+      @serializer_opts.replace(deep_copy(DEFAULT_SERIALIZER_OPTS).merge!(h))
+    end
+
     def freeze
       @error_logger.freeze
 
-      @default_roles.freeze
-      @default_has_many_roles.freeze
-      @default_has_one_roles.freeze
-
-      @resource_roles.default_proc = nil
-      @resource_roles.values.each do |h|
-        h[:resource].freeze
-        h[:has_many].default_proc = nil
-        deep_freeze(h[:has_many])
-        h[:has_one].default_proc = nil
-        deep_freeze(h[:has_one])
-      end
-      deep_freeze(@resource_roles)
-
-      @resource_sideload.default_proc = nil
-      deep_freeze(@resource_sideload)
+      deep_freeze(@default_roles)
+      deep_freeze(@resource_config)
 
       @conflict_exceptions.freeze
       @not_found_exceptions.freeze
       @validation_exceptions.freeze
       @validation_formatter.freeze
 
-      deep_freeze(@serializer_opts)
-
       @opts.freeze
+      deep_freeze(@serializer_opts)
 
       super
     end
@@ -174,7 +194,7 @@ module Sinja
       h.each do |action, roles|
         abort "Unknown or invalid action helper `#{action}' in configuration" \
           unless @data.key?(action)
-        @data[action].replace(Roles[*roles])
+        @data[action].replace([*roles])
       end
       @data
     end
@@ -182,35 +202,6 @@ module Sinja
     def initialize_copy(other)
       super
       @data = deep_copy(other.instance_variable_get(:@data))
-    end
-
-    def freeze
-      deep_freeze(@data)
-      super
-    end
-  end
-
-  class SideloadConfig
-    include ConfigUtils
-    extend Forwardable
-
-    def initialize(actions=[])
-      @data = actions.map { |child| [child, Set.new] }.to_h
-    end
-
-    def_delegators :@data, :[], :dig
-
-    def ==(other)
-      @data == other.instance_variable_get(:@data)
-    end
-
-    def merge!(h={})
-      h.each do |child, parents|
-        abort "Unknown or invalid action helper `#{child}' in configuration" \
-          unless @data.key?(child)
-        @data[child].replace(Set[*parents])
-      end
-      @data
     end
 
     def freeze

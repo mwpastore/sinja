@@ -4,6 +4,7 @@ require 'mustermann'
 require 'sinatra/base'
 require 'sinatra/namespace'
 
+require 'set'
 require 'sinja/config'
 require 'sinja/errors'
 require 'sinja/helpers/serializers'
@@ -34,33 +35,17 @@ module Sinja
       .to_sym
 
     # trigger default procs
-    _sinja.resource_roles[resource_name]
-    _sinja.resource_sideload[resource_name]
+    config = _sinja.resource_config[resource_name]
 
     namespace "/#{resource_name}" do
-      define_singleton_method(:_resource_roles) do
-        _sinja.resource_roles[resource_name]
-      end
-
-      define_singleton_method(:resource_roles) do
-        _resource_roles[:resource]
-      end
-
-      define_singleton_method(:resource_sideload) do
-        _sinja.resource_sideload[resource_name]
-      end
+      define_singleton_method(:_resource_config) { config }
+      define_singleton_method(:resource_config) { config[:resource] }
 
       helpers do
-        define_method(:can?) do |*args|
-          super(resource_name, *args)
-        end
-
-        define_method(:sanity_check!) do |*args|
-          super(resource_name, *args)
-        end
-
-        define_method(:sideload?) do |*args|
-          super(resource_name, *args)
+        %i[can? sanity_check! sideload?].each do |meth|
+          define_method(meth) do |*args|
+            super(resource_name, *args)
+          end
         end
       end
 
@@ -102,7 +87,7 @@ module Sinja
 
     app.disable :protection, :show_exceptions, :static
     app.set :_sinja, Sinja::Config.new
-    app.set :_resource_roles, nil # dummy value overridden in each resource
+    app.set :_resource_config, nil # dummy value overridden in each resource
 
     app.set :actions do |*actions|
       condition do
@@ -151,9 +136,10 @@ module Sinja
       end
 
       def can?(resource_name, action, rel_type=nil, rel=nil)
-        lookup = settings._sinja.resource_roles[resource_name]
-        # TODO: This is... problematic.
-        roles = (lookup[rel_type][rel][action] if rel_type && rel) || lookup[:resource][action]
+        config = settings._sinja.resource_config[resource_name]
+        config = rel_type && rel ? config[rel_type][rel] : config[:resource]
+        roles = config&.dig(action, :roles)
+
         roles.nil? || roles.empty? || roles === memoized_role
       end
 
@@ -197,9 +183,8 @@ module Sinja
 
       def sideload?(resource_name, child)
         return unless sideloaded?
-        parent = env.fetch('sinja.passthru', 'unknown').to_sym
-        settings._sinja.resource_sideload[resource_name][child]&.
-          include?(parent) && can?(parent)
+        parent = env['sinja.passthru'].to_sym
+        settings.resource_config[child][:sideload_on]&.include?(parent) && can?(parent)
       end
 
       def sideloaded?

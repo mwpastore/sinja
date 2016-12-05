@@ -15,15 +15,12 @@ class TestConfig < Minitest::Test
     assert_kind_of Sinja::RolesConfig, @config.default_has_many_roles
     assert_kind_of Sinja::RolesConfig, @config.default_has_one_roles
 
-    assert_kind_of Hash, @config.resource_roles
-    assert_respond_to @config.resource_roles.default_proc, :call
+    assert_kind_of Hash, @config.resource_config
+    assert_respond_to @config.resource_config.default_proc, :call
 
-    assert_kind_of Hash, @config.resource_sideload
-    assert_respond_to @config.resource_sideload.default_proc, :call
-
-    assert_equal Set.new, @config.conflict_exceptions
-    assert_equal Set.new, @config.not_found_exceptions
-    assert_equal Set.new, @config.validation_exceptions
+    assert_kind_of Set, @config.conflict_exceptions
+    assert_kind_of Set, @config.not_found_exceptions
+    assert_kind_of Set, @config.validation_exceptions
     assert_respond_to @config.validation_formatter, :call
 
     assert_kind_of Hash, @config.serializer_opts
@@ -32,29 +29,43 @@ class TestConfig < Minitest::Test
     assert_equal :generate, @config.json_error_generator
   end
 
-  def test_resource_roles_default_proc
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:resource]
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:has_many][:bars]
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:has_one][:qux]
+  def test_resource_config_default_procs
+    @config.default_roles = { :index=>:foo }
+    @config.default_has_many_roles = { :fetch=>:bar }
+    @config.default_has_one_roles = { :pluck=>:qux }
 
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:bars][:resource]
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:bars][:has_one][:foo]
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:bars][:has_one][:qux]
+    assert_equal Sinja::Roles[:foo], @config.resource_config[:foos][:resource][:index][:roles]
+    assert_equal Sinja::Roles[:bar], @config.resource_config[:foos][:has_many][:bars][:fetch][:roles]
+    assert_equal Sinja::Roles[:qux], @config.resource_config[:foos][:has_one][:qux][:pluck][:roles]
 
-    refute_same @config.resource_roles[:foos], @config.resource_roles[:bars]
+    assert_kind_of Sinja::Roles, @config.resource_config[:bars][:resource][:index][:roles]
+    assert_kind_of Sinja::Roles, @config.resource_config[:bars][:has_many][:bars][:fetch][:roles]
+    assert_kind_of Sinja::Roles, @config.resource_config[:bars][:has_one][:qux][:pluck][:roles]
 
-    assert_equal @config.resource_roles[:foos][:resource], @config.resource_roles[:bars][:resource]
-    refute_same @config.resource_roles[:foos][:resource], @config.resource_roles[:bars][:resource]
+    assert_equal @config.resource_config[:foos],
+      @config.resource_config[:bars]
+    refute_same @config.resource_config[:foos],
+      @config.resource_config[:bars]
 
-    assert_equal @config.resource_roles[:foos][:has_one][:qux], @config.resource_roles[:bars][:has_one][:qux]
-    refute_same @config.resource_roles[:foos][:has_one][:qux], @config.resource_roles[:bars][:has_one][:qux]
-  end
+    assert_equal @config.resource_config[:foos][:resource],
+      @config.resource_config[:bars][:resource]
+    refute_same @config.resource_config[:foos][:resource],
+      @config.resource_config[:bars][:resource]
 
-  def test_resource_sideload_default_proc
-    assert_kind_of Sinja::SideloadConfig, @config.resource_sideload[:foos]
-    assert_kind_of Sinja::SideloadConfig, @config.resource_sideload[:bars]
-    assert_equal @config.resource_sideload[:foos], @config.resource_sideload[:bars]
-    refute_same @config.resource_sideload[:foos], @config.resource_sideload[:bars]
+    assert_equal @config.resource_config[:foos][:resource][:index],
+      @config.resource_config[:bars][:resource][:index]
+    refute_same @config.resource_config[:foos][:resource][:index],
+      @config.resource_config[:bars][:resource][:index]
+
+    assert_equal @config.resource_config[:foos][:resource][:index][:roles],
+      @config.resource_config[:bars][:resource][:index][:roles]
+    refute_same @config.resource_config[:foos][:resource][:index][:roles],
+      @config.resource_config[:bars][:resource][:index][:roles]
+
+    assert_equal @config.resource_config[:foos][:resource][:index][:sideload_on],
+      @config.resource_config[:bars][:resource][:index][:sideload_on]
+    refute_same @config.resource_config[:foos][:resource][:index][:sideload_on],
+      @config.resource_config[:bars][:resource][:index][:sideload_on]
   end
 
   def test_error_logger_setter
@@ -148,11 +159,8 @@ class TestConfig < Minitest::Test
     assert_predicate @config.default_has_one_roles, :frozen?
     assert_predicate @config.default_has_many_roles, :frozen?
 
-    assert_predicate @config.resource_roles, :frozen?
-    assert_nil @config.resource_roles.default_proc
-
-    assert_predicate @config.resource_sideload, :frozen?
-    assert_nil @config.resource_sideload.default_proc
+    assert_predicate @config.resource_config, :frozen?
+    assert_nil @config.resource_config.default_proc
 
     assert_predicate @config.conflict_exceptions, :frozen?
     assert_predicate @config.not_found_exceptions, :frozen?
@@ -164,20 +172,27 @@ class TestConfig < Minitest::Test
     assert_predicate @config.instance_variable_get(:@opts), :frozen?
   end
 
-  def test_it_freezes_resource_role_deeply
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:resource]
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:has_many][:bars]
-    assert_kind_of Sinja::RolesConfig, @config.resource_roles[:foos][:has_one][:qux]
+  def test_it_freezes_resource_config_deeply
+    assert_kind_of Sinja::Roles, @config.resource_config[:foos][:resource][:index][:roles]
+    assert_kind_of Sinja::Roles, @config.resource_config[:foos][:has_many][:bars][:fetch][:roles]
+    assert_kind_of Set, @config.resource_config[:foos][:has_many][:bars][:fetch][:sideload_on]
+    assert_kind_of Sinja::Roles, @config.resource_config[:foos][:has_one][:qux][:pluck][:roles]
 
     @config.freeze
 
-    assert_predicate @config.resource_roles[:foos], :frozen?
-    assert_predicate @config.resource_roles[:foos][:resource], :frozen?
-    assert_predicate @config.resource_roles[:foos][:has_many], :frozen?
-    assert_nil @config.resource_roles[:foos][:has_many].default_proc
-    assert_predicate @config.resource_roles[:foos][:has_many][:bars], :frozen?
-    assert_predicate @config.resource_roles[:foos][:has_one], :frozen?
-    assert_nil @config.resource_roles[:foos][:has_one].default_proc
-    assert_predicate @config.resource_roles[:foos][:has_one][:qux], :frozen?
+    assert_predicate @config.resource_config[:foos], :frozen?
+    assert_nil @config.resource_config[:foos].default_proc
+
+    assert_predicate @config.resource_config[:foos][:has_many], :frozen?
+    assert_nil @config.resource_config[:foos][:has_many].default_proc
+
+    assert_predicate @config.resource_config[:foos][:has_one][:qux], :frozen?
+    assert_nil @config.resource_config[:foos][:has_one][:qux].default_proc
+
+    assert_predicate @config.resource_config[:foos][:resource][:index], :frozen?
+    assert_nil @config.resource_config[:foos][:resource][:index].default_proc
+
+    assert_predicate @config.resource_config[:foos][:has_many][:bars][:fetch][:roles], :frozen?
+    assert_predicate @config.resource_config[:foos][:has_many][:bars][:fetch][:sideload_on], :frozen?
   end
 end

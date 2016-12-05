@@ -2,10 +2,10 @@
 module Sinja
   module RelationshipRoutes
     module HasOne
-      ACTIONS = %i[pluck prune graft].freeze
-
       def self.registered(app)
-        app.def_action_helpers(ACTIONS, app)
+        app.def_action_helper(app, :pluck, :roles)
+        app.def_action_helper(app, :prune, :roles)
+        app.def_action_helper(app, :graft, %i[roles sideload_on])
 
         app.head '' do
           unless relationship_link?
