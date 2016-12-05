@@ -36,7 +36,7 @@ TagController = proc do
   show
 
   index(sort_by: :name, filter_by: :name) do
-    Tag
+    Tag.dataset
   end
 
   create(roles: :logged_in) do |attr|

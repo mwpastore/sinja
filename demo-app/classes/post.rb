@@ -58,7 +58,7 @@ PostController = proc do
   end
 
   index do
-    Post
+    Post.dataset
   end
 
   create(roles: :logged_in) do |attr, slug|

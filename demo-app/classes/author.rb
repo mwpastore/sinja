@@ -57,7 +57,7 @@ AuthorController = proc do
   show
 
   index do
-    Author
+    Author.dataset
   end
 
   create do |attr|
