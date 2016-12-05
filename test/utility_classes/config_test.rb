@@ -24,6 +24,7 @@ class TestConfig < Minitest::Test
     assert_kind_of Set, @config.validation_exceptions
     assert_respond_to @config.validation_formatter, :call
 
+    assert_kind_of Hash, @config.page_using
     assert_kind_of Hash, @config.serializer_opts
 
     assert_equal :generate, @config.json_generator
@@ -67,6 +68,16 @@ class TestConfig < Minitest::Test
       @config.resource_config[:bars][:resource][:index][:sideload_on]
     refute_same @config.resource_config[:foos][:resource][:index][:sideload_on],
       @config.resource_config[:bars][:resource][:index][:sideload_on]
+
+    assert_equal @config.resource_config[:foos][:resource][:index][:filter_by],
+      @config.resource_config[:bars][:resource][:index][:filter_by]
+    refute_same @config.resource_config[:foos][:resource][:index][:filter_by],
+      @config.resource_config[:bars][:resource][:index][:filter_by]
+
+    assert_equal @config.resource_config[:foos][:resource][:index][:sort_by],
+      @config.resource_config[:bars][:resource][:index][:sort_by]
+    refute_same @config.resource_config[:foos][:resource][:index][:sort_by],
+      @config.resource_config[:bars][:resource][:index][:sort_by]
   end
 
   def test_error_logger_setter
@@ -139,6 +150,12 @@ class TestConfig < Minitest::Test
     assert_equal lam, @config.validation_formatter
   end
 
+  def test_page_using
+    @config.page_using = { :c=>3 }
+    @config.page_using = { :a=>1, :b=>2 }
+    assert_equal({ :a=>1, :b=>2 }, @config.page_using)
+  end
+
   def test_serializer_opts_setter
     default = @config.serializer_opts[:jsonapi]
     @config.serializer_opts = { :meta=>{ :what=>1 } }
@@ -169,6 +186,7 @@ class TestConfig < Minitest::Test
     assert_predicate @config.validation_exceptions, :frozen?
     assert_predicate @config.validation_formatter, :frozen?
 
+    assert_predicate @config.page_using, :frozen?
     assert_predicate @config.serializer_opts, :frozen?
 
     assert_predicate @config.instance_variable_get(:@opts), :frozen?
@@ -178,6 +196,8 @@ class TestConfig < Minitest::Test
     assert_kind_of Sinja::Roles, @config.resource_config[:foos][:resource][:index][:roles]
     assert_kind_of Sinja::Roles, @config.resource_config[:foos][:has_many][:bars][:fetch][:roles]
     assert_kind_of Set, @config.resource_config[:foos][:has_many][:bars][:fetch][:sideload_on]
+    assert_kind_of Set, @config.resource_config[:foos][:has_many][:bars][:fetch][:filter_by]
+    assert_kind_of Set, @config.resource_config[:foos][:has_many][:bars][:fetch][:sort_by]
     assert_kind_of Sinja::Roles, @config.resource_config[:foos][:has_one][:qux][:pluck][:roles]
 
     @config.freeze
@@ -196,5 +216,7 @@ class TestConfig < Minitest::Test
 
     assert_predicate @config.resource_config[:foos][:has_many][:bars][:fetch][:roles], :frozen?
     assert_predicate @config.resource_config[:foos][:has_many][:bars][:fetch][:sideload_on], :frozen?
+    assert_predicate @config.resource_config[:foos][:has_many][:bars][:fetch][:filter_by], :frozen?
+    assert_predicate @config.resource_config[:foos][:has_many][:bars][:fetch][:sort_by], :frozen?
   end
 end

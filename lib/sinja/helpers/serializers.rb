@@ -95,9 +95,9 @@ module Sinja
         options[:skip_collection_check] = defined?(::Sequel) && ::Sequel::Model === model
         options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
+        options = settings._sinja.serializer_opts.merge(options)
 
-        ::JSONAPI::Serializer.serialize model,
-          settings._sinja.serializer_opts.merge(options)
+        ::JSONAPI::Serializer.serialize(model, options)
       end
 
       def serialize_model?(model=nil, options={})
@@ -114,9 +114,29 @@ module Sinja
         options[:is_collection] = true
         options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
+        options = settings._sinja.serializer_opts.merge(options)
 
-        ::JSONAPI::Serializer.serialize [*models],
-          settings._sinja.serializer_opts.merge(options)
+        if options.key?(:links) && pagination = options[:links].delete(:pagination)
+          options[:links][:self] = request.url unless pagination.key?(:self)
+
+          query = Rack::Utils.build_nested_query \
+            env['rack.request.query_hash'].dup.tap { |h| h.delete('page') }
+          self_link, join_char =
+            if query.empty?
+              [request.path, ??]
+            else
+              ["#{request.path}?#{query}", ?&]
+            end
+
+          %i[self first prev next last].each do |key|
+            next unless pagination.key?(key)
+            query = Rack::Utils.build_nested_query \
+              :page=>pagination[key]
+            options[:links][key] = "#{self_link}#{join_char}#{query}"
+          end
+        end
+
+        ::JSONAPI::Serializer.serialize([*models], options)
       end
 
       def serialize_models?(models=[], options={})
@@ -129,16 +149,15 @@ module Sinja
         end
       end
 
-      def serialize_linkage(model, rel_path, options={})
+      def serialize_linkage(model, rel, options={})
         options[:is_collection] = false
         options[:skip_collection_check] = defined?(::Sequel) && ::Sequel::Model === model
-        options[:include] = rel_path.to_s
-
-        content = ::JSONAPI::Serializer.serialize model,
-          settings._sinja.serializer_opts.merge(options)
+        options[:include] = rel.to_s
+        options = settings._sinja.serializer_opts.merge(options)
 
         # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
-        content['data']['relationships'][rel_path.to_s].tap do |linkage|
+        content = ::JSONAPI::Serializer.serialize(model, options)
+        content['data']['relationships'][rel.to_s].tap do |linkage|
           %w[meta jsonapi].each do |key|
             linkage[key] = content[key] if content.key?(key)
           end

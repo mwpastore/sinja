@@ -31,8 +31,11 @@ module Sinja
         allow :get=>:index, :post=>:create
       end
 
-      app.get '', :qparams=>%i[include fields], :actions=>:index do
-        serialize_models(*index)
+      app.get '', :qparams=>%i[include fields filter sort page], :actions=>:index do
+        collection, opts = index
+        collection, links = filter_sort_page(collection, :index)
+        (opts[:links] ||= {}).merge!(links)
+        serialize_models(collection, opts)
       end
 
       app.post '', :qparams=>:include, :actions=>:create do

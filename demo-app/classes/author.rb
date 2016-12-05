@@ -57,7 +57,7 @@ AuthorController = proc do
   show
 
   index do
-    Author.all
+    Author
   end
 
   create do |attr|
@@ -76,13 +76,13 @@ AuthorController = proc do
 
   has_many :comments do
     fetch(roles: :logged_in) do
-      resource.comments
+      resource.comments_dataset
     end
   end
 
   has_many :posts do
     fetch do
-      resource.posts
+      resource.posts_dataset
     end
   end
 end

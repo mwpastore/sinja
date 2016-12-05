@@ -35,8 +35,8 @@ TagController = proc do
 
   show
 
-  index do
-    Tag.all
+  index(sort_by: :name, filter_by: :name) do
+    Tag
   end
 
   create(roles: :logged_in) do |attr|
@@ -52,7 +52,7 @@ TagController = proc do
 
   has_many :posts do
     fetch do
-      resource.posts
+      resource.posts_dataset
     end
 
     merge(roles: :logged_in) do |rios|

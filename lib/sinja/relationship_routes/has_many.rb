@@ -22,8 +22,11 @@ module Sinja
           serialize_linkage
         end
 
-        app.get '', :qparams=>%i[include fields], :actions=>:fetch do
-          serialize_models(*fetch)
+        app.get '', :qparams=>%i[include fields filter sort page], :actions=>:fetch do
+          collection, opts = fetch
+          collection, links = filter_sort_page(collection, :fetch)
+          (opts[:links] ||= {}).merge!(links)
+          serialize_models(collection, opts)
         end
 
         app.patch '', :nullif=>proc(&:empty?), :actions=>:clear do

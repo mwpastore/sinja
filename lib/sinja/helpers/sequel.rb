@@ -11,6 +11,12 @@ module Sinja
         c.not_found_exceptions << ::Sequel::NoMatchingRow
         c.validation_exceptions << ::Sequel::ValidationFailed
         c.validation_formatter = ->(e) { e.errors.keys.zip(e.errors.full_messages) }
+
+        c.page_using = {
+          :number=>1,
+          :size=>10,
+          :record_count=>nil
+        } if ::Sequel::Database::EXTENSIONS.key?(:pagination)
       end
 
       def validate!
@@ -19,6 +25,47 @@ module Sinja
 
       def database
         ::Sequel::DATABASES.first
+      end
+
+      def filter(collection, **fields)
+        collection.where(fields)
+      end
+
+      def sort(collection, **fields)
+        collection.order(*fields.map { |k, v| ::Sequel.send(v, k) })
+      end
+
+      def page(collection, **opts)
+        opts = settings._sinja.page_using.merge(opts)
+        collection = collection.dataset \
+          unless collection.respond_to?(:paginate)
+        collection = collection.paginate \
+          opts[:number].to_i,
+          opts[:size].to_i,
+          (opts[:record_count].to_i if opts[:record_count])
+
+        pagination = {
+          :first=>{ :number=>1 },
+          :self=>{ :number=>collection.current_page },
+          :last=>{ :number=>collection.page_count }
+        }
+        pagination[:next] = { :number=>collection.next_page } if collection.next_page
+        pagination[:prev] = { :number=>collection.prev_page } if collection.prev_page
+
+        # Add attributes common to all pagination links
+        pagination.values.each_with_object([
+          collection.page_size,
+          collection.pagination_record_count
+        ]) do |h, (s, c)|
+          h[:size] = s
+          h[:record_count] = c
+        end
+
+        return collection, pagination
+      end if ::Sequel::Database::EXTENSIONS.key?(:pagination)
+
+      def finalize(collection)
+        collection.all
       end
 
       def transaction(&block)

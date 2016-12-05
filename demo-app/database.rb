@@ -9,4 +9,5 @@ DB =
     Sequel.sqlite
   end
 
+DB.extension :pagination
 DB.loggers << Logger.new($stderr) if Sinatra::Base.development?

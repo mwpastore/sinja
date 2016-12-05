@@ -54,6 +54,7 @@ module Sinja
       :not_found_exceptions,
       :validation_exceptions,
       :validation_formatter,
+      :page_using,
       :serializer_opts
 
     def initialize
@@ -93,6 +94,7 @@ module Sinja
       @validation_formatter = ->{ Array.new }
 
       @opts = deep_copy(DEFAULT_OPTS)
+      @page_using = Hash.new
       @serializer_opts = deep_copy(DEFAULT_SERIALIZER_OPTS)
     end
 
@@ -157,6 +159,10 @@ module Sinja
       define_method("#{k}=") { |v| @opts[k] = v }
     end
 
+    def page_using=(p={})
+      @page_using.replace(p)
+    end
+
     def serializer_opts=(h={})
       @serializer_opts.replace(deep_copy(DEFAULT_SERIALIZER_OPTS).merge!(h))
     end
@@ -174,6 +180,7 @@ module Sinja
       @validation_formatter.freeze
 
       @opts.freeze
+      @page_using.freeze
       deep_freeze(@serializer_opts)
 
       super

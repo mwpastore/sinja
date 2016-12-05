@@ -47,6 +47,11 @@ the JSON:API specification is).
       - [`merge {|rios| ..}` => TrueClass?](#merge-rios---trueclass)
       - [`subtract {|rios| ..}` => TrueClass?](#subtract-rios---trueclass)
   - [Action Helper Hooks &amp; Utilities](#action-helper-hooks-amp-utilities)
+  - [Working with Collections](#working-with-collections)
+    - [Filtering](#filtering)
+    - [Sorting](#sorting)
+    - [Paging](#paging)
+    - [Finalizing](#finalizing)
   - [Authorization](#authorization)
     - [`default_roles` configurables](#default_roles-configurables)
     - [`:roles` Action Helper option](#roles-action-helper-option)
@@ -334,13 +339,13 @@ welcome.
 | Fetchability    | `fetchable_fields` method    | Omit attributes in Serializer                     |
 | Creatability    | `creatable_fields` method    | Handle in `create` action helper or Model\*       |
 | Updatability    | `updatable_fields` method    | Handle in `update` action helper or Model\*       |
-| Sortability     | `sortable_fields` method     | Handle `params[:sort]` in `index` action helper   |
+| Sortability     | `sortable_fields` method     | `sort` helper and `:sort_by` option               |
 | Default sorting | `default_sort` method        | Set default for `params[:sort]`                   |
 | Context         | `context` method             | Rack middleware (e.g. `env['context']`)           |
 | Attributes      | Define in Model and Resource | Define in Model\* and Serializer                  |
 | Formatting      | `format` attribute keyword   | Define attribute as a method in Serialier         |
 | Relationships   | Define in Model and Resource | Define in Model, Resource, and Serializer         |
-| Filters         | `filter(s)` keywords         | Handle `params[:filter]` in `index` action helper |
+| Filters         | `filter(s)` keywords         | `filter` helper and `:filter_by` option           |
 | Default filters | `default` filter keyword     | Set default for `params[:filter]`                 |
 
 \* - Depending on your ORM.
@@ -420,6 +425,9 @@ configure_jsonapi do |c|
   #c.query_params = {
     :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>[]
   #}
+
+  # see "Paging" below
+  #c.page_using = {}
 
   # Set the error logger used by Sinja
   #c.error_logger = ->(error_hash) { logger.error('sinja') { error_hash } }
@@ -690,10 +698,130 @@ To let a custom route accept standard query parameters, add a `:qparams` route
 condition:
 
 ```ruby
-get '/top10', qparams: [:include, :fields] do
+get '/top10', qparams: [:include, :sort] do
   # ..
 end
 ```
+
+### Working with Collections
+
+#### Filtering
+
+Allow clients to filter the collections returned by the `index` and `fetch`
+action helpers by defining a `filter` helper in the appropriate scope that
+takes a collection and a hash of `filter` query parameters (with its top-level
+keys dedasherized and symbolized) and returns the filtered collection. You may
+also set a `:filter_by` option on the action helper to an array of symbols
+representing the "filter-able" fields for that resource.
+
+For example, to implement simple equality filters using Sequel:
+
+```ruby
+helpers do
+  def filter(collection, fields={})
+    collection.where(fields)
+  end
+end
+
+resource :posts do
+  index(filter_by: [:title, :type]) do
+    Foo # return a Sequel::Dataset (instead of an array of Sequel::Model instances)
+  end
+
+  has_many :comments do
+    fetch(filter_by: :status) do
+      resource.comments_dataset # return a Sequel::Dataset
+    end
+  end
+end
+```
+
+#### Sorting
+
+Allow clients to sort the collections returned by the `index` and `fetch`
+action helpers by defining a `sort` helper in the appropriate scope that takes
+a collection and a hash of `sort` query parameters (with its top-level keys
+dedasherized and symbolized) and returns the sorted collection. The hash values
+are either `:asc` (to sort ascending) or `:desc` (to sort descending). You may
+also set a `:sort_by` option on the action helper to an array of symbols
+representing the "sort-able" fields for that resource.
+
+For example, to implement sorting using Sequel:
+
+```ruby
+helpers do
+  def sort(collection, fields={})
+    collection.order(*fields.map { |k, v| Sequel.send(v, k) })
+  end
+end
+
+resource :posts do
+  index(sort_by: :created_at) do
+    Foo # return a Sequel::Dataset (instead of an array of Sequel::Model instances)
+  end
+end
+```
+
+#### Paging
+
+Allow clients to page the collections returned by the `index` and `fetch`
+action helpers by defining a `page` helper in the appropriate scope that takes
+a collection and a hash of `page` query parameters (with its top-level keys
+dedasherized and symbolized) and returns the paged collection along with a
+special nested hash used to build the paging links.
+
+The top-level keys of the hash returned by this method must be members of the
+set: {`:self`, `:first`, `:prev`, `:next`, `:last`}. The values of the hash are
+hashes themselves containing the query parameters used to construct the
+corresponding link. For example, the hash:
+
+```ruby
+{
+  prev: {
+    number: 3,
+    size: 10
+  },
+  next: {
+    number: 5,
+    size: 10
+  }
+}
+```
+
+Could be used to build the following top-level links in the response document:
+
+```json
+"links": {
+  "prev": "/posts?page[number]=3&page[size]=10",
+  "next": "/posts?page[number]=5&page[size]=10"
+}
+```
+
+You must also set the `page_using` configurable to a hash of symbols
+representing the paging fields used in your application (for example, `:number`
+and `:size` for the above example) along with their default values (or `nil`).
+Please see the [Sequel helpers](/lib/sinja/helpers/sequel.rb) in this
+repository for a detailed, working example.
+
+#### Finalizing
+
+If you need to perform any additional actions on a collection after it is
+filtered, sorted, and/or paged, but before it is serialized, define a
+`finalize` helper that takes a collection and returns the finalized collection.
+For example, to convert Sequel datasets to arrays of models before
+serialization:
+
+```ruby
+helpers do
+  def finalize(collection)
+    collection.all
+  end
+end
+```
+
+(Note that in addition to finalizing Sequel datasets with `#all`, you should
+also enable the `:tactical_eager_loading` plugin for the best compatibility
+with JSONAPI::Serializers.)
 
 ### Authorization
 

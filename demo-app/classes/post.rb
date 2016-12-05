@@ -58,8 +58,7 @@ PostController = proc do
   end
 
   index do
-    # TODO: Filter/sort by created_at and/or updated_at?
-    Post.all
+    Post
   end
 
   create(roles: :logged_in) do |attr, slug|
@@ -94,13 +93,13 @@ PostController = proc do
 
   has_many :comments do
     fetch do
-      next resource.comments, include: 'author'
+      next resource.comments_dataset, include: 'author'
     end
   end
 
   has_many :tags do
     fetch do
-      resource.tags
+      resource.tags_dataset
     end
 
     merge(roles: %i[owner superuser], sideload_on: %i[create update]) do |rios|
