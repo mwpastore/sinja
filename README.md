@@ -47,6 +47,7 @@ the JSON:API specification is).
       - [`merge {|rios| ..}` => TrueClass?](#merge-rios---trueclass)
       - [`subtract {|rios| ..}` => TrueClass?](#subtract-rios---trueclass)
   - [Action Helper Hooks &amp; Utilities](#action-helper-hooks-amp-utilities)
+  - [Query Parameters](#query-parameters)
   - [Working with Collections](#working-with-collections)
     - [Filtering](#filtering)
     - [Sorting](#sorting)
@@ -70,6 +71,7 @@ the JSON:API specification is).
   - [Patchless Clients](#patchless-clients)
   - [Sinja or Sinatra::JSONAPI](#sinja-or-sinatrajsonapi)
   - [Code Organization](#code-organization)
+  - [Testing](#testing)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -1337,6 +1339,25 @@ class App < Sinatra::Base
 end
 ```
 
+### Testing
+
+The short answer to "How do I test my Sinja application?" is "Like you would
+any other Sinatra application." Unfortunately, the testing story isn't quite
+*there* yet for Sinja. I think leveraging something like [Munson][27] or
+[json_api_client][28] is probably the best bet for integration testing, but
+unfortunately both projects are rife with broken and/or missing critical
+features. And until we can solve the general code organization problem (most
+likely with patches to Sinatra), it will remain difficult to isolate action
+helpers and other artifacts for unit testing.
+
+Sinja's own test suite is based on [Rack::Test][29] (plus some ugly kludges).
+I wouldn't recommend it but it might be a good place to start looking for
+ideas. It leverages [demo-app](/demo-app) with Sequel and an in-memory database
+to perform integration testing of Sinja's various features under MRI/YARV and
+JRuby. The goal is to free you from worrying about whether your applications
+will behave according to the JSON:API spec (as long as you follow the usage
+documented in this README) and focus on testing your business logic.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run
@@ -1385,3 +1406,6 @@ License](http://opensource.org/licenses/MIT).
 [24]: http://www.rubydoc.info/github/rack/rack/Rack/MethodOverride
 [25]: http://www.sinatrarb.com/mustermann/
 [26]: https://github.com/tiagopog/jsonapi-utils
+[27]: https://github.com/coryodaniel/munson
+[28]: https://github.com/chingor13/json_api_client
+[29]: https://github.com/brynary/rack-test
