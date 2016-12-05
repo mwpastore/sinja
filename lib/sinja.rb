@@ -181,9 +181,11 @@ module Sinja
       def can?(resource_name, action, rel_type=nil, rel=nil)
         config = settings._sinja.resource_config[resource_name]
         config = rel_type && rel ? config[rel_type][rel] : config[:resource]
-        roles = config&.dig(action, :roles)
-
-        roles.nil? || roles.empty? || roles === memoized_role
+        # JRuby issues with nil default_proc (fixed in 9.1.7.0?)
+        # https://github.com/jruby/jruby/issues/4302
+        #roles = config&.dig(action, :roles)
+        roles = config&.key?(action) && config[action][:roles]
+        !roles || roles.empty? || roles === memoized_role
       end
 
       def content?
