@@ -10,7 +10,7 @@ DB.create_table?(:tags) do
 end
 
 DB.create_table?(:posts_tags) do
-  foreign_key :post_slug, :posts, :null=>false, :on_delete=>:cascade, :type=>String
+  foreign_key :post_slug, :posts, :null=>false, :on_delete=>:cascade, :on_update=>:cascade, :type=>String
   foreign_key :tag_id, :tags, :null=>false, :on_delete=>:cascade
   primary_key [:post_slug, :tag_id]
   index [:tag_id, :post_slug]
@@ -31,6 +31,10 @@ TagController = proc do
     def find(id)
       Tag[id.to_i]
     end
+
+    def settable_fields
+      %i[name]
+    end
   end
 
   show
@@ -41,7 +45,7 @@ TagController = proc do
 
   create(roles: :logged_in) do |attr|
     tag = Tag.new
-    tag.set_fields(attr, %i[name])
+    tag.set_fields(attr, settable_fields)
     tag.save(validate: false)
     next_pk tag
   end

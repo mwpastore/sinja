@@ -19,15 +19,15 @@ helpers Sinja::Helpers::Sequel do
     Author.first_by_email(env['HTTP_X_EMAIL']) if env.key?('HTTP_X_EMAIL')
   end
 
+  def database
+    DB
+  end
+
   def role
     [].tap do |a|
       a << :logged_in if current_user
       a << :superuser if current_user&.admin?
     end
-  end
-
-  def database
-    DB
   end
 end
 

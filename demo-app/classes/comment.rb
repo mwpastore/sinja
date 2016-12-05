@@ -5,7 +5,7 @@ require_relative '../database'
 DB.create_table?(:comments) do
   primary_key :id
   foreign_key :author_id, :authors, :on_delete=>:cascade
-  foreign_key :post_slug, :posts, :on_delete=>:cascade, :type=>String
+  foreign_key :post_slug, :posts, :on_delete=>:cascade, :on_update=>:cascade, :type=>String
   String :body, :text=>true, :null=>false
   DateTime :created_at
   DateTime :updated_at
@@ -38,10 +38,14 @@ CommentController = proc do
 
     def role
       if resource&.author == current_user
-        super.push(:owner)
+        [*super].push(:owner)
       else
         super
       end
+    end
+
+    def settable_fields
+      %i[body]
     end
   end
 
@@ -51,13 +55,13 @@ CommentController = proc do
 
   create(roles: :logged_in) do |attr|
     comment = Comment.new
-    comment.set_fields(attr, %i[body])
+    comment.set_fields(attr, settable_fields)
     comment.save(validate: false)
     next_pk comment
   end
 
   update(roles: %i[owner superuser]) do |attr|
-    resource.update_fields(attr, %i[body], validate: false, missing: :skip)
+    resource.update_fields(attr, settable_fields, validate: false, missing: :skip)
   end
 
   destroy(roles: %i[owner superuser]) do

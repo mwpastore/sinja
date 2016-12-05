@@ -14,7 +14,7 @@ end
 class Post < Sequel::Model
   plugin :timestamps
 
-  unrestrict_primary_key
+  unrestrict_primary_key # allow client-generated slugs
 
   many_to_one :author
   one_to_many :comments
@@ -46,10 +46,14 @@ PostController = proc do
 
     def role
       if resource&.author == current_user
-        super.push(:owner)
+        [*super].push(:owner)
       else
         super
       end
+    end
+
+    def settable_fields
+      %i[title body]
     end
   end
 
@@ -63,14 +67,14 @@ PostController = proc do
 
   create(roles: :logged_in) do |attr, slug|
     post = Post.new
-    post.set_fields(attr, %i[title body])
+    post.set_fields(attr, settable_fields)
     post.slug = slug.to_s # set primary key
     post.save(validate: false)
     next_pk post
   end
 
   update(roles: %i[owner superuser]) do |attr|
-    resource.update_fields(attr, %i[title body], validate: false, missing: :skip)
+    resource.update_fields(attr, settable_fields, validate: false, missing: :skip)
   end
 
   destroy(roles: %i[owner superuser]) do

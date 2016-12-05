@@ -24,6 +24,7 @@ class Author < Sequel::Model
   one_to_many :posts
 end
 
+# We have to create an admin user here, otherwise we have no way to create one.
 Author.create(email: 'all@yourbase.com', admin: true)
 
 class AuthorSerializer < BaseSerializer
@@ -41,13 +42,13 @@ AuthorController = proc do
 
     def role
       if resource == current_user
-        super.push(:self)
+        [*super].push(:self)
       else
         super
       end
     end
 
-    def fields
+    def settable_fields
       %i[email real_name display_name].tap do |a|
         a << :admin if role?(:superuser)
       end
@@ -62,12 +63,12 @@ AuthorController = proc do
 
   create do |attr|
     author = Author.new
-    author.set_fields(attr, fields)
+    author.set_fields(attr, settable_fields)
     next_pk author.save(validate: false)
   end
 
   update(roles: %i[self superuser]) do |attr|
-    resource.update_fields(attr, fields, validate: false, missing: :skip)
+    resource.update_fields(attr, settable_fields, validate: false, missing: :skip)
   end
 
   destroy(roles: %i[self superuser]) do
