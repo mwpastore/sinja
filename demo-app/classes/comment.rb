@@ -37,10 +37,8 @@ CommentController = proc do
     end
 
     def role
-      if resource&.author == current_user
-        [*super].push(:owner)
-      else
-        super
+      [*super].tap do |a|
+        a << :owner if resource&.author == current_user
       end
     end
 

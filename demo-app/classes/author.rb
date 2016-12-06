@@ -41,10 +41,8 @@ AuthorController = proc do
     end
 
     def role
-      if resource == current_user
-        [*super].push(:self)
-      else
-        super
+      [*super].tap do |a|
+        a << :myself if resource == current_user
       end
     end
 
@@ -67,11 +65,11 @@ AuthorController = proc do
     next_pk author.save(validate: false)
   end
 
-  update(roles: %i[self superuser]) do |attr|
+  update(roles: %i[myself superuser]) do |attr|
     resource.update_fields(attr, settable_fields, validate: false, missing: :skip)
   end
 
-  destroy(roles: %i[self superuser]) do
+  destroy(roles: %i[myself superuser]) do
     resource.destroy
   end
 

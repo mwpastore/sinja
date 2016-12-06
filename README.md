@@ -329,39 +329,31 @@ welcome.
 
 ### Comparison with JSONAPI::Resources (JR)
 
-| Feature         | JR                           | Sinja                                             |
-| :-------------- | :--------------------------- | :------------------------------------------------ |
-| Serializer      | Built-in                     | [JSONAPI::Serializers][3]                         |
-| Framework       | Rails                        | Sinatra, but easy to mount within others          |
-| Routing         | ActionDispatch::Routing      | Mustermann                                        |
-| Caching         | ActiveSupport::Cache         | BYO                                               |
-| ORM             | ActiveRecord/ActiveModel     | BYO                                               |
-| Authorization   | [Pundit][9]                  | Role-based                                        |
-| Immutability    | `immutable` method           | Omit mutator action helpers (e.g. `update`)       |
-| Fetchability    | `fetchable_fields` method    | Omit attributes in Serializer                     |
-| Creatability    | `creatable_fields` method    | Handle in `create` action helper or Model\*       |
-| Updatability    | `updatable_fields` method    | Handle in `update` action helper or Model\*       |
-| Sortability     | `sortable_fields` method     | `sort` helper and `:sort_by` option               |
-| Default sorting | `default_sort` method        | Set default for `params[:sort]`                   |
-| Context         | `context` method             | Rack middleware (e.g. `env['context']`)           |
-| Attributes      | Define in Model and Resource | Define in Model\* and Serializer                  |
-| Formatting      | `format` attribute keyword   | Define attribute as a method in Serialier         |
-| Relationships   | Define in Model and Resource | Define in Model, Resource, and Serializer         |
-| Filters         | `filter(s)` keywords         | `filter` helper and `:filter_by` option           |
-| Default filters | `default` filter keyword     | Set default for `params[:filter]`                 |
+| Feature         | JR                               | Sinja                                             |
+| :-------------- | :------------------------------- | :------------------------------------------------ |
+| Serializer      | Built-in                         | [JSONAPI::Serializers][3]                         |
+| Framework       | Rails                            | Sinatra, but easy to mount within others          |
+| Routing         | ActionDispatch::Routing          | Mustermann                                        |
+| Caching         | ActiveSupport::Cache             | BYO                                               |
+| ORM             | ActiveRecord/ActiveModel         | BYO                                               |
+| Authorization   | [Pundit][9]                      | Role-based                                        |
+| Immutability    | `immutable` method               | Omit mutator action helpers (e.g. `update`)       |
+| Fetchability    | `fetchable_fields` method        | Omit attributes in Serializer                     |
+| Creatability    | `creatable_fields` method        | Handle in `create` action helper or Model\*       |
+| Updatability    | `updatable_fields` method        | Handle in `update` action helper or Model\*       |
+| Sortability     | `sortable_fields` method         | `sort` helper and `:sort_by` option               |
+| Default sorting | `default_sort` method            | Set default for `params[:sort]`                   |
+| Context         | `context` method                 | Rack middleware (e.g. `env['context']`)           |
+| Attributes      | Define in Model and Resource     | Define in Model\* and Serializer                  |
+| Formatting      | `:format` attribute keyword      | Define attribute as a method in Serialier         |
+| Relationships   | Define in Model and Resource     | Define in Model, Resource, and Serializer         |
+| Filters         | `filter(s)` keywords             | `filter` helper and `:filter_by` option           |
+| Default filters | `:default` filter keyword        | Set default for `params[:filter]`                 |
+| Pagination      | JSONAPI::Paginator               | `page` helper and `page_using` configurable       |
+| Meta            | `meta` method                    | Serializer `:meta` option               |
+| Primary keys    | `resource_key_type` configurable | Serializer `id` method               |
 
 \* - Depending on your ORM.
-
-This list is incomplete. TODO:
-
-* Primary keys
-* Pagination
-* Custom links
-* Meta
-* Side-loading (on request and response)
-* Namespaces
-* Configuration
-* Validation
 
 ## Usage
 
@@ -423,9 +415,9 @@ configure_jsonapi do |c|
   #c.default_has_one_roles = {}
   #c.default_has_many_roles = {}
 
-  # see "Query Parameters" below
+  # You can't set this directly; see "Query Parameters" below
   #c.query_params = {
-    :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>[]
+  #  :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>[]
   #}
 
   # see "Paging" below
@@ -508,9 +500,9 @@ necessary) or use the `next` keyword (instead of `return` or `break`) to exit
 the action helper. Return values marked with a question mark below may be
 omitted entirely. Any helper may additionally return an options hash to pass
 along to JSONAPI::Serializer.serialize (which will be merged into the global
-`serializer_opts` described above). The `:include` (see "Side-Unloading
-Related Resources" below) and `:fields` query parameters are automatically
-passed through to JSONAPI::Serializers.
+`serializer_opts` described above). The `:include` (see "Side-Unloading Related
+Resources" below) and `:fields` (for sparse fieldsets) query parameters are
+automatically passed through to JSONAPI::Serializers.
 
 All arguments to action helpers are "tainted" and should be treated as
 potentially dangerous: IDs, attribute hashes, and (arrays of) [resource

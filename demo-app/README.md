@@ -43,7 +43,7 @@ but you will at least want to:
 - [ ] Separate the class files (e.g. `author.rb`, `post.rb`) into separate
       files for the migrations, models, serializers, and Sinja controllers
 - [ ] Create a Gemfile using the dependencies in the top-level
-      [gemspec][/sinja.gemspec] as a starting point.
+      [gemspec](/sinja.gemspec) as a starting point.
 - [ ] Add authentication middleware and rewrite the `role` helper to enable
       the authorization scheme. You can use the existing roles as defined or
       rename them (e.g. use `:admin` instead of `:superuser`).
