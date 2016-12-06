@@ -17,7 +17,7 @@ DB.create_table?(:posts_tags) do
 end
 
 class Tag < Sequel::Model
-  many_to_many :posts
+  many_to_many :posts, right_key: :post_slug
 end
 
 class TagSerializer < BaseSerializer

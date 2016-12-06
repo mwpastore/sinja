@@ -9,6 +9,10 @@ require_relative 'classes/tag'
 
 require 'sinja/helpers/sequel'
 
+configure :development do
+  set :server_settings, AccessLog: [] # avoid WEBrick double-logging issue
+end
+
 configure_jsonapi do |c|
   Sinja::Helpers::Sequel.config(c)
 end

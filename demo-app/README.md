@@ -48,8 +48,8 @@ but you will at least want to:
       the authorization scheme. You can use the existing roles as defined or
       rename them (e.g. use `:admin` instead of `:superuser`)
 - [ ] Use a real application server such as [Puma](http://puma.io) or
-      [Passenger](https://www.phusionpassenger.com) instead of Sinatra's
-      default
+      [Passenger](https://www.phusionpassenger.com) instead of Ruby's
+      stdlib (WEBrick)
 - [ ] Configure Sequel's connection pool (i.e. `:max_connections`) to match the
       application server's thread pool (if any)
 - [ ] Add caching directives (i.e. `cache_control`, `expires`, `last_modified`,
