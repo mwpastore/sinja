@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ['Mike Pastore']
   spec.email         = ['mike@oobak.org']
 
-  spec.summary       = 'RESTful, JSON:API-compliant web services in Sinatra'
+  spec.summary       = 'RESTful, {json:api}-compliant web services in Sinatra'
   spec.homepage      = 'https://github.com/mwpastore/sinja'
   spec.license       = 'MIT'
 

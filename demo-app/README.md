@@ -19,7 +19,7 @@ $ bundle exec ruby app.rb [-p <PORT>]
 ```
 
 The web server will report the port it's listening on, or you can specify a
-port with the `-p` option. It will respond to JSON:API-compliant requests
+port with the `-p` option. It will respond to {json:api}-compliant requests
 (don't forget to set an `Accept` header) to `/authors`, `/posts`, `/comments`,
 and `/tags`, although not every endpoint is implemented. Log in by setting the
 `X-Email` header on the request to the email address of a registered user; the

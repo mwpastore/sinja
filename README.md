@@ -4,14 +4,14 @@
 [![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
 
 Sinja is a [Sinatra][1] [extension][10] for quickly building [RESTful][11],
-[JSON:API][2]-[compliant][7] web services, leveraging the excellent
+[{json:api}][2]-[compliant][7] web services, leveraging the excellent
 [JSONAPI::Serializers][3] gem and [Sinatra::Namespace][21] extension. It
 enhances Sinatra's DSL to enable resource-, relationship-, and role-centric
 definition of applications, and it configures Sinatra with the proper settings,
-MIME-types, filters, conditions, and error-handling to implement JSON:API.
+MIME-types, filters, conditions, and error-handling to implement {json:api}.
 Sinja aims to be lightweight (to the extent that Sinatra is), ORM-agnostic (to
 the extent that JSONAPI::Serializers is), and opinionated (to the extent that
-the JSON:API specification is).
+the {json:api} specification is).
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -103,7 +103,7 @@ freeze_jsonapi
 
 Assuming the presence of a `Post` model and serializer, running the above
 "classic"-style Sinatra application would enable the following endpoints (with
-all other JSON:API endpoints returning 404 or 405):
+all other {json:api} endpoints returning 404 or 405):
 
 * `GET /posts/<id>`
 * `GET /posts`
@@ -367,7 +367,7 @@ This list is incomplete. TODO:
 
 You'll need a database schema and models (using the engine and ORM of your
 choice) and [serializers][3] to get started. Create a new Sinatra application
-(classic or modular) to hold all your JSON:API endpoints and (if modular)
+(classic or modular) to hold all your {json:api} endpoints and (if modular)
 register this extension. Instead of defining routes with `get`, `post`, etc. as
 you normally would, define `resource` blocks with action helpers and `has_one`
 and `has_many` relationship blocks (with their own action helpers). Sinja will
@@ -380,7 +380,7 @@ HTTP statuses: 403, 404, or 405.
 #### Sinatra
 
 Registering this extension has a number of application-wide implications,
-detailed below. If you have any non-JSON:API routes, you may want to keep them
+detailed below. If you have any non-{json:api} routes, you may want to keep them
 in a separate application and incorporate them as middleware or mount them
 elsewhere (e.g. with [Rack::URLMap][4]), or host them as a completely separate
 web service. It may not be feasible to have custom routes that don't conform to
@@ -390,14 +390,14 @@ these settings.
 * Disables [Rack::Protection][6] (can be reenabled with `enable :protection` or
   by manually `use`-ing the Rack::Protection middleware)
 * Disables static file routes (can be reenabled with `enable :static`)
-* Disables "classy" error pages (in favor of "classy" JSON:API error documents)
+* Disables "classy" error pages (in favor of "classy" {json:api} error documents)
 * Adds an `:api_json` MIME-type (`Sinja::MIME_TYPE`)
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
 * Sets the `Content-Type` response header to `:api_json` (can be overriden with
   the `content_type` helper)
 * Normalizes and strictly enforces query parameters to reflect the features
-  supported by JSON:API
-* Formats all errors to the proper JSON:API structure
+  supported by {json:api}
+* Formats all errors to the proper {json:api} structure
 * Serializes all response bodies (including errors) to JSON
 * Modifies `halt` and `not_found` to raise exceptions instead of just setting
   the status code and body of the response
@@ -680,7 +680,7 @@ hashes in a `before` hook will be persisted to the action helper.
 
 ### Query Parameters
 
-The JSON:API specification states that any unhandled query parameters should
+The {json:api} specification states that any unhandled query parameters should
 cause the request to abort with HTTP status 400. To enforce this requirement,
 Sinja maintains a global "whitelist" of acceptable query parameters as well as
 a per-route whitelist, and interrogates your application to see which features
@@ -1064,7 +1064,7 @@ descendents will _not_ be automatically excluded.
 Sinja works hard to DRY up your business logic. As mentioned above, when a
 request comes in to create or update a resource and that request includes
 relationships, Sinja will try to farm out the work to your defined relationship
-routes. Let's look at this example request from the JSON:API specification:
+routes. Let's look at this example request from the {json:api} specification:
 
 ```
 POST /photos HTTP/1.1
@@ -1234,7 +1234,7 @@ constraints on the join table.
 
 ### Coalesced Find Requests
 
-If your JSON:API client coalesces find requests, the `show` action helper will
+If your {json:api} client coalesces find requests, the `show` action helper will
 be invoked once for each ID in the `:id` filter, and the resulting collection
 will be serialized on the response. Both query parameter syntaxes for arrays
 are supported: `?filter[id]=1,2` and `?filter[id][]=1&filter[id][]=2`. If any
@@ -1243,7 +1243,7 @@ status 404.
 
 ### Patchless Clients
 
-JSON:API [recommends][23] supporting patchless clients by using the
+{json:api} [recommends][23] supporting patchless clients by using the
 `X-HTTP-Method-Override` request header to coerce a `POST` into a `PATCH`. To
 support this in Sinja, add the Sinja::MethodOverride middleware (which is a
 stripped-down version of [Rack::MethodOverride][24]) into your application (or
@@ -1355,7 +1355,7 @@ I wouldn't recommend it but it might be a good place to start looking for
 ideas. It leverages [demo-app](/demo-app) with Sequel and an in-memory database
 to perform integration testing of Sinja's various features under MRI/YARV and
 JRuby. The goal is to free you from worrying about whether your applications
-will behave according to the JSON:API spec (as long as you follow the usage
+will behave according to the {json:api} spec (as long as you follow the usage
 documented in this README) and focus on testing your business logic.
 
 ## Development
