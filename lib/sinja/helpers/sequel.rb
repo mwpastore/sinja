@@ -44,22 +44,18 @@ module Sinja
           opts[:size].to_i,
           (opts[:record_count].to_i if opts[:record_count])
 
-        pagination = {
-          :first=>{ :number=>1 },
-          :self=>{ :number=>collection.current_page },
-          :last=>{ :number=>collection.page_count }
+        # Attributes common to all pagination links
+        base = {
+          :size=>collection.page_size,
+          :record_count=>collection.pagination_record_count
         }
-        pagination[:next] = { :number=>collection.next_page } if collection.next_page
-        pagination[:prev] = { :number=>collection.prev_page } if collection.prev_page
-
-        # Add attributes common to all pagination links
-        pagination.values.each_with_object([
-          collection.page_size,
-          collection.pagination_record_count
-        ]) do |h, (s, c)|
-          h[:size] = s
-          h[:record_count] = c
-        end
+        pagination = {
+          :first=>base.merge(:number=>1),
+          :self=>base.merge(:number=>collection.current_page),
+          :last=>base.merge(:number=>collection.page_count)
+        }
+        pagination[:next] = base.merge(:number=>collection.next_page) if collection.next_page
+        pagination[:prev] = base.merge(:number=>collection.prev_page) if collection.prev_page
 
         return collection, pagination
       end if ::Sequel::Database::EXTENSIONS.key?(:pagination)
