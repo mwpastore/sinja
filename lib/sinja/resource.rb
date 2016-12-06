@@ -34,14 +34,16 @@ module Sinja
         required_arity = {
           :create=>2,
           :index=>-1,
-          :fetch=>-1
+          :fetch=>-1,
+          :show_many=>-1
         }.freeze[action] || 1
 
         define_method(action) do |*args|
           raise ArgumentError, "Unexpected argument(s) for `#{action}' action helper" \
             unless args.length == block.arity
 
-          public_send("before_#{action}", *args) if respond_to?("before_#{action}")
+          public_send("before_#{action}", *args) \
+            if respond_to?("before_#{action}")
 
           case result = instance_exec(*args, &block)
           when Array

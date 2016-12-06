@@ -3,6 +3,7 @@ module Sinja
   module ResourceRoutes
     def self.registered(app)
       app.def_action_helper(app, :show, :roles)
+      app.def_action_helper(app, :show_many)
       app.def_action_helper(app, :index, %i[roles filter_by sort_by])
       app.def_action_helper(app, :create, :roles)
       app.def_action_helper(app, :update, :roles)
@@ -15,16 +16,23 @@ module Sinja
       app.get '', :qcapture=>{ :filter=>:id }, :qparams=>%i[include fields], :actions=>:show do
         ids = @qcaptures.first # TODO: Get this as a block parameter?
         ids = ids.split(',') if String === ids
+        ids = [*ids].tap(&:uniq!)
 
-        opts = {}
-        resources = [*ids].tap(&:uniq!).map! do |id|
-          tmp, opts = show(id)
-          raise NotFoundError, "Resource '#{id}' not found" unless tmp
-          tmp
+        if respond_to?(:show_many)
+          resources, opts = show_many(ids)
+          raise NotFoundError, "Resource(s) not found" \
+            unless ids.length == resources.length
+          serialize_models(resources, opts)
+        else
+          opts = {}
+          resources = ids.map! do |id|
+            tmp, opts = show(id)
+            raise NotFoundError, "Resource '#{id}' not found" unless tmp
+            tmp
+          end
+
+          serialize_models(resources, opts)
         end
-
-        # TODO: Serialize collection with opts from last model found?
-        serialize_models(resources, opts)
       end
 
       app.head '' do

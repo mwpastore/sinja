@@ -70,7 +70,7 @@ module Sinja
       @error_logger = ->(h) { logger.error('sinja') { h } }
 
       @default_roles = {
-        :resource=>RolesConfig.new(%i[show index create update destroy]),
+        :resource=>RolesConfig.new(%i[show show_many index create update destroy]),
         :has_many=>RolesConfig.new(%i[fetch merge subtract clear]),
         :has_one=>RolesConfig.new(%i[pluck graft prune])
       }

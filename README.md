@@ -187,7 +187,7 @@ helpers, and the `resource`, `has_one`, and `has_many` keywords build
 [Sinatra::Namespace][21] blocks. You can manage caching directives, set
 headers, and even `halt` (or `not_found`, although such cases are usually
 handled transparently by returning `nil` values or empty collections from
-action helpers) as desired.
+action helpers) as appropriate.
 
 ```ruby
 class App < Sinatra::Base
@@ -540,6 +540,11 @@ Return an array of zero or more objects to serialize on the response.
 
 Take an ID and return the corresponding object (or `nil` if not found) to
 serialize on the response.
+
+##### `show_many {|ids| ..}` => Array
+
+Take an array of IDs and return an equally-lengthed array of objects to
+serialize on the response. See "Coalesced Find Requests" below.
 
 ##### `create {|attr, id| ..}` => id, Object?
 
@@ -1116,7 +1121,7 @@ either `graft` or `create`.
 
 `create` and `update` are the only two action helpers that trigger sideloading;
 `graft`, `merge`, and `clear` are the only action helpers invoked by
-sideloading.  You must indicate which combinations are valid using the
+sideloading. You must indicate which combinations are valid using the
 `:sideload_on` action helper option. (Note that if you want to sideload `merge`
 on `update`, you must define a `clear` action helper as well.) For example:
 
@@ -1250,6 +1255,11 @@ will be serialized on the response. Both query parameter syntaxes for arrays
 are supported: `?filter[id]=1,2` and `?filter[id][]=1&filter[id][]=2`. If any
 ID is not found (i.e. `show` returns `nil`), the route will halt with HTTP
 status 404.
+
+Optionally, to reduce round trips to the database, you may define a "special"
+`show_many` action helper that takes an array of IDs to show. It does not take
+`:roles` or any other options and will only be invoked if the current user has
+access to `show`. This feature is still experimental.
 
 ### Patchless Clients
 

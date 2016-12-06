@@ -10,6 +10,48 @@ class AuthorTest < SequelTest
     Sinatra::Application.new
   end
 
+  def test_uncoalesced_find_head
+    head '/authors'
+    assert_ok
+    assert_equal 'GET,POST', last_response.headers['Allow']
+  end
+
+  def test_uncoalesced_find
+    DB[:authors].multi_insert [
+      { :email=>'dilbert@example.com', :display_name=>'Dilbert' },
+      { :email=>'dogbert@example.com', :display_name=>'Dogbert' },
+      { :email=>'catbert@example.com', :display_name=>'Catbert' },
+      { :email=>'wally@example.com', :display_name=>'Wally' }
+    ]
+    get '/authors'
+    assert_ok
+    vals = json[:data].map do |t|
+      name = t[:attributes][:'display-name']
+      name = nil if name == 'Anonymous Coward'
+      { :id=>t[:id].to_i, :display_name=>name }
+    end
+    assert_equal DB[:authors].select(:id, :display_name).all, vals
+  end
+
+  def test_coalesced_find_head
+    head '/tags?filter[id]=2,4'
+    assert_ok
+    assert_equal 'GET', last_response.headers['Allow']
+  end
+
+  def test_coalesced_find
+    DB[:authors].multi_insert [
+      { :email=>'dilbert@example.com', :display_name=>'Dilbert' },
+      { :email=>'dogbert@example.com', :display_name=>'Dogbert' },
+      { :email=>'catbert@example.com', :display_name=>'Catbert' },
+      { :email=>'wally@example.com', :display_name=>'Wally' }
+    ]
+    get '/authors?filter[id]=2,4'
+    assert_ok
+    vals = json[:data].map { |t| { :id=>t[:id].to_i, :display_name=>t[:attributes][:'display-name'] } }
+    assert_equal DB[:authors].where(:id=>[2, 4]).select(:id, :display_name).all, vals
+  end
+
   def test_disallow_client_generated_id
     post '/authors', JSON.generate(:data=>{
       :type=>'authors',

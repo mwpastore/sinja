@@ -7,7 +7,6 @@ class PostTest < SequelTest
   include Rack::Test::Methods
 
   def app
-    Sinatra::Application.dump_errors = true
     Sinatra::Application.new
   end
 

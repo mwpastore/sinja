@@ -55,6 +55,10 @@ AuthorController = proc do
 
   show
 
+  show_many do |ids|
+    Author.where(id: ids.map!(&:to_i)).all
+  end
+
   index do
     Author.dataset
   end

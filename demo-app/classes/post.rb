@@ -59,6 +59,10 @@ PostController = proc do
     next find(slug), include: %w[author comments tags]
   end
 
+  show_many do |slugs|
+    next Post.where(slug: slugs.map!(&:to_s)).all, include: %i[author tags]
+  end
+
   index do
     Post.dataset
   end
