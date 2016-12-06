@@ -19,16 +19,18 @@ the {json:api} specification is).
 
 - [Synopsis](#synopsis)
 - [Installation](#installation)
-- [Features](#features)
-  - [Extensibility](#extensibility)
-    - [Public APIs](#public-apis)
+- [Features & Design](#features--design)
+  - [Ol' Blue Eyes is Back](#ol-blue-eyes-is-back)
+  - [Public APIs](#public-apis)
+    - [Commonly Used](#commonly-used)
+    - [Less-Commonly Used](#less-commonly-used)
   - [Performance](#performance)
-  - [Comparison with JSONAPI::Resources (JR)](#comparison-with-jsonapiresources-jr)
-- [Usage](#usage)
+  - [Comparison with JSONAPI::Resources](#comparison-with-jsonapiresources)
+- [Basic Usage](#basic-usage)
   - [Configuration](#configuration)
     - [Sinatra](#sinatra)
     - [Sinja](#sinja)
-  - [Resource Locator](#resource-locator)
+  - [Resource Locators](#resource-locators)
   - [Action Helpers](#action-helpers)
     - [`resource`](#resource)
       - [`index {..}` => Array](#index---array)
@@ -46,17 +48,18 @@ the {json:api} specification is).
       - [`clear {..}` => TrueClass?](#clear---trueclass)
       - [`merge {|rios| ..}` => TrueClass?](#merge-rios---trueclass)
       - [`subtract {|rios| ..}` => TrueClass?](#subtract-rios---trueclass)
-  - [Action Helper Hooks &amp; Utilities](#action-helper-hooks-amp-utilities)
+- [Advanced Usage](#advanced-usage)
+  - [Action Helper Hooks & Utilities](#action-helper-hooks--utilities)
+  - [Authorization](#authorization)
+    - [`default_roles` configurables](#default_roles-configurables)
+    - [`:roles` Action Helper option](#roles-action-helper-option)
+    - [`role` helper](#role-helper)
   - [Query Parameters](#query-parameters)
   - [Working with Collections](#working-with-collections)
     - [Filtering](#filtering)
     - [Sorting](#sorting)
     - [Paging](#paging)
     - [Finalizing](#finalizing)
-  - [Authorization](#authorization)
-    - [`default_roles` configurables](#default_roles-configurables)
-    - [`:roles` Action Helper option](#roles-action-helper-option)
-    - [`role` helper](#role-helper)
   - [Conflicts](#conflicts)
   - [Validations](#validations)
   - [Missing Records](#missing-records)
@@ -69,6 +72,7 @@ the {json:api} specification is).
       - [Many-to-Many](#many-to-many)
   - [Coalesced Find Requests](#coalesced-find-requests)
   - [Patchless Clients](#patchless-clients)
+- [Application Concerns](#application-concerns)
   - [Sinja or Sinatra::JSONAPI](#sinja-or-sinatrajsonapi)
   - [Code Organization](#code-organization)
   - [Testing](#testing)
@@ -110,7 +114,7 @@ all other {json:api} endpoints returning 404 or 405):
 * `POST /posts`
 
 The resource locator and other action helpers, documented below, enable other
-endpoints.
+endpoints. Please see the [demo-app](/demo-app) for more complete examples.
 
 Of course, "modular"-style Sinatra aplications require you to register the
 extension:
@@ -150,10 +154,10 @@ Or install it yourself as:
 $ gem install sinja
 ```
 
-## Features
+## Features & Design
 
 * ORM-agnostic
-* Role-based authorization
+* Simple role-based authorization
 * To-one and to-many relationships and related resources
 * Side-loaded relationships on resource creation and update
 * Error-handling
@@ -161,7 +165,7 @@ $ gem install sinja
   * Missing records
   * Validation failures
 * Filtering, sorting, and paging collections
-* Plus all the features of JSONAPI::Serializers!
+* Plus all the features of [JSONAPI::Serializers][3]!
 
 Its main competitors in the Ruby space are [ActiveModelSerializers][12] (AMS)
 with the JsonApi adapter, [JSONAPI::Resources][8] (JR), and
@@ -174,15 +178,16 @@ and a ton of boilerplate. The goal of this extension is to provide most or all
 of the boilerplate for a Sintara application and automate the drawing of routes
 based on the resource definitions.
 
-### Extensibility
+### Ol' Blue Eyes is Back
 
-The "power" of implementing this functionality as a Sinatra extension is that
-all of Sinatra's usual features are available within your resource definitions.
-The action helpers blocks get compiled into Sinatra helpers, and the
-`resource`, `has_one`, and `has_many` keywords build [Sinatra::Namespace][21]
-blocks. You can manage caching directives, set headers, and even `halt` (or
-`not_found`, although such cases are usually handled transparently by returning
-`nil` values or empty collections from action helpers) as desired.
+The "power" so to speak of implementing this functionality as a Sinatra
+extension is that all of Sinatra's usual features are available within your
+resource definitions. The action helpers blocks get compiled into Sinatra
+helpers, and the `resource`, `has_one`, and `has_many` keywords build
+[Sinatra::Namespace][21] blocks. You can manage caching directives, set
+headers, and even `halt` (or `not_found`, although such cases are usually
+handled transparently by returning `nil` values or empty collections from
+action helpers) as desired.
 
 ```ruby
 class App < Sinatra::Base
@@ -241,7 +246,7 @@ class App < Sinatra::Base
 
     show do |id|
       book = find(id)
-      not_found "Book #{id} not found!" unless book
+      next unless book
       headers 'X-ISBN'=>book.isbn
       last_modified book.updated_at
       next book, include: %w[author]
@@ -275,12 +280,29 @@ class App < Sinatra::Base
 end
 ```
 
-#### Public APIs
+### Public APIs
+
+Sinja makes a few APIs public to help you work around edge cases in your
+application.
+
+#### Commonly Used
 
 **can?**
 : Takes the symbol of an action helper and returns true if the current user has
   access to call that action helper for the current resource using the `role`
   helper and role definitions detailed under "Authorization" below.
+
+**role?**
+: Takes a list of role(s) and returns true if it has members in common with the
+  current user's role(s).
+
+**sideloaded?**
+: Returns true if the request was invoked from another action helper.
+
+#### Less-Commonly Used
+
+These are helpful if you want to add some custom routes to your Sinja
+application.
 
 **data**
 : Returns the `data` key of the deserialized request payload (with symbolized
@@ -292,10 +314,6 @@ end
 
 **dedasherize_names**
 : Takes a hash and returns the hash with its keys dedasherized (deeply).
-
-**role?**
-: Takes a list of role(s) and returns true if it has members in common with the
-  current user's role(s).
 
 **serialize_model**
 : Takes a model (and optional hash of JSONAPI::Serializers options) and returns
@@ -315,9 +333,6 @@ end
   and returns a serialized collection if non-empty, or the root metadata if
   present, or a HTTP status 204.
 
-**sideloaded?**
-: Returns true if the request was invoked from another action helper.
-
 ### Performance
 
 Although there is some heavy metaprogramming happening at boot time, the end
@@ -327,7 +342,7 @@ written them verbosely. The main caveat is that there are quite a few block
 closures, which don't perform as well as normal methods in Ruby. Feedback
 welcome.
 
-### Comparison with JSONAPI::Resources (JR)
+### Comparison with JSONAPI::Resources
 
 | Feature         | JR                               | Sinja                                             |
 | :-------------- | :------------------------------- | :------------------------------------------------ |
@@ -355,7 +370,7 @@ welcome.
 
 \* - Depending on your ORM.
 
-## Usage
+## Basic Usage
 
 You'll need a database schema and models (using the engine and ORM of your
 choice) and [serializers][3] to get started. Create a new Sinatra application
@@ -383,7 +398,7 @@ these settings.
   by manually `use`-ing the Rack::Protection middleware)
 * Disables static file routes (can be reenabled with `enable :static`)
 * Disables "classy" error pages (in favor of "classy" {json:api} error documents)
-* Adds an `:api_json` MIME-type (`Sinja::MIME_TYPE`)
+* Adds an `:api_json` MIME-type (`application/vnd.api+json`)
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
 * Sets the `Content-Type` response header to `:api_json` (can be overriden with
   the `content_type` helper)
@@ -420,8 +435,7 @@ configure_jsonapi do |c|
   #  :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>[]
   #}
 
-  # see "Paging" below
-  #c.page_using = {}
+  #c.page_using = {} # see "Paging" below
 
   # Set the error logger used by Sinja
   #c.error_logger = ->(error_hash) { logger.error('sinja') { error_hash } }
@@ -437,10 +451,10 @@ end
 
 The above structures are mutable (e.g. you can do `c.conflict_exceptions <<
 FooError` and `c.serializer_opts[:meta] = { foo: 'bar' }`) until you call
-`freeze_jsonapi` to freeze the configuration store. You should always freeze
-the store after Sinja is configured and all your resources are defined.
+`freeze_jsonapi` to freeze the configuration store. **You should always freeze
+the store after Sinja is configured and all your resources are defined.**
 
-### Resource Locator
+### Resource Locators
 
 Much of Sinja's advanced functionality (e.g. updating and destroying resources,
 relationship routes) is dependent upon its ability to locate the corresponding
@@ -621,7 +635,9 @@ unless already missing) the relationships on `resource`. To serialize the
 updated linkage on the response, refresh or reload `resource` (if necessary)
 and return a truthy value.
 
-### Action Helper Hooks &amp; Utilities
+## Advanced Usage
+
+### Action Helper Hooks & Utilities
 
 You may remove a previously-registered action helper with `remove_<action>`:
 
@@ -669,6 +685,153 @@ end
 
 Any changes made to attribute hashes or (arrays of) resource identifier object
 hashes in a `before` hook will be persisted to the action helper.
+
+### Authorization
+
+Sinja provides a simple role-based authorization scheme to restrict access to
+routes based on the action helpers they invoke. For example, you might say all
+logged-in users have access to `index`, `show`, `pluck`, and `fetch` (the
+read-only action helpers), but only administrators have access to `create`,
+`update`, etc. (the read-write action helpers). You can have as many roles as
+you'd like, e.g. a super-administrator role to restrict access to `destroy`.
+Users can be in one or more roles, and action helpers can be restricted to one
+or more roles for maximum flexibility. There are three main components to the
+scheme:
+
+#### `default_roles` configurables
+
+You set the default roles for the entire Sinja application in the top-level
+configuration. Action helpers without any default roles are unrestricted by
+default.
+
+```ruby
+configure_jsonapi do |c|
+  # Resource roles
+  c.default_roles = {
+    index: :user,
+    show: :user,
+    create: :admin,
+    update: :admin,
+    destroy: :super
+  }
+
+  # To-one relationship roles
+  c.default_has_one_roles = {
+    pluck: :user,
+    prune: :admin,
+    graft: :admin
+  }
+
+  # To-many relationship roles
+  c.default_has_many_roles = {
+    fetch: :user,
+    clear: :admin,
+    merge: :admin,
+    subtract: :admin
+  }
+end
+```
+
+#### `:roles` Action Helper option
+
+To override the default roles for any given action helper, specify a `:roles`
+option when defining it. To remove all restrictions from an action helper, set
+`:roles` to an empty array. For example, to manage access to `show` at
+different levels of granularity (with the above default roles):
+
+```ruby
+resource :foos do
+  show do
+    # any logged-in user (with the `user' role) can access /foos/:id
+  end
+end
+
+resource :bars do
+  show(roles: :admin) do
+    # only logged-in users with the `admin' role can access /bars/:id
+  end
+end
+
+resource :quxes do
+  show(roles: []) do
+    # anyone (bypassing the `role' helper) can access /quxes/:id
+  end
+end
+```
+
+#### `role` helper
+
+Finally, define a `role` helper in your application that returns the user's
+role(s) (if any). You can handle login failures in your middleware, elsewhere
+in the application (i.e. a `before` filter), or within the helper, either by
+raising an error or by letting Sinja raise an error on restricted action
+helpers when `role` returns `nil` (the default behavior).
+
+```ruby
+helpers do
+  def role
+    env['my_auth_middleware'].login!
+    session[:roles]
+  rescue MyAuthenticationFailure=>e
+    nil
+  end
+end
+```
+
+If you need more fine-grained control, for example if your action helper logic
+varies by the user's role, you can use a switch statement on `role` along with
+the `Sinja::Roles` utility class:
+
+```ruby
+index(roles: [:user, :admin, :super]) do
+  case role
+  when Sinja::Roles[:user]
+    # logic specific to the `user' role
+  when Sinja::Roles[:admin, :super]
+    # logic specific to administrative roles
+  end
+end
+```
+
+Or use the `role?` helper:
+
+```ruby
+show do |id|
+  exclude = []
+  exclude << 'secrets' unless role?(:admin)
+
+  next find(id), exclude: exclude
+end
+```
+
+You can append resource- or even relationship-specific roles by defining a
+nested helper and calling `super` (keeping in mind that `resource` may be
+`nil`).
+
+```ruby
+helpers do
+  def role
+    [:user] if logged_in_user
+  end
+end
+
+resource :foos do
+  helpers do
+    def role
+      if resource&.owner == logged_in_user
+        [*super].push(:owner)
+      else
+        super
+      end
+    end
+  end
+
+  create(roles: :user) { |attr| .. }
+  update(roles: :owner) { |attr| .. }
+end
+```
+
+Please see the [demo-app](/demo-app) for more complete examples.
 
 ### Query Parameters
 
@@ -816,151 +979,6 @@ end
 (Note that in addition to finalizing Sequel datasets with `#all`, you should
 also enable the `:tactical_eager_loading` plugin for the best compatibility
 with JSONAPI::Serializers.)
-
-### Authorization
-
-Sinja provides a simple role-based authorization scheme to restrict access to
-routes based on the action helpers they invoke. For example, you might say all
-logged-in users have access to `index`, `show`, `pluck`, and `fetch` (the
-read-only action helpers), but only administrators have access to `create`,
-`update`, etc. (the read-write action helpers). You can have as many roles as
-you'd like, e.g. a super-administrator role to restrict access to `destroy`.
-Users can be in one or more roles, and action helpers can be restricted to one
-or more roles for maximum flexibility. There are three main components to the
-scheme:
-
-#### `default_roles` configurables
-
-You set the default roles for the entire Sinja application in the top-level
-configuration. Action helpers without any default roles are unrestricted by
-default.
-
-```ruby
-configure_jsonapi do |c|
-  # Resource roles
-  c.default_roles = {
-    index: :user,
-    show: :user,
-    create: :admin,
-    update: :admin,
-    destroy: :super
-  }
-
-  # To-one relationship roles
-  c.default_has_one_roles = {
-    pluck: :user,
-    prune: :admin,
-    graft: :admin
-  }
-
-  # To-many relationship roles
-  c.default_has_many_roles = {
-    fetch: :user,
-    clear: :admin,
-    merge: :admin,
-    subtract: :admin
-  }
-end
-```
-
-#### `:roles` Action Helper option
-
-To override the default roles for any given action helper, specify a `:roles`
-option when defining it. To remove all restrictions from an action helper, set
-`:roles` to an empty array. For example, to manage access to `show` at
-different levels of granularity (with the above default roles):
-
-```ruby
-resource :foos do
-  show do
-    # any logged-in user (with the `user' role) can access /foos/:id
-  end
-end
-
-resource :bars do
-  show(roles: :admin) do
-    # only logged-in users with the `admin' role can access /bars/:id
-  end
-end
-
-resource :quxes do
-  show(roles: []) do
-    # anyone (bypassing the `role' helper) can access /quxes/:id
-  end
-end
-```
-
-#### `role` helper
-
-Finally, define a `role` helper in your application that returns the user's
-role(s) (if any). You can handle login failures in your middleware, elsewhere
-in the application (i.e. a `before` filter), or within the helper, either by
-raising an error or by letting Sinja raise an error on restricted action
-helpers when `role` returns `nil` (the default behavior).
-
-```ruby
-helpers do
-  def role
-    env['my_auth_middleware'].login!
-    session[:roles]
-  rescue MyAuthenticationFailure=>e
-    nil
-  end
-end
-```
-
-If you need more fine-grained control, for example if your action helper logic
-varies by the user's role, you can use a switch statement on `role` along with
-the `Sinja::Roles` utility class:
-
-```ruby
-index(roles: [:user, :admin, :super]) do
-  case role
-  when Sinja::Roles[:user]
-    # logic specific to the `user' role
-  when Sinja::Roles[:admin, :super]
-    # logic specific to administrative roles
-  end
-end
-```
-
-Or use the `role?` helper:
-
-```ruby
-show do |id|
-  exclude = []
-  exclude << 'secrets' unless role?(:admin)
-
-  next find(id), exclude: exclude
-end
-```
-
-You can append resource- or even relationship-specific roles by defining a
-nested helper and calling `super` (keeping in mind that `resource` may be
-`nil`).
-
-```ruby
-helpers do
-  def role
-    [:user] if logged_in_user
-  end
-end
-
-resource :foos do
-  helpers do
-    def role
-      if resource&.owner == logged_in_user
-        [*super].push(:owner)
-      else
-        super
-      end
-    end
-  end
-
-  create(roles: :user) { |attr| .. }
-  update(roles: :owner) { |attr| .. }
-end
-```
 
 ### Conflicts
 
@@ -1254,6 +1272,8 @@ class MyApp < Sinatra::Base
 end
 ```
 
+## Application Concerns
+
 ### Sinja or Sinatra::JSONAPI
 
 Everything is dual-namespaced under both Sinatra::JSONAPI and Sinja, and Sinja
@@ -1344,11 +1364,12 @@ helpers and other artifacts for unit testing.
 
 Sinja's own test suite is based on [Rack::Test][29] (plus some ugly kludges).
 I wouldn't recommend it but it might be a good place to start looking for
-ideas. It leverages [demo-app](/demo-app) with Sequel and an in-memory database
-to perform integration testing of Sinja's various features under MRI/YARV and
-JRuby. The goal is to free you from worrying about whether your applications
-will behave according to the {json:api} spec (as long as you follow the usage
-documented in this README) and focus on testing your business logic.
+ideas. It leverages the [demo-app](/demo-app) with Sequel and an in-memory
+database to perform integration testing of Sinja's various features under
+MRI/YARV and JRuby. The goal is to free you from worrying about whether your
+applications will behave according to the {json:api} spec (as long as you
+follow the usage documented in this README) and focus on testing your business
+logic.
 
 ## Development
 
