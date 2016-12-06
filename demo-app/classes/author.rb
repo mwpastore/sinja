@@ -4,10 +4,10 @@ require_relative '../database'
 
 DB.create_table?(:authors) do
   primary_key :id
-  String :email, :null=>false, :unique=>true
+  String :email, null: false, unique: true
   String :real_name
   String :display_name
-  TrueClass :admin, :default=>false
+  TrueClass :admin, default: false
   DateTime :created_at
   DateTime :updated_at
 end
@@ -17,7 +17,7 @@ class Author < Sequel::Model
   plugin :boolean_readers
 
   finder def self.by_email(arg)
-    where(:email=>arg)
+    where(email: arg)
   end
 
   one_to_many :comments

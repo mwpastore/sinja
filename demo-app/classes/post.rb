@@ -3,10 +3,10 @@ require_relative '../base'
 require_relative '../database'
 
 DB.create_table?(:posts) do
-  String :slug, :primary_key=>true
-  foreign_key :author_id, :authors, :on_delete=>:cascade
-  String :title, :null=>false
-  String :body, :text=>true, :null=>false
+  String :slug, primary_key: true
+  foreign_key :author_id, :authors, on_delete: :cascade
+  String :title, null: false
+  String :body, text: true, null: false
   DateTime :created_at
   DateTime :updated_at
 end
@@ -18,7 +18,7 @@ class Post < Sequel::Model
 
   many_to_one :author
   one_to_many :comments
-  many_to_many :tags, :left_key=>:post_slug
+  many_to_many :tags, left_key: :post_slug
 
   def validate
     super

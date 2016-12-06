@@ -6,12 +6,12 @@ require_relative 'post' # make sure we create the posts table before the join ta
 
 DB.create_table?(:tags) do
   primary_key :id
-  String :name, :null=>false, :unique=>true
+  String :name, null: false, unique: true
 end
 
 DB.create_table?(:posts_tags) do
-  foreign_key :post_slug, :posts, :null=>false, :on_delete=>:cascade, :on_update=>:cascade, :type=>String
-  foreign_key :tag_id, :tags, :null=>false, :on_delete=>:cascade
+  foreign_key :post_slug, :posts, type: String, null: false, on_delete: :cascade, on_update: :cascade
+  foreign_key :tag_id, :tags, null: false, on_delete: :cascade
   primary_key [:post_slug, :tag_id]
   index [:tag_id, :post_slug]
 end
