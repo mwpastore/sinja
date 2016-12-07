@@ -35,6 +35,7 @@ the {json:api} specification is).
     - [`resource`](#resource)
       - [`index {..}` => Array](#index---array)
       - [`show {|id| ..}` => Object](#show-id---object)
+      - [`show_many {|ids| ..}` => Array](#show_many-ids---array)
       - [`create {|attr, id| ..}` => id, Object?](#create-attr-id---id-object)
       - [`create {|attr| ..}` => id, Object](#create-attr---id-object)
       - [`update {|attr| ..}` => Object?](#update-attr---object)
@@ -114,7 +115,7 @@ all other {json:api} endpoints returning 404 or 405):
 * `POST /posts`
 
 The resource locator and other action helpers, documented below, enable other
-endpoints. Please see the [demo-app](/demo-app) for more complete examples.
+endpoints.
 
 Of course, "modular"-style Sinatra aplications require you to register the
 extension:
@@ -133,6 +134,8 @@ class App < Sinatra::Base
   freeze_jsonapi
 end
 ```
+
+Please see the [demo-app](/demo-app) for a more complete example.
 
 ## Installation
 
@@ -172,11 +175,11 @@ with the JsonApi adapter, [JSONAPI::Resources][8] (JR), and
 [jsonapi-utils][26], all of which are designed to work with [Rails][16] and
 [ActiveRecord][17]/[ActiveModel][18] (although they may work with [Sequel][13]
 via [sequel-rails][14] and Sequel's [`:active_model` plugin][15]). Otherwise,
-you might use something like Sinatra, [Roda][20], or [Grape][19] with
-JSONAPI::Serializers (or another (de)serialization library), your own routes,
-and a ton of boilerplate. The goal of this extension is to provide most or all
-of the boilerplate for a Sintara application and automate the drawing of routes
-based on the resource definitions.
+you might use something like Sinatra, [Roda][20], or [Grape][19] with a
+(de)serialization library, your own routes, and a ton of boilerplate. The goal
+of this extension is to provide most or all of the boilerplate for a Sintara
+application and automate the drawing of routes based on the resource
+definitions.
 
 ### Ol' Blue Eyes is Back
 
@@ -836,7 +839,7 @@ resource :foos do
 end
 ```
 
-Please see the [demo-app](/demo-app) for more complete examples.
+Please see the [demo-app](/demo-app) for a more complete example.
 
 ### Query Parameters
 
@@ -847,8 +850,8 @@ a per-route whitelist, and interrogates your application to see which features
 it supports; for example, a route may allow a `filter` query parameter, but you
 may not have defined a `filter` helper.
 
-To allow a custom query parameter through, add it to the `query_params`
-configurable with a `nil` value:
+To let a custom query parameter through to the standard action helpers, add it
+to the `query_params` configurable with a `nil` value:
 
 ```ruby
 configure_jsonapi do |c|
@@ -898,6 +901,23 @@ resource :posts do
 end
 ```
 
+The easiest way to set a default filter is to tweak the post-processed query
+parameter(s) in a `before_<action>` hook:
+
+```ruby
+resource :posts do
+  helpers do
+    def before_index
+      params['filter']['type'] ||= 'article'
+    end
+  end
+
+  index do
+    # ..
+  end
+end
+```
+
 #### Sorting
 
 Allow clients to sort the collections returned by the `index` and `fetch`
@@ -920,6 +940,23 @@ end
 resource :posts do
   index(sort_by: :created_at) do
     Foo # return a Sequel::Dataset (instead of an array of Sequel::Model instances)
+  end
+end
+```
+
+The easiest way to set a default sort order is to tweak the post-processed
+query parameter(s) in a `before_<action>` hook:
+
+```ruby
+resource :posts do
+  helpers do
+    def before_index
+      params['sort'] << [:title, :asc] if params['sort'].empty?
+    end
+  end
+
+  index do
+    # ..
   end
 end
 ```
@@ -964,6 +1001,23 @@ representing the paging fields used in your application (for example, `:number`
 and `:size` for the above example) along with their default values (or `nil`).
 Please see the [Sequel helpers](/lib/sinja/helpers/sequel.rb) in this
 repository for a detailed, working example.
+
+The easiest way to page a collection by default is to tweak the post-processed
+query parameter(s) in a `before_<action>` hook:
+
+```ruby
+resource :posts do
+  helpers do
+    def before_index
+      params['page']['number'] ||= 1
+    end
+  end
+
+  index do
+    # ..
+  end
+end
+```
 
 #### Finalizing
 
@@ -1123,7 +1177,8 @@ either `graft` or `create`.
 `graft`, `merge`, and `clear` are the only action helpers invoked by
 sideloading. You must indicate which combinations are valid using the
 `:sideload_on` action helper option. (Note that if you want to sideload `merge`
-on `update`, you must define a `clear` action helper as well.) For example:
+on `update`, you must define a `clear` action helper and allow it to sideload
+on `update` as well.) For example:
 
 ```ruby
 resource :photos do
@@ -1259,7 +1314,26 @@ status 404.
 Optionally, to reduce round trips to the database, you may define a "special"
 `show_many` action helper that takes an array of IDs to show. It does not take
 `:roles` or any other options and will only be invoked if the current user has
-access to `show`. This feature is still experimental.
+access to `show`. This feature is experimental.
+
+Collections assembled during coalesced find requests will not be filtered,
+sorted, or paged. The easiest way to limit the number of records that can be
+queried is to define a `show_many` action helper and validate the length of the
+passed array in the `before_show_many` hook:
+
+```ruby
+resource :foos do
+  helpers do
+    def before_show_many(ids)
+      halt 413, 'You want the impossible.' if ids.length > 50
+    end
+  end
+
+  show_many do |ids|
+    # ..
+  end
+end
+```
 
 ### Patchless Clients
 

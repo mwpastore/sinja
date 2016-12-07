@@ -18,21 +18,20 @@ module Sinja
         ids = ids.split(',') if String === ids
         ids = [*ids].tap(&:uniq!)
 
+        resources, opts = [], {}
         if respond_to?(:show_many)
           resources, opts = show_many(ids)
           raise NotFoundError, "Resource(s) not found" \
             unless ids.length == resources.length
-          serialize_models(resources, opts)
         else
-          opts = {}
-          resources = ids.map! do |id|
+          ids.each do |id|
             tmp, opts = show(id)
             raise NotFoundError, "Resource '#{id}' not found" unless tmp
-            tmp
+            resources << tmp
           end
-
-          serialize_models(resources, opts)
         end
+
+        serialize_models(resources, opts)
       end
 
       app.head '' do
