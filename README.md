@@ -467,7 +467,7 @@ and returns the corresponding object. You can, of course, use this helper
 method elsewhere in your application, such as in your `show` action helper.
 
 ```ruby
-resource :posts
+resource :posts do
   helpers do
     def find(id)
       Post[id.to_i]
