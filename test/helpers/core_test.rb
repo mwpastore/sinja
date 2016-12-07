@@ -6,6 +6,12 @@ class HelpersApp < MyAppBase
     env['sinja.passthru'] = true # let exceptions propagate
   end
 
+  configure_jsonapi do |c|
+    %i[code body roles].each do |sym|
+      c.query_params[sym] = nil
+    end
+  end
+
   post '/attributes' do
     attributes
   end
@@ -100,7 +106,7 @@ class TestHelpers < Minitest::Test
     assert_kind_of Hash, json.delete(:fields)
     assert_kind_of Hash, json.delete(:page)
     assert_kind_of Array, json.delete(:include)
-    assert_kind_of Array, json.delete(:sort)
+    assert_kind_of Hash, json.delete(:sort)
     json.delete(:captures) # Sinatra 2.0 adds this to every request
     assert_empty json
   end

@@ -104,10 +104,16 @@ module Sinja
       condition do
         @qcaptures ||= []
         index.to_h.all? do |key, subkeys|
-          params.key?(key.to_s) && [*subkeys].all? do |subkey|
-            @qcaptures << params[key.to_s].delete(subkey.to_s) \
-              if params[key.to_s].key?(subkey.to_s)
-          end
+          Hash === params[key.to_s] && params[key.to_s].any? &&
+            [*subkeys].all? do |subkey|
+              # TODO: What if deleting one is successful, but not another?
+              # We'll need to restore the hash to its original state.
+              @qcaptures << params[key.to_s].delete(subkey.to_s) \
+                if params[key.to_s].key?(subkey.to_s)
+            end.tap do |ok|
+              # If us deleting key(s) causes the hash to be empty, delete it.
+              params.delete(key.to_s) if ok && params[key.to_s].empty?
+            end
         end
       end
     end
@@ -122,31 +128,39 @@ module Sinja
         params.each do |key, value|
           key = key.to_sym
 
-          next if settings._sinja.query_params[key].nil?
+          # Ignore interal Sinatra query parameters (e.g. :captures) and any
+          # "known" query parameter set to `nil' in the configurable.
+          next if !env['rack.request.query_hash'].key?(key.to_s) ||
+            settings._sinja.query_params.fetch(key, :_).nil?
 
           raise BadRequestError, "`#{key}' query parameter not allowed" \
-            unless allow_params.include?(key) || value.empty?
+            unless allow_params.include?(key)
 
-          if Array === settings._sinja.query_params[key] && String === value
-            value = (params[key.to_s] = value.split(','))
+          next if env['sinja.normalized'] == params.object_id
+
+          if !(String === settings._sinja.query_params[key]) && String === value
+            params[key.to_s] = value.split(',')
           elsif !(settings._sinja.query_params[key].class === value)
             raise BadRequestError, "`#{key}' query parameter malformed"
           end
         end
 
+        return true if env['sinja.normalized'] == params.object_id
+
         settings._sinja.query_params.each do |key, value|
           next if value.nil?
 
-          key = key.to_s
-
           if respond_to?("normalize_#{key}_params")
-            params[key] = send("normalize_#{key}_params")
+            params[key.to_s] = send("normalize_#{key}_params")
           else
-            params[key] ||= value
+            params[key.to_s] ||= value
           end
         end
 
-        true
+        # Sinatra 2.0 re-initializes `params' at namespace boundaries, but
+        # Sinatra 1.4 does not, so we'll reference its object_id in the flag
+        # to make sure we only re-normalize the parameters when necessary.
+        env['sinja.normalized'] = params.object_id
       end
     end
 
@@ -213,7 +227,7 @@ module Sinja
       end
 
       def normalize_sort_params
-        return [] unless params[:sort]&.any?
+        return {} unless params[:sort]&.any?
 
         raise BadRequestError, "Unsupported `sort' query parameter(s)" \
           unless respond_to?(:sort)

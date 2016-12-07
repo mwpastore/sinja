@@ -6,6 +6,12 @@ class SerializersApp < MyAppBase
     env['sinja.passthru'] = true # let exceptions propagate
   end
 
+  configure_jsonapi do |c|
+    %i[str sym _include _exclude].each do |sym|
+      c.query_params[sym] = nil
+    end
+  end
+
   get '/dedasherize' do
     res = dedasherize(params.fetch('str') { params.fetch('sym').to_sym })
     { :class_name=>res.class.name, :output=>res }

@@ -435,7 +435,7 @@ configure_jsonapi do |c|
 
   # You can't set this directly; see "Query Parameters" below
   #c.query_params = {
-  #  :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>[]
+  #  :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>{}
   #}
 
   #c.page_using = {} # see "Paging" below
@@ -908,7 +908,7 @@ parameter(s) in a `before_<action>` hook:
 resource :posts do
   helpers do
     def before_index
-      params['filter']['type'] ||= 'article'
+      params[:filter][:type] = 'article' if params[:filter].empty?
     end
   end
 
@@ -951,7 +951,7 @@ query parameter(s) in a `before_<action>` hook:
 resource :posts do
   helpers do
     def before_index
-      params['sort'] << [:title, :asc] if params['sort'].empty?
+      params[:sort][:title] = :asc if params[:sort].empty?
     end
   end
 
@@ -1009,7 +1009,7 @@ query parameter(s) in a `before_<action>` hook:
 resource :posts do
   helpers do
     def before_index
-      params['page']['number'] ||= 1
+      params[:page][:number] = 1 if params[:page].empty?
     end
   end
 

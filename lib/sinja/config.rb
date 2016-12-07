@@ -59,12 +59,11 @@ module Sinja
 
     def initialize
       @query_params = {
-        :fields=>{}, # passthru to JAS
         :include=>[], # passthru to JAS
+        :fields=>{}, # passthru to JAS
         :filter=>{},
         :page=>{},
-        :sort=>[],
-        :capture=>nil
+        :sort=>{}
       }
 
       @error_logger = ->(h) { logger.error('sinja') { h } }
