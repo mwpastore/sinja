@@ -40,8 +40,9 @@ module Sinja
       end
 
       app.get '', :qparams=>%i[include fields filter sort page], :actions=>:index do
+        filter_sort_page?(:index)
         collection, opts = index
-        collection, links = filter_sort_page(collection, :index)
+        collection, links = filter_sort_page(collection)
         (opts[:links] ||= {}).merge!(links)
         serialize_models(collection, opts)
       end

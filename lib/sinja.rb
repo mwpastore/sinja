@@ -204,7 +204,7 @@ module Sinja
       def normalize_filter_params
         return {} unless params[:filter]&.any?
 
-        halt 400, "Unsupported `filter' query parameter(s)" \
+        raise BadRequestError, "Unsupported `filter' query parameter(s)" \
           unless respond_to?(:filter)
 
         params[:filter].map do |k, v|
@@ -212,10 +212,17 @@ module Sinja
         end.to_h
       end
 
+      def filter_by?(action)
+        return true if settings.resource_config[action][:filter_by].empty? ||
+          params[:filter].keys.to_set.subset?(settings.resource_config[action][:filter_by])
+
+        raise BadRequestError, "Invalid `filter' query parameter(s)"
+      end
+
       def normalize_sort_params
         return [] unless params[:sort]&.any?
 
-        halt 400, "Unsupported `sort' query parameter(s)" \
+        raise BadRequestError, "Unsupported `sort' query parameter(s)" \
           unless respond_to?(:sort)
 
         params[:sort].map do |k|
@@ -224,41 +231,40 @@ module Sinja
         end.to_h
       end
 
+      def sort_by?(action)
+        return true if settings.resource_config[action][:sort_by].empty? ||
+          params[:sort].keys.to_set.subset?(settings.resource_config[action][:sort_by])
+
+        raise BadRequestError, "Invalid `sort' query parameter(s)"
+      end
+
       def normalize_page_params
         return {} unless params[:page]&.any?
 
-        halt 400, "Unsupported `page' query parameter(s)" \
+        raise BadRequestError, "Unsupported `page' query parameter(s)" \
           unless respond_to?(:page)
 
-        h = params[:page].map do |k, v|
+        params[:page].map do |k, v|
           [dedasherize(k).to_sym, v]
         end.to_h
-
-        return h if h.keys.to_set.subset?(settings._sinja.page_using.keys.to_set)
-
-        halt 400, "Invalid `page' query parameter(s)"
       end
 
-      def filter_sort_page(collection, action)
-        unless params[:filter].empty?
-          halt 400, "Invalid `filter' query parameter(s)" \
-            unless settings.resource_config[action][:filter_by].empty? ||
-              params[:filter].keys.to_set.subset?(settings.resource_config[action][:filter_by])
+      def page_using?
+        return true if params[:page].keys.to_set.subset?(settings._sinja.page_using.keys.to_set)
 
-          collection = filter(collection, params[:filter])
-        end
+        raise BadRequestError, "Invalid `page' query parameter(s)"
+      end
 
-        unless params[:sort].empty?
-          halt 400, "Invalid `sort' query parameter(s)" \
-            unless settings.resource_config[action][:sort_by].empty? ||
-              params[:sort].keys.to_set.subset?(settings.resource_config[action][:sort_by])
+      def filter_sort_page?(action)
+        filter_by?(action) unless params[:filter].empty?
+        sort_by?(action) unless params[:sort].empty?
+        page_using? unless params[:page].empty?
+      end
 
-          collection = sort(collection, params[:sort])
-        end
-
-        unless params[:page].empty?
-          collection, pagination = page(collection, params[:page])
-        end
+      def filter_sort_page(collection)
+        collection = filter(collection, params[:filter]) unless params[:filter].empty?
+        collection = sort(collection, params[:sort]) unless params[:sort].empty?
+        collection, pagination = page(collection, params[:page]) unless params[:page].empty?
 
         collection = finalize(collection) if respond_to?(:finalize)
 

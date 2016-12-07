@@ -27,15 +27,15 @@ module Sinja
         ::Sequel::DATABASES.first
       end
 
-      def filter(collection, **fields)
+      def filter(collection, fields)
         collection.where(fields)
       end
 
-      def sort(collection, **fields)
+      def sort(collection, fields)
         collection.order(*fields.map { |k, v| ::Sequel.send(v, k) })
       end
 
-      def page(collection, **opts)
+      def page(collection, opts)
         opts = settings._sinja.page_using.merge(opts)
         collection = collection.dataset \
           unless collection.respond_to?(:paginate)
