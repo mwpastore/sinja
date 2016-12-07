@@ -42,10 +42,8 @@ module Sinja
       define_singleton_method(:resource_config) { config[:resource] }
 
       helpers do
-        %i[can? sanity_check! sideload?].each do |meth|
-          define_method(meth) do |*args|
-            super(resource_name, *args)
-          end
+        define_method(:sanity_check!) do |*args|
+          super(resource_name, *args)
         end
       end
 
@@ -93,7 +91,7 @@ module Sinja
       condition do
         actions.each do |action|
           raise ForbiddenError, 'You are not authorized to perform this action' \
-            unless can?(action) || sideload?(action)
+            unless can?(action)
           raise MethodNotAllowedError, 'Action or method not implemented or supported' \
             unless respond_to?(action)
         end
@@ -178,14 +176,9 @@ module Sinja
         end
       end
 
-      def can?(resource_name, action, rel_type=nil, rel=nil)
-        config = settings._sinja.resource_config[resource_name]
-        config = rel_type && rel ? config[rel_type][rel] : config[:resource]
-        # JRuby issues with nil default_proc (fixed in 9.1.7.0?)
-        # https://github.com/jruby/jruby/issues/4302
-        #roles = config&.dig(action, :roles)
-        roles = config&.key?(action) && config[action][:roles]
-        !roles || roles.empty? || roles === memoized_role
+      def can?(action)
+        roles = settings._resource_config[:resource].fetch(action, {})[:roles]
+        roles.nil? || roles.empty? || roles === memoized_role
       end
 
       def content?
@@ -283,12 +276,6 @@ module Sinja
 
       def memoized_role
         @role ||= role
-      end
-
-      def sideload?(resource_name, child)
-        return unless sideloaded?
-        parent = env['sinja.passthru'].to_sym
-        settings.resource_config[child][:sideload_on]&.include?(parent) && can?(parent)
       end
 
       def sideloaded?

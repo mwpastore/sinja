@@ -92,8 +92,12 @@ module Sinja
           define_singleton_method(:resource_config) { config }
 
           helpers Helpers::Nested do
-            define_method(:can?) do |*args|
-              super(*args, rel_type, rel)
+            define_method(:can?) do |action, *args|
+              parent = sideloaded? && env['sinja.passthru'].to_sym
+
+              roles, sideload_on = config.fetch(action, {}).values_at(:roles, :sideload_on)
+              roles.nil? || roles.empty? || roles === memoized_role ||
+                parent && sideload_on.include?(parent) && super(parent, *args)
             end
 
             define_method(:serialize_linkage) do |*args|
