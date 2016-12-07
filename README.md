@@ -1,5 +1,7 @@
 # Sinja (Sinatra::JSONAPI)
 
+[![Join the chat at https://gitter.im/sinja-rb/Lobby](https://badges.gitter.im/sinja-rb/Lobby.svg)](https://gitter.im/sinja-rb/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Gem Version](https://badge.fury.io/rb/sinja.svg)](https://badge.fury.io/rb/sinja)
 [![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
 
