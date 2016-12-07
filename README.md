@@ -2,6 +2,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/sinja.svg)](https://badge.fury.io/rb/sinja)
 [![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
+[![Chat](https://badges.gitter.im/sinja-rb/Lobby.svg)](https://gitter.im/sinja-rb/Lobby)
 
 Sinja is a [Sinatra][1] [extension][10] for quickly building [RESTful][11],
 [{json:api}][2]-[compliant][7] web services, leveraging the excellent
