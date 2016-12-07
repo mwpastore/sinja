@@ -17,14 +17,12 @@ configure_jsonapi do |c|
   Sinja::Helpers::Sequel.config(c)
 end
 
-helpers Sinja::Helpers::Sequel do
+helpers do
+  prepend Sinja::Helpers::Sequel
+
   def current_user
     # TESTING/DEMO PURPOSES ONLY -- DO NOT DO THIS IN PRODUCTION
     Author.first_by_email(env['HTTP_X_EMAIL']) if env.key?('HTTP_X_EMAIL')
-  end
-
-  def database
-    DB
   end
 
   def role

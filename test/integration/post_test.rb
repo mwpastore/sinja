@@ -34,6 +34,7 @@ class PostTest < SequelTest
     })
     assert_error 422
     assert_equal '/data/attributes/author', json[:errors].first[:source][:pointer]
+    assert_empty DB[:posts].all
   end
 
   def test_sideload_on_create

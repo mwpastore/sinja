@@ -1,10 +1,12 @@
 # frozen_string_literal: true
+require 'forwardable'
 require 'sequel/model/inflections'
 
 module Sinja
   module Helpers
     module Sequel
       include ::Sequel::Inflections
+      extend Forwardable
 
       def self.config(c)
         c.conflict_exceptions << ::Sequel::ConstraintViolation
@@ -27,9 +29,9 @@ module Sinja
         ::Sequel::DATABASES.first
       end
 
-      def filter(collection, fields)
-        collection.where(fields)
-      end
+      def_delegator :database, :transaction
+
+      define_method :filter, proc(&:where)
 
       def sort(collection, fields)
         collection.order(*fields.map { |k, v| ::Sequel.send(v, k) })
@@ -60,13 +62,7 @@ module Sinja
         return collection, pagination
       end if ::Sequel::Database::EXTENSIONS.key?(:pagination)
 
-      def finalize(collection)
-        collection.all
-      end
-
-      def transaction(&block)
-        database.transaction(&block)
-      end
+      define_method :finalize, proc(&:all)
 
       def next_pk(resource, **opts)
         [resource.pk, resource, opts]
