@@ -21,17 +21,8 @@ module Sinja
         } if ::Sequel::Database::EXTENSIONS.key?(:pagination)
       end
 
-      def validate!
-        raise ::Sequel::ValidationFailed, resource unless resource.valid?
-      end
-
-      def database
-        ::Sequel::DATABASES.first
-      end
-
+      def_delegator ::Sequel::Model, :db, :database
       def_delegator :database, :transaction
-
-      define_method :filter, proc(&:where)
 
       def sort(collection, fields)
         collection.order(*fields.map { |k, v| ::Sequel.send(v, k) })
@@ -62,7 +53,12 @@ module Sinja
         return collection, pagination
       end if ::Sequel::Database::EXTENSIONS.key?(:pagination)
 
+      define_method :filter, proc(&:where)
       define_method :finalize, proc(&:all)
+
+      def validate!
+        raise ::Sequel::ValidationFailed, resource unless resource.valid?
+      end
 
       def next_pk(resource, **opts)
         [resource.pk, resource, opts]
