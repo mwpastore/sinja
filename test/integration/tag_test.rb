@@ -101,15 +101,18 @@ class PostTest < SequelTest
     assert_ok
     assert_equal 1, json[:data].length
     assert_equal 4, json[:data].first[:id].to_i
+    assert_equal 1, json[:meta][:pagination][:self][:number]
 
     get json[:links][:next]
     assert_ok
     assert_equal 1, json[:data].length
     assert_equal 2, json[:data].first[:id].to_i
+    assert_equal 2, json[:meta][:pagination][:self][:number]
 
     get json[:links][:last]
     assert_ok
     assert_equal 1, json[:data].length
     assert_equal 3, json[:data].first[:id].to_i
+    assert_equal 4, json[:meta][:pagination][:self][:number]
   end
 end

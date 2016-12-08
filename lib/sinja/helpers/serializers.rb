@@ -7,6 +7,8 @@ require 'set'
 module Sinja
   module Helpers
     module Serializers
+      VALID_PAGINATION_KEYS = Set.new(%i[self first prev next last]).freeze
+
       def dedasherize(s=nil)
         s.to_s.tr('-', '_').send(Symbol === s ? :to_sym : :itself)
       end
@@ -110,38 +112,50 @@ module Sinja
         end
       end
 
-      def serialize_models(models=[], options={})
+      def serialize_models(models=[], options={}, pagination=nil)
         options[:is_collection] = true
         options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
         options = settings._sinja.serializer_opts.merge(options)
 
-        if options.key?(:links) && pagination = options[:links].delete(:pagination)
+        if pagination
+          # Whitelist pagination keys and dasherize query parameter names
+          pagination = VALID_PAGINATION_KEYS
+            .select { |outer_key| pagination.key?(outer_key) }
+            .map! do |outer_key|
+              [outer_key, pagination[outer_key].map do |inner_key, value|
+                [inner_key.to_s.dasherize.to_sym, value]
+              end.to_h]
+            end.to_h
+
+          options[:meta] ||= {}
+          options[:meta][:pagination] = pagination
+
+          options[:links] ||= {}
           options[:links][:self] = request.url unless pagination.key?(:self)
 
-          query = Rack::Utils.build_nested_query \
+          base_query = Rack::Utils.build_nested_query \
             env['rack.request.query_hash'].dup.tap { |h| h.delete('page') }
+
           self_link, join_char =
-            if query.empty?
+            if base_query.empty?
               [request.path, ??]
             else
-              ["#{request.path}?#{query}", ?&]
+              ["#{request.path}?#{base_query}", ?&]
             end
 
-          %i[self first prev next last].each do |key|
-            next unless pagination.key?(key)
-            query = Rack::Utils.build_nested_query \
-              :page=>pagination[key]
-            options[:links][key] = "#{self_link}#{join_char}#{query}"
-          end
+          options[:links].merge!(pagination.map do |key, value|
+            [key, [self_link,
+              Rack::Utils.build_nested_query(:page=>value)].join(join_char)]
+          end.to_h)
         end
 
         ::JSONAPI::Serializer.serialize([*models], options)
       end
 
-      def serialize_models?(models=[], options={})
+      def serialize_models?(models=[], options={}, pagination=nil)
         if [*models].any?
-          body serialize_models(models, options)
+          body serialize_models(models, options, pagination)
         elsif options.key?(:meta)
           body serialize_models([], :meta=>options[:meta])
         else

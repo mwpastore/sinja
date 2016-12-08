@@ -275,7 +275,7 @@ module Sinja
 
         collection = finalize(collection) if respond_to?(:finalize)
 
-        return collection, :pagination=>pagination
+        return collection, pagination
       end
 
       def halt(code, body=nil)
