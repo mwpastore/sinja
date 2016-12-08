@@ -16,6 +16,10 @@ class Post < Sequel::Model
 
   unrestrict_primary_key # allow client-generated slugs
 
+  # jdbc-sqlite3 reports unexpected record counts with cascading updates that
+  # breaks Sequel (https://github.com/jeremyevans/sequel/issues/1275)
+  self.require_modification = !defined?(JRUBY_VERSION)
+
   many_to_one :author
   one_to_many :comments
   many_to_many :tags, left_key: :post_slug
