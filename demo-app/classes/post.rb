@@ -1,6 +1,5 @@
 # frozen_string_literal: true
-require_relative '../base'
-require_relative '../database'
+require_relative 'base'
 
 DB.create_table?(:posts) do
   String :slug, primary_key: true
@@ -13,8 +12,7 @@ end
 
 class Post < Sequel::Model
   plugin :timestamps
-
-  unrestrict_primary_key # allow client-generated slugs
+  plugin :update_primary_key
 
   many_to_one :author
   one_to_many :comments
@@ -51,7 +49,7 @@ PostController = proc do
     end
 
     def settable_fields
-      %i[title body]
+      %i[slug title body]
     end
   end
 
@@ -69,8 +67,7 @@ PostController = proc do
 
   create(roles: :logged_in) do |attr, slug|
     post = Post.new
-    post.set_fields(attr, settable_fields)
-    post.slug = slug.to_s # set primary key
+    post.set_fields(attr.merge(slug: slug), settable_fields)
     post.save(validate: false)
     next_pk post
   end

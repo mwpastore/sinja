@@ -1,6 +1,5 @@
 # frozen_string_literal: true
-require_relative '../base'
-require_relative '../database'
+require_relative 'base'
 
 DB.create_table?(:comments) do
   primary_key :id

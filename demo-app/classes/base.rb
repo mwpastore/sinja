@@ -1,5 +1,6 @@
 # require_string_literal: true
-require_relative 'boot'
+require_relative '../boot'
+require_relative '../database'
 
 class BaseSerializer
   include JSONAPI::Serializer

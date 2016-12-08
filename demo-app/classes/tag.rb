@@ -1,7 +1,5 @@
 # frozen_string_literal: true
-require_relative '../base'
-require_relative '../database'
-
+require_relative 'base'
 require_relative 'post' # make sure we create the posts table before the join table
 
 DB.create_table?(:tags) do

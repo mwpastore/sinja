@@ -99,6 +99,31 @@ class PostTest < SequelTest
     assert_match %r{different}, DB[:posts].first(:slug=>slug)[:body]
   end
 
+  def test_slug_update
+    author_id = DB[:authors].insert :email=>'foo@example.com'
+    DB[:tags].multi_insert [{ :name=>'teapots' }, { :name=>'sassafrass' }]
+    tag_ids = DB[:tags].select_order_map(:id)
+    slug = 'foo-bar'
+    DB[:posts].insert :slug=>slug, :title=>'This is a post', :body=>'This is a post body', :author_id=>author_id
+    DB[:posts_tags].multi_insert [
+      { :post_slug=>slug, :tag_id=>tag_ids.first },
+      { :post_slug=>slug, :tag_id=>tag_ids.last }
+    ]
+
+    login 'foo@example.com'
+
+    new_slug = 'bar-qux'
+    patch "/posts/#{slug}", JSON.generate(:data=>{
+      :type=>'posts',
+      :id=>slug,
+      :attributes=>{ :slug=>new_slug }
+    })
+
+    assert_ok
+    assert_equal tag_ids, DB[:posts_tags].where(:post_slug=>new_slug).select_order_map(:tag_id)
+    assert_match %r{a post body}, DB[:posts].first(:slug=>new_slug)[:body]
+  end
+
   def test_owner_cant_change_author
     author_id = DB[:authors].insert :email=>'foo@example.com'
     slug = 'foo-bar'

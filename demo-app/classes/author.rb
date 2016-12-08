@@ -1,6 +1,5 @@
 # frozen_string_literal: true
-require_relative '../base'
-require_relative '../database'
+require_relative 'base'
 
 DB.create_table?(:authors) do
   primary_key :id
@@ -13,8 +12,8 @@ DB.create_table?(:authors) do
 end
 
 class Author < Sequel::Model
-  plugin :timestamps
   plugin :boolean_readers
+  plugin :timestamps
 
   finder def self.by_email(arg)
     where(email: arg)
@@ -25,7 +24,7 @@ class Author < Sequel::Model
 end
 
 # We have to create an admin user here, otherwise we have no way to create one.
-Author.create(email: 'all@yourbase.com', admin: true)
+Author.create(email: 'all@yourbase.com', admin: true) if Author.where(admin: true).empty?
 
 class AuthorSerializer < BaseSerializer
   attribute(:display_name) { object.display_name || 'Anonymous Coward' }
