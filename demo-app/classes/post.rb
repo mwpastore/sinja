@@ -14,6 +14,8 @@ class Post < Sequel::Model
   plugin :timestamps
   plugin :update_primary_key
 
+  unrestrict_primary_key # allow client-generated slugs
+
   many_to_one :author
   one_to_many :comments
   many_to_many :tags, left_key: :post_slug

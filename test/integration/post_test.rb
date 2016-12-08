@@ -100,6 +100,9 @@ class PostTest < SequelTest
   end
 
   def test_slug_update
+    # https://github.com/jeremyevans/sequel/issues/1275
+    skip if defined?(JRUBY_VERSION)
+
     author_id = DB[:authors].insert :email=>'foo@example.com'
     DB[:tags].multi_insert [{ :name=>'teapots' }, { :name=>'sassafrass' }]
     tag_ids = DB[:tags].select_order_map(:id)
