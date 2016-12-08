@@ -63,7 +63,7 @@ module Sinja
         :fields=>{}, # passthru to JAS
         :filter=>{},
         :page=>{},
-        :sort=>{}
+        :sort=>[]
       }
 
       @error_logger = ->(h) { logger.error('sinja') { h } }

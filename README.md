@@ -436,7 +436,7 @@ configure_jsonapi do |c|
 
   # You can't set this directly; see "Query Parameters" below
   #c.query_params = {
-  #  :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>{}
+  #  :include=>[], :fields=>{}, :filter=>{}, :page=>{}, :sort=>[]
   #}
 
   #c.page_using = {} # see "Paging" below
