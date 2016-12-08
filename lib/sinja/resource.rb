@@ -105,8 +105,7 @@ module Sinja
             end
           end
 
-          register RelationshipRoutes.const_get \
-            rel_type.to_s.split('_').map(&:capitalize).join.to_sym
+          register RelationshipRoutes.const_get(rel_type.to_s.camelize)
 
           instance_eval(&block) if block
         end

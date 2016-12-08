@@ -314,7 +314,7 @@ application.
 
 **dedasherize**
 : Takes a string or symbol and returns the string or symbol with any and all
-  dashes transliterated to underscores.
+  dashes transliterated to underscores, and camelCase converted to snake_case.
 
 **dedasherize_names**
 : Takes a hash and returns the hash with its keys dedasherized (deeply).

@@ -10,7 +10,7 @@ module Sinja
       VALID_PAGINATION_KEYS = Set.new(%i[self first prev next last]).freeze
 
       def dedasherize(s=nil)
-        s.to_s.tr('-', '_').send(Symbol === s ? :to_sym : :itself)
+        s.to_s.underscore.send(Symbol === s ? :to_sym : :itself)
       end
 
       def dedasherize_names(*args)
@@ -198,11 +198,7 @@ module Sinja
       end
 
       def exception_title(e)
-        if e.respond_to?(:title)
-          e.title
-        else
-          e.class.name.split('::').last.split(/(?=[[:upper:]])/).join(' ')
-        end
+        e.respond_to?(:title) ? e.title : e.class.name.demodulize.titleize
       end
 
       def serialize_errors(&block)
