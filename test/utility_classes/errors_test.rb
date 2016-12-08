@@ -192,9 +192,9 @@ class TestMethodNotAllowedError < Minitest::Test
   end
 end
 
-class TestNotAcceptibleError < Minitest::Test
+class TestNotAcceptableError < Minitest::Test
   def setup
-    @error = Sinja::NotAcceptibleError.new('baba booey')
+    @error = Sinja::NotAcceptableError.new('baba booey')
   end
 
   def test_it_is_an_error

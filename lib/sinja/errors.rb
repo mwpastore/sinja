@@ -42,7 +42,7 @@ module Sinja
     def initialize(*args) super(405, *args) end
   end
 
-  class NotAcceptibleError < HttpError
+  class NotAcceptableError < HttpError
     def initialize(*args) super(406, *args) end
   end
 

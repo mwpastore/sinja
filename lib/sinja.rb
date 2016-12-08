@@ -18,7 +18,7 @@ module Sinja
     ForbiddenError,
     NotFoundError,
     MethodNotAllowedError,
-    NotAcceptibleError,
+    NotAcceptableError,
     ConflictError,
     UnsupportedTypeError
   ].map! { |c| [c.new.http_status, c] }.to_h.tap do |h|
@@ -319,7 +319,7 @@ module Sinja
 
     app.before do
       unless sideloaded?
-        raise NotAcceptibleError unless request.preferred_type.entry == MIME_TYPE
+        raise NotAcceptableError unless request.preferred_type.entry == MIME_TYPE
         raise UnsupportedTypeError if content? && (
           request.media_type != MIME_TYPE || request.media_type_params.keys.any? { |k| k != 'charset' }
         )
