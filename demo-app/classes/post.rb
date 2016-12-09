@@ -16,7 +16,7 @@ class Post < Sequel::Model
 
   unrestrict_primary_key # allow client-generated slugs
 
-  # jdbc-sqlite3 reports unexpected record counts with cascading updates that
+  # jdbc-sqlite3 reports unexpected record counts with cascading updates, which
   # breaks Sequel (https://github.com/jeremyevans/sequel/issues/1275)
   self.require_modification = !defined?(JRUBY_VERSION)
 
