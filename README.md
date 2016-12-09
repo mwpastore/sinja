@@ -1,5 +1,12 @@
 # Sinja (Sinatra::JSONAPI)
 
+<!--
+  Title: Sinja
+  Description: RESTful, {json:api}-compliant web services in Sinatra
+  Author: Mike Pastore
+  Keywords: JSON, API, JSONAPI, JSON:API, {json:api}, Ruby, Sinatra, JSONAPI::Serializers, jsonapi-serializers
+  -->
+
 [![Gem Version](https://badge.fury.io/rb/sinja.svg)](https://badge.fury.io/rb/sinja)
 [![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
 [![Chat](https://badges.gitter.im/sinja-rb/Lobby.svg)](https://gitter.im/sinja-rb/Lobby)
