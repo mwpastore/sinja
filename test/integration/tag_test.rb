@@ -115,4 +115,28 @@ class PostTest < SequelTest
     assert_equal 3, json[:data].first[:id].to_i
     assert_equal 4, json[:meta][:pagination][:self][:number]
   end
+
+  def test_create
+    login 'all@yourbase.com'
+    post '/tags', JSON.generate(:data=>{
+      :type=>'tags', :attributes=>{ :name=>'sassafrass' }
+    })
+    assert_ok
+  end
+
+  def test_create_with_unknown_fields
+    login 'all@yourbase.com'
+    post '/tags', JSON.generate(:data=>{
+      :type=>'tags', :attributes=>{ :name=>'sassafrass', :banana=>'apple' }
+    })
+    assert_ok
+  end
+
+  def test_create_with_restricted_fields
+    login 'all@yourbase.com'
+    post '/tags', JSON.generate(:data=>{
+      :type=>'tags', :attributes=>{ :name=>'sassafrass', :id=>42 }
+    })
+    assert_ok
+  end
 end
