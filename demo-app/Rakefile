@@ -1,0 +1,36 @@
+# frozen_string_literal: true
+namespace :docker do
+  require 'securerandom'
+
+  IMAGE = 'mwpastore/sinja-demo-app'
+  NAME = SecureRandom.hex(6)
+
+  def port
+    %x{
+      docker inspect --format '{{ (index ( index .NetworkSettings.Ports "4567/tcp") 0).HostPort }}' #{NAME}
+    }.chomp
+  end
+
+  task :build do
+    sh "docker build --no-cache -t #{IMAGE}:latest #{__dir__}"
+  end
+
+  task :test do
+    sh "docker run -d --name #{NAME} -P #{IMAGE}"
+    sleep 5
+    begin
+      sh "curl -sf -H 'Accept: application/vnd.api+json' -I :#{port}/authors"
+    ensure
+      sh "docker stop #{NAME} >/dev/null || true"
+      sh "docker rm #{NAME} >/dev/null || true"
+    end
+  end
+
+  task push: [:build, :test] do
+    sh "docker push #{IMAGE}:latest"
+  end
+
+  task :run do
+    sh "docker run -it -p 4567:4567 --rm #{IMAGE}"
+  end
+end

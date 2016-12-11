@@ -24,13 +24,21 @@ $ bundle install
 $ bundle exec ruby app.rb [-p <PORT>]
 ```
 
-The web server will report the port it's listening on, or you can specify a
-port with the `-p` option. It will respond to {json:api}-compliant requests
-(don't forget to set an `Accept` header) to `/authors`, `/posts`, `/comments`,
-and `/tags`, although not every endpoint is implemented. Log in by setting the
-`X-Email` header on the request to the email address of a registered user; the
-email address for the default admin user is all@yourbase.com. **This is clearly
-extremely insecure and should not be used as-is in production. Caveat emptor.**
+The web server will report the port it's listening on (most likely 4567), or
+you can specify a port with the `-p` option. Alternatively, if you don't want
+to set up a Ruby environment just for a quick demo, it's [available on Docker
+Cloud](https://cloud.docker.com/app/mwpastore/repository/docker/mwpastore/sinja-demo-app):
+
+```
+$ docker run -it -p 4567:4567 --rm mwpastore/sinja-demo-app
+```
+
+It will respond to {json:api}-compliant requests (don't forget to set an
+`Accept` header) to `/authors`, `/posts`, `/comments`, and `/tags`, although
+not every endpoint is implemented. Log in by setting the `X-Email` header on
+the request to the email address of a registered user; the email address for
+the default admin user is all@yourbase.com. **This is clearly extremely
+insecure and should not be used as-is in production. Caveat emptor.**
 
 You can point it at a different database by setting `DATABASE_URL` in the
 environment before executing `app.rb`. See the relevant [Sequel

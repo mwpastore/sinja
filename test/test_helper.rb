@@ -2,10 +2,12 @@
 ENV['RACK_ENV'] = ENV['APP_ENV'] = 'test'
 
 require 'bundler/setup'
-require 'json'
 require 'minitest/autorun'
 require 'rack/test'
-require 'sinja'
+
+Bundler.require :default
+Bundler.require Sinatra::Base.environment
+Bundler.require :development if Sinatra::Base.test?
 
 module MyAppTest
   def setup
