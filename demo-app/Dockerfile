@@ -1,4 +1,8 @@
 FROM ruby:2.3-alpine
+ARG container_port=4567
+ENV container_port=$container_port
+
+RUN apk --no-cache upgrade
 RUN apk --no-cache add \
         sqlite-libs
 
@@ -9,7 +13,7 @@ RUN apk --no-cache add --virtual build-dependencies \
         ruby-dev \
         sqlite-dev \
     && cd /app \
-    && bundle install \
+    && bundle install --jobs=4 \
     && apk del build-dependencies
 
 COPY . /app
@@ -17,7 +21,6 @@ RUN chown -R nobody:nogroup /app
 
 USER nobody
 WORKDIR /app
-ENTRYPOINT ["bundle", "exec"]
-CMD ["ruby", "app.rb", "-o", "0.0.0.0", "-p", "4567"]
+CMD bundle exec ruby app.rb -o 0.0.0.0 -p $container_port
 
-EXPOSE 4567
+EXPOSE $container_port
