@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'forwardable'
-require 'sequel/model/inflections'
 
 module Sinja
   module Helpers
@@ -66,18 +65,18 @@ module Sinja
 
       # <= association, rios, block
       def add_missing(*args, &block)
-        add_remove(:add, :-, *args, &block)
+        add_or_remove(:add, :-, *args, &block)
       end
 
       # <= association, rios, block
       def remove_present(*args, &block)
-        add_remove(:remove, :&, *args, &block)
+        add_or_remove(:remove, :&, *args, &block)
       end
 
       private
 
-      def add_remove(meth_prefix, operator, association, rios)
-        meth = "#{meth_prefix}_#{singularize(association)}".to_sym
+      def add_or_remove(meth_prefix, operator, association, rios)
+        meth = "#{meth_prefix}_#{association.to_s.singularize}".to_sym
         transaction do
           resource.lock!
           venn(operator, association, rios) do |subresource|
@@ -92,8 +91,8 @@ module Sinja
         dataset = resource.send("#{association}_dataset")
         klass = dataset.association_reflection.associated_class
         # does not / will not work with composite primary keys
-        rios.map { |rio| rio[:id].to_i }
-          .send(operator, dataset.select_map(:id))
+        rios.map { |rio| rio[:id].to_s }
+          .send(operator, dataset.select_map(::Sequel.cast(klass.primary_key, String)))
           .each { |id| yield klass.with_pk!(id) }
       end
     end
