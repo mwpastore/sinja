@@ -39,9 +39,9 @@ module Sinja
       end
 
       app.get '', :qparams=>%i[include fields filter sort page], :actions=>:index do
-        filter_sort_page?(:index)
+        fsp_opts = filter_sort_page?(:index)
         collection, opts = index
-        collection, pagination = filter_sort_page(collection)
+        collection, pagination = filter_sort_page(collection, fsp_opts)
         serialize_models(collection, opts, pagination)
       end
 

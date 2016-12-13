@@ -221,8 +221,11 @@ module Sinja
       end
 
       def filter_by?(action)
-        return true if settings.resource_config[action][:filter_by].empty? ||
-          params[:filter].keys.to_set.subset?(settings.resource_config[action][:filter_by])
+        return if params[:filter].empty?
+
+        return params[:filter] \
+          if settings.resource_config[action][:filter_by].empty? ||
+            params[:filter].keys.to_set.subset?(settings.resource_config[action][:filter_by])
 
         raise BadRequestError, "Invalid `filter' query parameter(s)"
       end
@@ -240,8 +243,11 @@ module Sinja
       end
 
       def sort_by?(action)
-        return true if settings.resource_config[action][:sort_by].empty? ||
-          params[:sort].keys.to_set.subset?(settings.resource_config[action][:sort_by])
+        return if params[:sort].empty?
+
+        return params[:sort] \
+          if settings.resource_config[action][:sort_by].empty? ||
+            params[:sort].keys.to_set.subset?(settings.resource_config[action][:sort_by])
 
         raise BadRequestError, "Invalid `sort' query parameter(s)"
       end
@@ -258,25 +264,36 @@ module Sinja
       end
 
       def page_using?
-        return true if params[:page].keys.to_set.subset?(settings._sinja.page_using.keys.to_set)
+        return if params[:page].empty?
+
+        return params[:page] \
+          if params[:page].keys.to_set.subset?(settings._sinja.page_using.keys.to_set)
 
         raise BadRequestError, "Invalid `page' query parameter(s)"
       end
 
       def filter_sort_page?(action)
-        filter_by?(action) unless params[:filter].empty?
-        sort_by?(action) unless params[:sort].empty?
-        page_using? unless params[:page].empty?
+        return enum_for(__callee__, action).to_h unless block_given?
+
+        if filter = filter_by?(action)
+          yield :filter, filter
+        end
+
+        if sort = sort_by?(action)
+          yield :sort, sort
+        end
+
+        if page = page_using?
+          yield :page, page
+        end
       end
 
-      def filter_sort_page(collection)
-        collection = filter(collection, params[:filter]) unless params[:filter].empty?
-        collection = sort(collection, params[:sort]) unless params[:sort].empty?
-        collection, pagination = page(collection, params[:page]) unless params[:page].empty?
+      def filter_sort_page(collection, opts)
+        collection = filter(collection, opts[:filter]) if opts.key?(:filter)
+        collection = sort(collection, opts[:sort]) if opts.key?(:sort)
+        collection, pagination = page(collection, opts[:page]) if opts.key?(:page)
 
-        collection = finalize(collection) if respond_to?(:finalize)
-
-        return collection, pagination
+        return respond_to?(:finalize) ? finalize(collection) : collection, pagination
       end
 
       def halt(code, body=nil)
