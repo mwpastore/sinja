@@ -1,10 +1,11 @@
 # frozen_string_literal: true
+require 'set'
+
 require 'active_support/inflector'
 require 'mustermann'
 require 'sinatra/base'
 require 'sinatra/namespace'
 
-require 'set'
 require 'sinja/config'
 require 'sinja/errors'
 require 'sinja/helpers/serializers'

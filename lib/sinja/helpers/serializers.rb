@@ -1,8 +1,9 @@
 # frozen_string_literal: true
+require 'set'
+
 require 'active_support/inflector'
 require 'json'
 require 'jsonapi-serializers'
-require 'set'
 
 module Sinja
   module Helpers

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'forwardable'
 require 'set'
+
 require 'sinatra/base'
 
 require 'sinja/resource'

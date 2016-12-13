@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require 'active_support/inflector'
 require 'set'
+
+require 'active_support/inflector'
 require 'sinatra/base'
 require 'sinatra/namespace'
 
