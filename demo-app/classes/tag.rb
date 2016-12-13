@@ -57,6 +57,12 @@ TagController = proc do
       resource.posts_dataset
     end
 
+    replace(roles: :logged_in) do |rios|
+      add_remove(:posts, rios) do |post|
+        role?(:superuser) || post.author == current_user
+      end
+    end
+
     merge(roles: :logged_in) do |rios|
       add_missing(:posts, rios) do |post|
         role?(:superuser) || post.author == current_user

@@ -111,16 +111,20 @@ PostController = proc do
       resource.tags_dataset
     end
 
-    merge(roles: %i[owner superuser], sideload_on: %i[create update]) do |rios|
+    clear(roles: %i[owner superuser], sideload_on: :update) do
+      resource.remove_all_tags
+    end
+
+    replace(roles: %i[owner superuser], sideload_on: :update) do |rios|
+      add_remove(:tags, rios)
+    end
+
+    merge(roles: %i[owner superuser], sideload_on: :create) do |rios|
       add_missing(:tags, rios)
     end
 
     subtract(roles: %i[owner superuser]) do |rios|
       remove_present(:tags, rios)
-    end
-
-    clear(roles: %i[owner superuser], sideload_on: :update) do
-      resource.remove_all_tags
     end
   end
 end

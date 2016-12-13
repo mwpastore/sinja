@@ -73,6 +73,35 @@ module Sinja
         add_or_remove(:remove, :&, *args, &block)
       end
 
+      def add_remove(association, rios)
+        meth_suffix = association.to_s.singularize
+        add = "add_#{meth_suffix}".to_sym
+        remove = "remove_#{meth_suffix}".to_sym
+
+        dataset = resource.send("#{association}_dataset")
+        klass = dataset.association_reflection.associated_class
+
+        # does not / will not work with composite primary keys
+        new_ids = rios.map { |rio| rio[:id].to_s }
+        transaction do
+          resource.lock!
+          old_ids = dataset.select_map(::Sequel.cast(klass.primary_key, String))
+          in_common = old_ids & new_ids
+
+          (new_ids - in_common).each do |id|
+            resource.send(add, klass.with_pk!(id)) \
+              unless block_given? && !yield(subresource)
+          end
+
+          (old_ids - in_common).each do |id|
+            resource.send(remove, klass.with_pk!(id)) \
+              unless block_given? && !yield(subresource)
+          end
+
+          resource.reload
+        end
+      end
+
       private
 
       def add_or_remove(meth_prefix, operator, association, rios)

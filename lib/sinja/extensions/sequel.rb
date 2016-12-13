@@ -3,20 +3,18 @@ require 'sinja/helpers/sequel'
 
 module Sinja
   module Resource
-    alias_method :core_has_one, :has_one
-
-    def has_one(rel, &block)
-      core_has_one(rel) do
+    def sequel_has_one(rel, &block)
+      has_one(rel) do
         pluck do
           resource.send(rel)
         end
 
-        prune do
+        prune(sideload_on: :update) do
           resource.send("#{rel}=", nil)
           resource.save_changes
         end
 
-        graft do |rio|
+        graft(sideload_on: %i[create update]) do |rio|
           klass = resource.class.association_reflection(rel).associated_class
           resource.send("#{rel}=", klass.with_pk!(rio[:id]))
           resource.save_changes(validate: !sideloaded?)
@@ -26,19 +24,21 @@ module Sinja
       end
     end
 
-    alias_method :core_has_many, :has_many
-
-    def has_many(rel, &block)
-      core_has_many(rel) do
+    def sequel_has_many(rel, &block)
+      has_many(rel) do
         fetch do
           resource.send(rel)
         end
 
-        clear do
+        clear(sideload_on: :update) do
           resource.send("remove_all_#{rel}")
         end
 
-        merge do |rios|
+        replace(sideload_on: :update) do |rios|
+          add_remove(rel, rios)
+        end
+
+        merge(sideload_on: :create) do |rios|
           add_missing(rel, rios)
         end
 

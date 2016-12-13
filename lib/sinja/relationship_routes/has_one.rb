@@ -4,7 +4,7 @@ module Sinja
     module HasOne
       def self.registered(app)
         app.def_action_helper(app, :pluck, :roles)
-        app.def_action_helper(app, :prune, :roles)
+        app.def_action_helper(app, :prune, %i[roles sideload_on])
         app.def_action_helper(app, :graft, %i[roles sideload_on])
 
         app.head '' do

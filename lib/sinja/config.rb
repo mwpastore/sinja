@@ -71,8 +71,8 @@ module Sinja
 
       @default_roles = {
         :resource=>RolesConfig.new(%i[show show_many index create update destroy]),
-        :has_many=>RolesConfig.new(%i[fetch merge subtract clear]),
-        :has_one=>RolesConfig.new(%i[pluck graft prune])
+        :has_many=>RolesConfig.new(%i[fetch clear replace merge subtract]),
+        :has_one=>RolesConfig.new(%i[pluck prune graft])
       }
 
       action_proc = proc { |type, hash, action| hash[action] = {

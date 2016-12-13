@@ -55,6 +55,7 @@ the {json:api} specification is).
     - [`has_many`](#has_many)
       - [`fetch {..}` => Array](#fetch---array)
       - [`clear {..}` => TrueClass?](#clear---trueclass)
+      - [`replace {|rios| ..}` => TrueClass?](#replace-rios---trueclass)
       - [`merge {|rios| ..}` => TrueClass?](#merge-rios---trueclass)
       - [`subtract {|rios| ..}` => TrueClass?](#subtract-rios---trueclass)
 - [Advanced Usage](#advanced-usage)
@@ -637,6 +638,18 @@ has_many :bars do
 end
 ```
 
+##### `replace {|rios| ..}` => TrueClass?
+
+Take an array of [resource identifier object][22] hashes and update
+(add/remove) the relationships on `resource`. To serialize the updated linkage
+on the response, refresh or reload `resource` (if necessary) and return a
+truthy value.
+
+In principle, `replace` should delete all members of the existing collection
+and insert all members of a new collection, but in practice&mdash;for
+performance reasons, especially with large collections and/or complex
+constraints&mdash;it may be prudent to simply apply a delta.
+
 ##### `merge {|rios| ..}` => TrueClass?
 
 Take an array of [resource identifier object][22] hashes and update (add unless
@@ -742,6 +755,7 @@ configure_jsonapi do |c|
   c.default_has_many_roles = {
     fetch: :user,
     clear: :admin,
+    replace: :admin,
     merge: :admin,
     subtract: :admin
   }
@@ -842,8 +856,8 @@ resource :foos do
     end
   end
 
-  create(roles: :user) { |attr| .. }
-  update(roles: :owner) { |attr| .. }
+  create(roles: :user) {|attr| .. }
+  update(roles: :owner) {|attr| .. }
 end
 ```
 
@@ -941,7 +955,7 @@ For example, to implement sorting using Sequel:
 ```ruby
 helpers do
   def sort(collection, fields={})
-    collection.order(*fields.map { |k, v| Sequel.send(v, k) })
+    collection.order(*fields.map {|k, v| Sequel.send(v, k) })
   end
 end
 
@@ -1181,12 +1195,11 @@ request will fail and any database changes will be rolled back (given a
 `transaction` helper). Note that the user's role must grant them access to call
 either `graft` or `create`.
 
-`create` and `update` are the only two action helpers that trigger sideloading;
-`graft`, `merge`, and `clear` are the only action helpers invoked by
+`create` and `update` are the resource action helpers that trigger sideloading;
+`graft` and `prune` are the to-one action helpers invoked by sideloading; and
+`replace`, `merge`, and `clear` are the to-many action helpers invoked by
 sideloading. You must indicate which combinations are valid using the
-`:sideload_on` action helper option. (Note that if you want to sideload `merge`
-on `update`, you must define a `clear` action helper and allow it to sideload
-on `update` as well.) For example:
+`:sideload_on` action helper option. For example:
 
 ```ruby
 resource :photos do
@@ -1194,23 +1207,63 @@ resource :photos do
     def find(id) ..; end
   end
 
-  create { |attr| .. }
-  update { |attr| .. }
+  create {|attr| .. }
 
   has_one :photographer do
-    # Allow `create' to sideload the Photographer
-    graft(sideload_on: :create) { |rio| .. }
+    # Allow `create' to sideload Photographer
+    graft(sideload_on: :create) {|rio| .. }
   end
 
   has_many :tags do
-    # Allow `create' and `update' to sideload Tags
-    merge(sideload_on: [:create, :update]) { |rios| .. }
-
-    # Allow `update' to clear Tags before sideloading them
-    clear(sideload_on: :update) { .. }
+    # Allow `create' to sideload Tags
+    merge(sideload_on: :create) {|rios| .. }
   end
 end
 ```
+
+The following matrix outlines which combinations of action helpers and
+`:sideload_on` options enable which behaviors:
+
+<small>
+<table>
+<thead>
+<tr>
+  <th rowspan="2">Desired behavior</th>
+  <th colspan="2">For to-one relationship(s)</th>
+  <th colspan="2">For to-many relationship(s)</th>
+</tr>
+<tr>
+  <th>Define Action Helper</th>
+  <th>With <code>:sideload_on</code></th>
+  <th>Define Action Helper</th>
+  <th>With <code>:sideload_on</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Set relationship(s) when creating resource</td>
+  <td><code>graft</code></td>
+  <td><code>:create</code></td>
+  <td><code>merge</code></td>
+  <td><code>:create</code></td>
+</tr>
+<tr>
+  <td>Set relationship(s) when updating resource</td>
+  <td><code>graft</code></td>
+  <td><code>:update</code></td>
+  <td><code>replace</code></td>
+  <td><code>:update</code></td>
+</tr>
+<tr>
+  <td>Delete relationship(s) when updating resource</td>
+  <td><code>prune</code></td>
+  <td><code>:update</code></td>
+  <td><code>clear</code></td>
+  <td><code>:update</code></td>
+</tr>
+</tbody>
+</table>
+</small>
 
 #### Avoiding Null Foreign Keys
 
@@ -1278,9 +1331,9 @@ end
 ```
 
 Note that the `validate!` hook is _only_ invoked from within transactions
-involving the `create` and `update` action helpers (and any dependent `graft`
-and `merge` action helpers), so this deferred validation pattern is only
-appropriate in those cases. You must use immedate validation in all other
+involving the `create` and `update` action helpers (and any action helpers
+invoked via the sideloading mechanism), so this deferred validation pattern is
+only appropriate in those cases. You must use immedate validation in all other
 cases. The `sideloaded?` helper is provided to help disambiguate edge cases.
 
 > TODO: The following three sections are a little confusing. Rewrite them.
