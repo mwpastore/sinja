@@ -8,8 +8,11 @@
   -->
 
 [![Gem Version](https://badge.fury.io/rb/sinja.svg)](https://badge.fury.io/rb/sinja)
+[![Dependency Status](https://gemnasium.com/badges/github.com/mwpastore/sinja.svg)](https://gemnasium.com/github.com/mwpastore/sinja)
 [![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
-[![Chat](https://badges.gitter.im/sinja-rb/Lobby.svg)](https://gitter.im/sinja-rb/Lobby)
+
+[![Chat in #sinja-rb on Gitter](https://badges.gitter.im/sinja-rb/Lobby.svg)](https://gitter.im/sinja-rb/Lobby)
+[![Chat in #-ember-data on Slack](https://ember-community-slackin.herokuapp.com/badge.svg)](https://ember-community-slackin.herokuapp.com/?channel=-ember-data)
 
 Sinja is a [Sinatra][1] [extension][10] for quickly building [RESTful][11],
 [{json:api}][2]-[compliant][7] web services, leveraging the excellent
