@@ -4,7 +4,6 @@ require 'forwardable'
 module Sinja
   module Helpers
     module Sequel
-      include ::Sequel::Inflections
       extend Forwardable
 
       def self.config(c)
