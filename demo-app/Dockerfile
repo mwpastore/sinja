@@ -1,6 +1,7 @@
 FROM ruby:2.3-alpine
 ARG container_port=4567
 ENV container_port=$container_port
+ENV DOCKERIZED=true
 
 RUN apk --no-cache upgrade
 RUN apk --no-cache add \
@@ -13,7 +14,7 @@ RUN apk --no-cache add --virtual build-dependencies \
         ruby-dev \
         sqlite-dev \
     && cd /app \
-    && DOCKER_BUILD=true bundle install --jobs=4 \
+    && bundle install --jobs=4 \
     && apk del build-dependencies
 
 COPY . /app
