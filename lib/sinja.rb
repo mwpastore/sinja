@@ -324,10 +324,10 @@ module Sinja
 
       def sanity_check!(resource_name, id=nil)
         raise ConflictError, 'Resource type in payload does not match endpoint' \
-          if data[:type].to_sym != resource_name
+          unless data[:type] && data[:type].to_sym == resource_name
 
         raise ConflictError, 'Resource ID in payload does not match endpoint' \
-          if id && data[:id].to_s != id.to_s
+          unless id.nil? || data[:id] && data[:id].to_s == id.to_s
       end
 
       def transaction
@@ -348,6 +348,10 @@ module Sinja
 
     app.after do
       body serialize_response_body if response.ok? || response.created?
+    end
+
+    app.not_found do
+      serialize_errors(&settings._sinja.error_logger)
     end
 
     app.error 400...600 do
