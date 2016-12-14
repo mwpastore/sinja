@@ -1,0 +1,4 @@
+source 'https://rubygems.org'
+
+gemspec
+gem 'sinja', :require=>false, :path=>'../..'

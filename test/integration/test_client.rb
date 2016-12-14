@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require_relative '../../demo-app/app'
+require 'munson'
 
 Munson.configure \
   adapter: [:rack, Sinatra::Application],

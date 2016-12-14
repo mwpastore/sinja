@@ -7,19 +7,13 @@ require_relative 'classes/comment'
 require_relative 'classes/post'
 require_relative 'classes/tag'
 
-require 'sinja/helpers/sequel'
+require 'sinja/sequel/helpers'
 
 configure :development do
   set :server_settings, AccessLog: [] # avoid WEBrick double-logging issue
 end
 
-configure_jsonapi do |c|
-  Sinja::Helpers::Sequel.config(c)
-end
-
-helpers do
-  prepend Sinja::Helpers::Sequel
-
+helpers Sinja::Sequel::Helpers do
   def current_user
     # TESTING/DEMO PURPOSES ONLY -- DO NOT DO THIS IN PRODUCTION
     @current_user ||= Author.first_by_email(env['HTTP_X_EMAIL']) if env.key?('HTTP_X_EMAIL')

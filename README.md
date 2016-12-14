@@ -36,6 +36,7 @@ the {json:api} specification is).
     - [Commonly Used](#commonly-used)
     - [Less-Commonly Used](#less-commonly-used)
   - [Performance](#performance)
+  - [Extensions](#extensions)
   - [Comparison with JSONAPI::Resources](#comparison-with-jsonapiresources)
 - [Basic Usage](#basic-usage)
   - [Configuration](#configuration)
@@ -356,6 +357,13 @@ conditions, helpers, etc., and Sinja applications should perform as if you had
 written them verbosely. The main caveat is that there are quite a few block
 closures, which don't perform as well as normal methods in Ruby. Feedback
 welcome.
+
+### Extensions
+
+Sinja extensions provide additional helpers, DSL, and configuration, packaging
+ORM-specific boilerplate as separate gems. At the moment, the only available
+extension is for [Sequel](/extensions/sequel), but community contributions are
+welcome!
 
 ### Comparison with JSONAPI::Resources
 
@@ -992,7 +1000,7 @@ Allow clients to page the collections returned by the `index` and `fetch`
 action helpers by defining a `page` helper in the appropriate scope that takes
 a collection and a hash of `page` query parameters (with its top-level keys
 dedasherized and symbolized) and returns the paged collection along with a
-special nested hash used to build the paging links.
+special nested hash used as root metadata and to build the paging links.
 
 The top-level keys of the hash returned by this method must be members of the
 set: {`:self`, `:first`, `:prev`, `:next`, `:last`}. The values of the hash are
@@ -1024,8 +1032,8 @@ Could be used to build the following top-level links in the response document:
 You must also set the `page_using` configurable to a hash of symbols
 representing the paging fields used in your application (for example, `:number`
 and `:size` for the above example) along with their default values (or `nil`).
-Please see the [Sequel helpers](/lib/sinja/helpers/sequel.rb) in this
-repository for a detailed, working example.
+Please see the [Sequel extension](/extensions/sequel) in this repository for a
+detailed, working example.
 
 The easiest way to page a collection by default is to tweak the post-processed
 query parameter(s) in a `before_<action>` hook:
@@ -1059,10 +1067,6 @@ helpers do
   end
 end
 ```
-
-(Note that in addition to finalizing Sequel datasets with `#all`, you should
-also enable the `:tactical_eager_loading` plugin for the best compatibility
-with JSONAPI::Serializers.)
 
 ### Conflicts
 

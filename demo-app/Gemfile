@@ -4,6 +4,6 @@ gem 'json', '~> 2.0'
 gem 'sequel', '~> 4.41'
 gem 'sinatra', '>= 2.0.0.beta2', '< 3'
 gem 'sinatra-contrib', '>= 2.0.0.beta2', '< 3'
-gem 'sinja',
-  git: 'https://github.com/mwpastore/sinja.git', branch: 'master'
+gem 'sinja', git: 'https://github.com/mwpastore/sinja.git', branch: 'master'
+gem 'sinja-sequel', git: 'https://github.com/mwpastore/sinja.git', branch: 'master', submodules: true
 gem 'sqlite3', '~> 1.3'
