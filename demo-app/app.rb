@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 require 'sinatra'
 require 'sinatra/jsonapi'
+require 'sinja/sequel/helpers'
 
 require_relative 'classes/author'
 require_relative 'classes/comment'
 require_relative 'classes/post'
 require_relative 'classes/tag'
-
-require 'sinja/sequel/helpers'
 
 configure :development do
   set :server_settings, AccessLog: [] # avoid WEBrick double-logging issue

@@ -13,7 +13,7 @@ RUN apk --no-cache add --virtual build-dependencies \
         ruby-dev \
         sqlite-dev \
     && cd /app \
-    && bundle install --jobs=4 \
+    && DOCKER_BUILD=true bundle install --jobs=4 \
     && apk del build-dependencies
 
 COPY . /app

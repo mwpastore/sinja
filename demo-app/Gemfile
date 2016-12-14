@@ -4,6 +4,11 @@ gem 'json', '~> 2.0'
 gem 'sequel', '~> 4.41'
 gem 'sinatra', '>= 2.0.0.beta2', '< 3'
 gem 'sinatra-contrib', '>= 2.0.0.beta2', '< 3'
-gem 'sinja', git: 'https://github.com/mwpastore/sinja.git', branch: 'master'
-gem 'sinja-sequel', git: 'https://github.com/mwpastore/sinja.git', branch: 'master', submodules: true
+unless ENV.key?('DOCKER_BUILD')
+  gem 'sinja', path: '..'
+  gem 'sinja-sequel', path: '../extensions/sequel'
+else
+  gem 'sinja'
+  gem 'sinja-sequel'
+end
 gem 'sqlite3', '~> 1.3'

@@ -24,9 +24,11 @@ $ bundle exec ruby app.rb [-p <PORT>]
 ```
 
 The web server will report the port it's listening on (most likely 4567), or
-you can specify a port with the `-p` option. Alternatively, if you don't want
-to set up a Ruby environment just for a quick demo, it's [available on Docker
-Cloud](https://cloud.docker.com/app/mwpastore/repository/docker/mwpastore/sinja-demo-app):
+you can specify a port with the `-p` option.
+
+Alternatively, if you don't want to clone this repo and set up a Ruby
+environment just for a quick demo, it's available on Docker Cloud as
+[mwpastore/sinja-demo-app](https://cloud.docker.com/app/mwpastore/repository/docker/mwpastore/sinja-demo-app):
 
 ```
 $ docker run -it -p 4567:4567 --rm mwpastore/sinja-demo-app
