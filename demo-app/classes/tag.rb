@@ -58,19 +58,19 @@ TagController = proc do
     end
 
     replace(roles: :logged_in) do |rios|
-      add_remove(:posts, rios) do |post|
+      add_remove(:posts, rios, :to_s) do |post|
         role?(:superuser) || post.author == current_user
       end
     end
 
     merge(roles: :logged_in) do |rios|
-      add_missing(:posts, rios) do |post|
+      add_missing(:posts, rios, :to_s) do |post|
         role?(:superuser) || post.author == current_user
       end
     end
 
     subtract(roles: :logged_in) do |rios|
-      remove_present(:posts, rios) do |post|
+      remove_present(:posts, rios, :to_s) do |post|
         role?(:superuser) || post.author == current_user
       end
     end
