@@ -1,7 +1,6 @@
 FROM ruby:2.3-alpine
 ARG container_port=4567
 ENV container_port=$container_port
-ENV DOCKERIZED=true
 
 RUN apk --no-cache upgrade
 RUN apk --no-cache add \

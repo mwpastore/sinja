@@ -1,6 +1,8 @@
 source 'https://rubygems.org'
 
 gemspec
-gem 'sinja-sequel', :require=>false, :path=>'extensions/sequel'
-gem 'munson', '~> 0.3', :require=>false,
-  :git=>'https://github.com/mwpastore/munson', :branch=>'develop'
+
+gem 'munson', :require=>false,
+  :git=>'git@github.com:mwpastore/munson.git', :branch=>'develop'
+gem 'sinja-sequel', :require=>false,
+  :git=>'git@github.com:mwpastore/sinja-sequel.git', :branch=>'master'

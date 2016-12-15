@@ -362,8 +362,7 @@ welcome.
 
 Sinja extensions provide additional helpers, DSL, and configuration, packaging
 ORM-specific boilerplate as separate gems. At the moment, the only available
-extension is for [Sequel](/extensions/sequel), but community contributions are
-welcome!
+extension is for [Sequel][30], but community contributions are welcome!
 
 ### Comparison with JSONAPI::Resources
 
@@ -1032,8 +1031,7 @@ Could be used to build the following top-level links in the response document:
 You must also set the `page_using` configurable to a hash of symbols
 representing the paging fields used in your application (for example, `:number`
 and `:size` for the above example) along with their default values (or `nil`).
-Please see the [Sequel extension](/extensions/sequel) in this repository for a
-detailed, working example.
+Please see the [Sequel extension][30] for a detailed, working example.
 
 The easiest way to page a collection by default is to tweak the post-processed
 query parameter(s) in a `before_<action>` hook:
@@ -1574,3 +1572,4 @@ License](http://opensource.org/licenses/MIT).
 [27]: https://github.com/coryodaniel/munson
 [28]: https://github.com/chingor13/json_api_client
 [29]: https://github.com/brynary/rack-test
+[30]: https://github.com/mwpastore/sinja-sequel

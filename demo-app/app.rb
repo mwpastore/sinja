@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 require 'sinatra'
 require 'sinatra/jsonapi'
+
+# Load the Sequel helpers without registering the extension.
 require 'sinja/sequel/helpers'
 
 require_relative 'classes/author'

@@ -1,14 +1,10 @@
 source 'https://rubygems.org'
 
 gem 'json', '~> 2.0'
-gem 'sequel', '~> 4.41'
 gem 'sinatra', '>= 2.0.0.beta2', '< 3'
 gem 'sinatra-contrib', '>= 2.0.0.beta2', '< 3'
-unless ENV.fetch('DOCKERIZED', 'false') == 'true'
-  gem 'sinja', path: '..'
-  gem 'sinja-sequel', path: '../extensions/sequel'
-else
-  gem 'sinja'
-  gem 'sinja-sequel'
-end
+gem 'sinja',
+  git: 'git@github.com:mwpastore/sinja.git', branch: 'master'
+gem 'sinja-sequel',
+  git: 'git@github.com:mwpastore/sinja-sequel.git', branch: 'master'
 gem 'sqlite3', '~> 1.3'

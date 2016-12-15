@@ -2,9 +2,10 @@
 
 This is the demo app for Sinja, provided both as an example of and for testing
 Sinja. It uses [Sequel ORM](http://sequel.jeremyevans.net) with an in-memory
-SQLite database and demonstrates the [Sequel extension](/extensions/sequel) for
-Sinja. It works under both MRI/YARV 2.3+ and JRuby 9.1+. It is a very
-simplistic blog-like application with [database
+SQLite database and demonstrates the [Sequel
+extension](https://github.com/mwpastore/sinja-sequel) for Sinja. It works under
+both MRI/YARV 2.3+ and JRuby 9.1+. It is a very simplistic blog-like
+application with [database
 tables](http://sequel.jeremyevans.net/rdoc/files/doc/schema_modification_rdoc.html),
 [models](http://sequel.jeremyevans.net/rdoc/files/README_rdoc.html#label-Sequel+Models),
 [serializers](https://github.com/fotinakis/jsonapi-serializers), and
