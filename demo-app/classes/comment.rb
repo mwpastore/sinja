@@ -46,8 +46,8 @@ CommentController = proc do
     end
   end
 
-  show do |id|
-    next find(id), include: 'author'
+  show do
+    next resource, include: 'author'
   end
 
   create(roles: :logged_in) do |attr|

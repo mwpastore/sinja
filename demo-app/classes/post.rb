@@ -59,8 +59,8 @@ PostController = proc do
     end
   end
 
-  show do |slug|
-    next find(slug), include: %w[author comments tags]
+  show do
+    next resource, include: %w[author comments tags]
   end
 
   show_many do |slugs|

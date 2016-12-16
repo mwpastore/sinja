@@ -48,7 +48,7 @@ module Sinja
         end
       end
 
-      before %r{/(?<id>[^/]+)(?:/.*)?} do |id|
+      before %r{/(?<id>[^/]+)(?:/.+)?} do |id|
         self.resource =
           if env.key?('sinja.resource')
             env['sinja.resource']

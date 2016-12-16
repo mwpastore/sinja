@@ -18,18 +18,22 @@ module Sinja
         ids = ids.split(',') if String === ids
         ids = [*ids].tap(&:uniq!)
 
-        resources, opts = [], {}
-        if respond_to?(:show_many)
-          resources, opts = show_many(ids)
-          raise NotFoundError, "Resource(s) not found" \
-            unless ids.length == resources.length
-        else
-          ids.each do |id|
-            tmp, opts = show(id)
-            raise NotFoundError, "Resource '#{id}' not found" unless tmp
-            resources << tmp
+        resources, opts =
+          if respond_to?(:show_many)
+            show_many(ids)
+          else
+            finder =
+              if respond_to?(:find)
+                method(:find)
+              else
+                proc { |id| show(id).first }
+              end
+
+            [ids.map!(&finder).tap(&:compact!), {}]
           end
-        end
+
+        raise NotFoundError, "Resource(s) not found" \
+          unless ids.length == resources.length
 
         serialize_models(resources, opts)
       end
@@ -52,9 +56,7 @@ module Sinja
         transaction do
           id, self.resource, opts =
             begin
-              args = [attributes]
-              args << data[:id] if data.key?(:id)
-              create(*args)
+              create(*[attributes].tap { |a| a << data[:id] if data.key?(:id) })
             rescue ArgumentError
               if data.key?(:id)
                 raise ForbiddenError, 'Client-generated ID not supported'
@@ -85,7 +87,7 @@ module Sinja
       end
 
       app.get '/:id', :qparams=>%i[include fields], :actions=>:show do |id|
-        tmp, opts = show(id)
+        tmp, opts = show(*[].tap { |a| a << id unless respond_to?(:find) })
         raise NotFoundError, "Resource '#{id}' not found" unless tmp
         serialize_model(tmp, opts)
       end

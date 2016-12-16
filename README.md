@@ -47,6 +47,7 @@ the {json:api} specification is).
     - [`resource`](#resource)
       - [`index {..}` => Array](#index---array)
       - [`show {|id| ..}` => Object](#show-id---object)
+      - [`show {..}` => Object](#show---object)
       - [`show_many {|ids| ..}` => Array](#show_many-ids---array)
       - [`create {|attr, id| ..}` => id, Object?](#create-attr-id---id-object)
       - [`create {|attr| ..}` => id, Object](#create-attr---id-object)
@@ -260,12 +261,10 @@ class App < Sinatra::Base
       end
     end
 
-    show do |id|
-      book = find(id)
-      next unless book
-      headers 'X-ISBN'=>book.isbn
-      last_modified book.updated_at
-      next book, include: %w[author]
+    show do
+      headers 'X-ISBN'=>resource.isbn
+      last_modified resource.updated_at
+      next resource, include: %w[author]
     end
 
     has_one :author do
@@ -482,8 +481,8 @@ Much of Sinja's advanced functionality (e.g. updating and destroying resources,
 relationship routes) is dependent upon its ability to locate the corresponding
 resource for a request. To enable these features, define an ordinary helper
 method named `find` in your resource definition that takes a single ID argument
-and returns the corresponding object. You can, of course, use this helper
-method elsewhere in your application, such as in your `show` action helper.
+and returns the corresponding object. Once defined, a `resource` object will
+be made available in any action helpers that operate on a single resource.
 
 ```ruby
 resource :posts do
@@ -493,8 +492,8 @@ resource :posts do
     end
   end
 
-  show do |id|
-    next find(id), include: 'comments'
+  show do
+    next resource, include: 'comments'
   end
 end
 ```
@@ -514,7 +513,7 @@ end
 
 * How do I control access to the resource locator?
 
-  You don't. Instead, control access to the action helpers that use it:
+  You don't. Instead, control access to the action helpers that use it: `show`,
   `update`, `destroy`, and all of the relationship action helpers such as
   `pluck` and `fetch`.
 
@@ -525,7 +524,7 @@ end
 
 As a bit of syntactic sugar, if you define a `find` helper and subsequently
 call `show` without a block, Sinja will generate a `show` action helper that
-delegates to `find`.
+simply returns `resource`.
 
 ### Action Helpers
 
@@ -560,8 +559,15 @@ Return an array of zero or more objects to serialize on the response.
 
 ##### `show {|id| ..}` => Object
 
-Take an ID and return the corresponding object (or `nil` if not found) to
-serialize on the response.
+Without a resource locator: Take an ID and return the corresponding object (or
+`nil` if not found) to serialize on the response. (Note that only one or the
+other `show` action helpers is allowed in any given resource block.)
+
+##### `show {..}` => Object
+
+With a resource locator: Return the `resource` object to serialize on the
+response. (Note that only one or the other `show` action helpers is allowed in
+any given resource block.)
 
 ##### `show_many {|ids| ..}` => Array
 
@@ -840,7 +846,7 @@ show do |id|
   exclude = []
   exclude << 'secrets' unless role?(:admin)
 
-  next find(id), exclude: exclude
+  next resource, exclude: exclude
 end
 ```
 
@@ -1370,12 +1376,12 @@ constraints on the join table.
 
 ### Coalesced Find Requests
 
-If your {json:api} client coalesces find requests, the `show` action helper will
-be invoked once for each ID in the `:id` filter, and the resulting collection
-will be serialized on the response. Both query parameter syntaxes for arrays
-are supported: `?filter[id]=1,2` and `?filter[id][]=1&filter[id][]=2`. If any
-ID is not found (i.e. `show` returns `nil`), the route will halt with HTTP
-status 404.
+If your {json:api} client coalesces find requests, the resource locator (or
+`show` action helper) will be invoked once for each ID in the `:id` filter, and
+the resulting collection will be serialized on the response. Both query
+parameter syntaxes for arrays are supported: `?filter[id]=1,2` and
+`?filter[id][]=1&filter[id][]=2`. If any ID is not found (i.e. `show` returns
+`nil`), the route will halt with HTTP status 404.
 
 Optionally, to reduce round trips to the database, you may define a "special"
 `show_many` action helper that takes an array of IDs to show. It does not take

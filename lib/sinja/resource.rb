@@ -28,7 +28,7 @@ module Sinja
         return unless block ||=
           case !method_defined?(action) && action
           when :show
-            proc { |id| find(id) } if method_defined?(:find)
+            proc { resource } if method_defined?(:find)
           end
 
         # TODO: Move this to a constant or configurable?
