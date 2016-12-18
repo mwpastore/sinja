@@ -159,8 +159,8 @@ $ gem install sinja
 
 The "power" so to speak of implementing this functionality as a Sinatra
 extension is that all of Sinatra's usual features are available within your
-resource definitions. The action helpers blocks get compiled into Sinatra
-helpers, and the `resource`, `has_one`, and `has_many` keywords build
+resource definitions. Action helper blocks get compiled into Sinatra helpers,
+and the `resource`, `has_one`, and `has_many` keywords build
 [Sinatra::Namespace][21] blocks. You can manage caching directives, set
 headers, and even `halt` (or `not_found`, although such cases are usually
 handled transparently by returning `nil` values or empty collections from
@@ -259,7 +259,7 @@ end
 
 You'll need a database schema and models (using the engine and ORM of your
 choice) and [serializers][3] to get started. Create a new Sinatra application
-(classic or modular) to hold all your {json:api} endpoints and (if modular)
+(classic or modular) to hold all your {json:api} controllers and (if modular)
 register this extension. Instead of defining routes with `get`, `post`, etc. as
 you normally would, define `resource` blocks with action helpers and `has_one`
 and `has_many` relationship blocks (with their own action helpers). Sinja will
@@ -281,7 +281,8 @@ these settings.
 * Registers [Sinatra::Namespace][21] and [Mustermann][25]
 * Disables [Rack::Protection][6] (can be reenabled with `enable :protection` or
   by manually `use`-ing the Rack::Protection middleware)
-* Disables static file routes (can be reenabled with `enable :static`)
+* Disables static file routes (can be reenabled with `enable :static`; be sure
+  to reenable Rack::Protection::PathTraversal as well)
 * Disables "classy" error pages (in favor of "classy" {json:api} error documents)
 * Adds an `:api_json` MIME-type (`application/vnd.api+json`)
 * Enforces strict checking of the `Accept` and `Content-Type` request headers
@@ -304,11 +305,11 @@ their defaults shown):
 configure_jsonapi do |c|
   #c.conflict_exceptions = [] # see "Conflicts" below
 
+  #c.not_found_exceptions = [] # see "Missing Records" below
+
   # see "Validations" below
   #c.validation_exceptions = []
   #c.validation_formatter = ->{ [] }
-
-  #c.not_found_exceptions = [] # see "Missing Records" below
 
   # see "Authorization" below
   #c.default_roles = {}
@@ -345,8 +346,9 @@ Much of Sinja's advanced functionality (e.g. updating and destroying resources,
 relationship routes) is dependent upon its ability to locate the corresponding
 resource for a request. To enable these features, define an ordinary helper
 method named `find` in your resource definition that takes a single ID argument
-and returns the corresponding object. Once defined, a `resource` object will
-be made available in any action helpers that operate on a single resource.
+and returns the corresponding object. Once defined, a `resource` object will be
+made available in any action helpers that operate on a single (parent)
+resource.
 
 ```ruby
 resource :posts do
@@ -438,19 +440,19 @@ any given resource block.)
 Take an array of IDs and return an equally-lengthed array of objects to
 serialize on the response. See "Coalesced Find Requests" below.
 
-##### `create {|attr, id| ..}` => id, Object?
-
-With client-generated IDs: Take a hash of (dedasherized) attributes and a
-client-generated ID, create a new resource, and return the ID and optionally
-the created resource. (Note that only one or the other `create` action helpers
-is allowed in any given resource block.)
-
 ##### `create {|attr| ..}` => id, Object
 
 Without client-generated IDs: Take a hash of (dedasherized) attributes, create
 a new resource, and return the server-generated ID and the created resource.
 (Note that only one or the other `create` action helpers is allowed in any
 given resource block.)
+
+##### `create {|attr, id| ..}` => id, Object?
+
+With client-generated IDs: Take a hash of (dedasherized) attributes and a
+client-generated ID, create a new resource, and return the ID and optionally
+the created resource. (Note that only one or the other `create` action helpers
+is allowed in any given resource block.)
 
 ##### `update {|attr| ..}` => Object?
 
@@ -749,8 +751,8 @@ The {json:api} specification states that any unhandled query parameters should
 cause the request to abort with HTTP status 400. To enforce this requirement,
 Sinja maintains a global "whitelist" of acceptable query parameters as well as
 a per-route whitelist, and interrogates your application to see which features
-it supports; for example, a route may allow a `filter` query parameter, but you
-may not have defined a `filter` helper.
+it supports; for example, a route may generally allow a `filter` query
+parameter, but you may not have defined a `filter` helper.
 
 To let a custom query parameter through to the standard action helpers, add it
 to the `query_params` configurable with a `nil` value:
