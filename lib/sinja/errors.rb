@@ -27,34 +27,50 @@ module Sinja
   end
 
   class BadRequestError < HttpError
-    def initialize(*args) super(400, *args) end
+    HTTP_STATUS = 400
+
+    def initialize(*args) super(HTTP_STATUS, *args) end
   end
 
   class ForbiddenError < HttpError
-    def initialize(*args) super(403, *args) end
+    HTTP_STATUS = 403
+
+    def initialize(*args) super(HTTP_STATUS, *args) end
   end
 
   class NotFoundError < HttpError
-    def initialize(*args) super(404, *args) end
+    HTTP_STATUS = 404
+
+    def initialize(*args) super(HTTP_STATUS, *args) end
   end
 
   class MethodNotAllowedError < HttpError
-    def initialize(*args) super(405, *args) end
+    HTTP_STATUS = 405
+
+    def initialize(*args) super(HTTP_STATUS, *args) end
   end
 
   class NotAcceptableError < HttpError
-    def initialize(*args) super(406, *args) end
+    HTTP_STATUS = 406
+
+    def initialize(*args) super(HTTP_STATUS, *args) end
   end
 
   class ConflictError < HttpError
-    def initialize(*args) super(409, *args) end
+    HTTP_STATUS = 409
+
+    def initialize(*args) super(HTTP_STATUS, *args) end
   end
 
   class UnsupportedTypeError < HttpError
-    def initialize(*args) super(415, *args) end
+    HTTP_STATUS = 415
+
+    def initialize(*args) super(HTTP_STATUS, *args) end
   end
 
   class UnprocessibleEntityError < HttpError
+    HTTP_STATUS = 422
+
     attr_reader :tuples
 
     def initialize(tuples=[])
@@ -63,7 +79,7 @@ module Sinja
       fail 'Tuples not properly formatted' \
         unless @tuples.any? && @tuples.all? { |t| Array === t && t.length == 2 }
 
-      super(422)
+      super(HTTP_STATUS)
     end
   end
 end

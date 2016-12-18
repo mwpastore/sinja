@@ -14,71 +14,11 @@ require 'sinja/version'
 
 module Sinja
   MIME_TYPE = 'application/vnd.api+json'
-  ERROR_CODES = [
-    BadRequestError,
-    ForbiddenError,
-    NotFoundError,
-    MethodNotAllowedError,
-    NotAcceptableError,
-    ConflictError,
-    UnsupportedTypeError
-  ].map! { |c| [c.new.http_status, c] }.to_h.tap do |h|
-    h[422] = UnprocessibleEntityError
-  end.freeze
-
-  def resource(resource_name, konst=nil, &block)
-    abort "Must supply proc constant or block for `resource'" \
-      unless block = (konst if konst.is_a?(Proc)) || block
-
-    resource_name = resource_name.to_s
-      .pluralize
-      .dasherize
-      .to_sym
-
-    # trigger default procs
-    config = _sinja.resource_config[resource_name]
-
-    namespace "/#{resource_name}" do
-      define_singleton_method(:_resource_config) { config }
-      define_singleton_method(:resource_config) { config[:resource] }
-
-      helpers do
-        define_method(:sanity_check!) do |*args|
-          super(resource_name, *args)
-        end
-      end
-
-      before %r{/(?<id>[^/]+)(?:/.+)?} do |id|
-        self.resource =
-          if env.key?('sinja.resource')
-            env['sinja.resource']
-          elsif respond_to?(:find)
-            find(id)
-          end
-
-        raise NotFoundError, "Resource '#{id}' not found" unless resource
-      end
-
-      register Resource
-
-      instance_eval(&block)
-    end
-  end
-
-  alias_method :resources, :resource
-
-  def sinja
-    if block_given?
-      yield _sinja
-    else
-      _sinja
-    end
-  end
-
-  alias_method :configure_jsonapi, :sinja
-  def freeze_jsonapi
-    _sinja.freeze
-  end
+  ERROR_CODES = ObjectSpace.each_object(Class).to_a
+    .keep_if { |klass| klass < HttpError }
+    .map! { |c| [(c.const_get(:HTTP_STATUS) rescue nil), c] }
+    .delete_if { |a| a.first.nil? }
+    .to_h.freeze
 
   def self.registered(app)
     app.register Mustermann if Sinatra::VERSION[/^\d+/].to_i < 2
@@ -374,6 +314,60 @@ module Sinja
 
       serialize_errors(&settings._sinja.error_logger)
     end
+  end
+
+  def resource(resource_name, konst=nil, &block)
+    abort "Must supply proc constant or block for `resource'" \
+      unless block = (konst if konst.is_a?(Proc)) || block
+
+    resource_name = resource_name.to_s
+      .pluralize
+      .dasherize
+      .to_sym
+
+    # trigger default procs
+    config = _sinja.resource_config[resource_name]
+
+    namespace "/#{resource_name}" do
+      define_singleton_method(:_resource_config) { config }
+      define_singleton_method(:resource_config) { config[:resource] }
+
+      helpers do
+        define_method(:sanity_check!) do |*args|
+          super(resource_name, *args)
+        end
+      end
+
+      before %r{/(?<id>[^/]+)(?:/.+)?} do |id|
+        self.resource =
+          if env.key?('sinja.resource')
+            env['sinja.resource']
+          elsif respond_to?(:find)
+            find(id)
+          end
+
+        raise NotFoundError, "Resource '#{id}' not found" unless resource
+      end
+
+      register Resource
+
+      instance_eval(&block)
+    end
+  end
+
+  alias_method :resources, :resource
+
+  def sinja
+    if block_given?
+      yield _sinja
+    else
+      _sinja
+    end
+  end
+
+  alias_method :configure_jsonapi, :sinja
+  def freeze_jsonapi
+    _sinja.freeze
   end
 
   def self.extended(base)

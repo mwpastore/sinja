@@ -13,6 +13,14 @@ require 'sinja/resource_routes'
 
 module Sinja
   module Resource
+    def self.registered(app)
+      app.helpers Helpers::Relationships do
+        attr_accessor :resource
+      end
+
+      app.register ResourceRoutes
+    end
+
     def def_action_helper(context, action, allow_opts=[])
       abort "Action helper names can't overlap with Sinatra DSL" \
         if Sinatra::Base.respond_to?(action)
@@ -70,14 +78,6 @@ module Sinja
           remove_method(action) if respond_to?(action)
         end
       end
-    end
-
-    def self.registered(app)
-      app.helpers Helpers::Relationships do
-        attr_accessor :resource
-      end
-
-      app.register ResourceRoutes
     end
 
     %i[has_one has_many].each do |rel_type|
