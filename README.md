@@ -84,7 +84,6 @@ without pulling in a heavy framework. It's lightweight and ORM-agnostic!
 ## Synopsis
 
 ```ruby
-require 'sinatra'
 require 'sinatra/jsonapi'
 
 resource :posts do
@@ -1371,6 +1370,7 @@ Everything is dual-namespaced under both Sinatra::JSONAPI and Sinja, and Sinja
 requires Sinatra::Base, so this:
 
 ```ruby
+require 'sinatra/base'
 require 'sinatra/jsonapi'
 
 class App < Sinatra::Base
