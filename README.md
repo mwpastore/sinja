@@ -10,19 +10,22 @@
 [![Gem Version](https://badge.fury.io/rb/sinja.svg)](https://badge.fury.io/rb/sinja)
 [![Dependency Status](https://gemnasium.com/badges/github.com/mwpastore/sinja.svg)](https://gemnasium.com/github.com/mwpastore/sinja)
 [![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
-
+[![{json:api} version](https://img.shields.io/badge/%7Bjson%3Aapi%7D%20version-1.0-lightgrey.svg)][7]
 [![Chat in #sinja-rb on Gitter](https://badges.gitter.im/sinja-rb/Lobby.svg)](https://gitter.im/sinja-rb/Lobby)
-[![Chat in #-ember-data on Slack](https://ember-community-slackin.herokuapp.com/badge.svg)](https://ember-community-slackin.herokuapp.com/?channel=-ember-data)
 
 Sinja is a [Sinatra][1] [extension][10] for quickly building [RESTful][11],
-[{json:api}][2]-[compliant][7] web services, leveraging the excellent
-[JSONAPI::Serializers][3] gem and [Sinatra::Namespace][21] extension. It
-enhances Sinatra's DSL to enable resource-, relationship-, and role-centric
-definition of applications, and it configures Sinatra with the proper settings,
-MIME-types, filters, conditions, and error-handling to implement {json:api}.
-Sinja aims to be lightweight (to the extent that Sinatra is), ORM-agnostic (to
-the extent that JSONAPI::Serializers is), and opinionated (to the extent that
-the {json:api} specification is).
+[{json:api}][2]-compliant web services, leveraging the excellent
+[JSONAPI::Serializers][3] gem for payload serialization. It enhances Sinatra's
+DSL to enable resource-, relationship-, and role-centric API development, and
+it configures Sinatra with the proper settings, MIME-types, filters,
+conditions, and error-handling.
+
+There are [many][31] parsing (deserializing) and rendering (serializing)
+libraries available for Ruby, but relatively few that implement the entire
+{json:api} specification, including routing, request header and query parameter
+checking, and side-loading relationships. Sinja lets you focus on the business
+logic of your applications without worrying about the specification, and
+without pulling in a heavy framework. It's lightweight and ORM-agnostic!
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -30,14 +33,7 @@ the {json:api} specification is).
 
 - [Synopsis](#synopsis)
 - [Installation](#installation)
-- [Features & Design](#features--design)
-  - [Ol' Blue Eyes is Back](#ol-blue-eyes-is-back)
-  - [Public APIs](#public-apis)
-    - [Commonly Used](#commonly-used)
-    - [Less-Commonly Used](#less-commonly-used)
-  - [Performance](#performance)
-  - [Extensions](#extensions)
-  - [Comparison with JSONAPI::Resources](#comparison-with-jsonapiresources)
+- [Ol' Blue Eyes is Back](#ol-blue-eyes-is-back)
 - [Basic Usage](#basic-usage)
   - [Configuration](#configuration)
     - [Sinatra](#sinatra)
@@ -45,24 +41,8 @@ the {json:api} specification is).
   - [Resource Locators](#resource-locators)
   - [Action Helpers](#action-helpers)
     - [`resource`](#resource)
-      - [`index {..}` => Array](#index---array)
-      - [`show {|id| ..}` => Object](#show-id---object)
-      - [`show {..}` => Object](#show---object)
-      - [`show_many {|ids| ..}` => Array](#show_many-ids---array)
-      - [`create {|attr, id| ..}` => id, Object?](#create-attr-id---id-object)
-      - [`create {|attr| ..}` => id, Object](#create-attr---id-object)
-      - [`update {|attr| ..}` => Object?](#update-attr---object)
-      - [`destroy {..}`](#destroy-)
     - [`has_one`](#has_one)
-      - [`pluck {..}` => Object](#pluck---object)
-      - [`prune {..}` => TrueClass?](#prune---trueclass)
-      - [`graft {|rio| ..}` => TrueClass?](#graft-rio---trueclass)
     - [`has_many`](#has_many)
-      - [`fetch {..}` => Array](#fetch---array)
-      - [`clear {..}` => TrueClass?](#clear---trueclass)
-      - [`replace {|rios| ..}` => TrueClass?](#replace-rios---trueclass)
-      - [`merge {|rios| ..}` => TrueClass?](#merge-rios---trueclass)
-      - [`subtract {|rios| ..}` => TrueClass?](#subtract-rios---trueclass)
 - [Advanced Usage](#advanced-usage)
   - [Action Helper Hooks & Utilities](#action-helper-hooks--utilities)
   - [Authorization](#authorization)
@@ -82,15 +62,19 @@ the {json:api} specification is).
   - [Side-Unloading Related Resources](#side-unloading-related-resources)
   - [Side-Loading Relationships](#side-loading-relationships)
     - [Avoiding Null Foreign Keys](#avoiding-null-foreign-keys)
-      - [Many-to-One](#many-to-one)
-      - [One-to-Many](#one-to-many)
-      - [Many-to-Many](#many-to-many)
   - [Coalesced Find Requests](#coalesced-find-requests)
   - [Patchless Clients](#patchless-clients)
+- [Extensions](#extensions)
+  - [Sequel](#sequel)
 - [Application Concerns](#application-concerns)
+  - [Performance](#performance)
+  - [Public APIs](#public-apis)
+    - [Commonly Used](#commonly-used)
+    - [Less-Commonly Used](#less-commonly-used)
   - [Sinja or Sinatra::JSONAPI](#sinja-or-sinatrajsonapi)
   - [Code Organization](#code-organization)
   - [Testing](#testing)
+- [Comparison with JSONAPI::Resources](#comparison-with-jsonapiresources)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -171,31 +155,7 @@ Or install it yourself as:
 $ gem install sinja
 ```
 
-## Features & Design
-
-* ORM-agnostic
-* Simple role-based authorization
-* To-one and to-many relationships and related resources
-* Side-loaded relationships on resource creation and update
-* Error-handling
-  * Conflicts (constraint violations)
-  * Missing records
-  * Validation failures
-* Filtering, sorting, and paging collections
-* Plus all the features of [JSONAPI::Serializers][3]!
-
-Its main competitors in the Ruby space are [ActiveModelSerializers][12] (AMS)
-with the JsonApi adapter, [JSONAPI::Resources][8] (JR), and
-[jsonapi-utils][26], all of which are designed to work with [Rails][16] and
-[ActiveRecord][17]/[ActiveModel][18] (although they may work with [Sequel][13]
-via [sequel-rails][14] and Sequel's [`:active_model` plugin][15]). Otherwise,
-you might use something like Sinatra, [Roda][20], or [Grape][19] with a
-(de)serialization library, your own routes, and a ton of boilerplate. The goal
-of this extension is to provide most or all of the boilerplate for a Sintara
-application and automate the drawing of routes based on the resource
-definitions.
-
-### Ol' Blue Eyes is Back
+## Ol' Blue Eyes is Back
 
 The "power" so to speak of implementing this functionality as a Sinatra
 extension is that all of Sinatra's usual features are available within your
@@ -294,102 +254,6 @@ class App < Sinatra::Base
   freeze_jsonapi
 end
 ```
-
-### Public APIs
-
-Sinja makes a few APIs public to help you work around edge cases in your
-application.
-
-#### Commonly Used
-
-**can?**
-: Takes the symbol of an action helper and returns true if the current user has
-  access to call that action helper for the current resource using the `role`
-  helper and role definitions detailed under "Authorization" below.
-
-**role?**
-: Takes a list of role(s) and returns true if it has members in common with the
-  current user's role(s).
-
-**sideloaded?**
-: Returns true if the request was invoked from another action helper.
-
-#### Less-Commonly Used
-
-These are helpful if you want to add some custom routes to your Sinja
-application.
-
-**data**
-: Returns the `data` key of the deserialized request payload (with symbolized
-  names).
-
-**dedasherize**
-: Takes a string or symbol and returns the string or symbol with any and all
-  dashes transliterated to underscores, and camelCase converted to snake_case.
-
-**dedasherize_names**
-: Takes a hash and returns the hash with its keys dedasherized (deeply).
-
-**serialize_model**
-: Takes a model (and optional hash of JSONAPI::Serializers options) and returns
-  a serialized model.
-
-**serialize_model?**
-: Takes a model (and optional hash of JSONAPI::Serializers options) and returns
-  a serialized model if non-`nil`, or the root metadata if present, or a HTTP
-  status 204.
-
-**serialize_models**
-: Takes an array of models (and optional hash of JSONAPI::Serializers options)
-  and returns a serialized collection.
-
-**serialize_models?**
-: Takes an array of models (and optional hash of JSONAPI::Serializers options)
-  and returns a serialized collection if non-empty, or the root metadata if
-  present, or a HTTP status 204.
-
-### Performance
-
-Although there is some heavy metaprogramming happening at boot time, the end
-result is simply a collection of Sinatra namespaces, routes, filters,
-conditions, helpers, etc., and Sinja applications should perform as if you had
-written them verbosely. The main caveat is that there are quite a few block
-closures, which don't perform as well as normal methods in Ruby. Feedback
-welcome.
-
-### Extensions
-
-Sinja extensions provide additional helpers, DSL, and configuration, packaging
-ORM-specific boilerplate as separate gems. At the moment, the only available
-extension is for [Sequel][30], but community contributions are welcome!
-
-### Comparison with JSONAPI::Resources
-
-| Feature         | JR                               | Sinja                                             |
-| :-------------- | :------------------------------- | :------------------------------------------------ |
-| Serializer      | Built-in                         | [JSONAPI::Serializers][3]                         |
-| Framework       | Rails                            | Sinatra, but easy to mount within others          |
-| Routing         | ActionDispatch::Routing          | Mustermann                                        |
-| Caching         | ActiveSupport::Cache             | BYO                                               |
-| ORM             | ActiveRecord/ActiveModel         | BYO                                               |
-| Authorization   | [Pundit][9]                      | Role-based                                        |
-| Immutability    | `immutable` method               | Omit mutator action helpers (e.g. `update`)       |
-| Fetchability    | `fetchable_fields` method        | Omit attributes in Serializer                     |
-| Creatability    | `creatable_fields` method        | Handle in `create` action helper or Model\*       |
-| Updatability    | `updatable_fields` method        | Handle in `update` action helper or Model\*       |
-| Sortability     | `sortable_fields` method         | `sort` helper and `:sort_by` option               |
-| Default sorting | `default_sort` method            | Set default for `params[:sort]`                   |
-| Context         | `context` method                 | Rack middleware (e.g. `env['context']`)           |
-| Attributes      | Define in Model and Resource     | Define in Model\* and Serializer                  |
-| Formatting      | `:format` attribute keyword      | Define attribute as a method in Serialier         |
-| Relationships   | Define in Model and Resource     | Define in Model, Resource, and Serializer         |
-| Filters         | `filter(s)` keywords             | `filter` helper and `:filter_by` option           |
-| Default filters | `:default` filter keyword        | Set default for `params[:filter]`                 |
-| Pagination      | JSONAPI::Paginator               | `page` helper and `page_using` configurable       |
-| Meta            | `meta` method                    | Serializer `:meta` option               |
-| Primary keys    | `resource_key_type` configurable | Serializer `id` method               |
-
-\* - Depending on your ORM.
 
 ## Basic Usage
 
@@ -1235,7 +1099,6 @@ end
 The following matrix outlines which combinations of action helpers and
 `:sideload_on` options enable which behaviors:
 
-<small>
 <table>
 <thead>
 <tr>
@@ -1274,7 +1137,6 @@ The following matrix outlines which combinations of action helpers and
 </tr>
 </tbody>
 </table>
-</small>
 
 #### Avoiding Null Foreign Keys
 
@@ -1428,7 +1290,78 @@ class MyApp < Sinatra::Base
 end
 ```
 
+## Extensions
+
+Sinja extensions provide additional helpers, DSL, and ORM-specific boilerplate
+as separate gems. Community contributions welcome!
+
+### Sequel
+
+Please see [Sinja::Sequel][30] for more information.
+
 ## Application Concerns
+
+### Performance
+
+Although there is some heavy metaprogramming happening at boot time, the end
+result is simply a collection of Sinatra namespaces, routes, filters,
+conditions, helpers, etc., and Sinja applications should perform as if you had
+written them verbosely. The main caveat is that there are quite a few block
+closures, which don't perform as well as normal methods in Ruby. Feedback
+welcome.
+
+### Public APIs
+
+Sinja makes a few APIs public to help you work around edge cases in your
+application.
+
+#### Commonly Used
+
+**can?**
+: Takes the symbol of an action helper and returns true if the current user has
+  access to call that action helper for the current resource using the `role`
+  helper and role definitions detailed under "Authorization" below.
+
+**role?**
+: Takes a list of role(s) and returns true if it has members in common with the
+  current user's role(s).
+
+**sideloaded?**
+: Returns true if the request was invoked from another action helper.
+
+#### Less-Commonly Used
+
+These are helpful if you want to add some custom routes to your Sinja
+application.
+
+**data**
+: Returns the `data` key of the deserialized request payload (with symbolized
+  names).
+
+**dedasherize**
+: Takes a string or symbol and returns the string or symbol with any and all
+  dashes transliterated to underscores, and camelCase converted to snake_case.
+
+**dedasherize_names**
+: Takes a hash and returns the hash with its keys dedasherized (deeply).
+
+**serialize_model**
+: Takes a model (and optional hash of JSONAPI::Serializers options) and returns
+  a serialized model.
+
+**serialize_model?**
+: Takes a model (and optional hash of JSONAPI::Serializers options) and returns
+  a serialized model if non-`nil`, or the root metadata if present, or a HTTP
+  status 204.
+
+**serialize_models**
+: Takes an array of models (and optional hash of JSONAPI::Serializers options)
+  and returns a serialized collection.
+
+**serialize_models?**
+: Takes an array of models (and optional hash of JSONAPI::Serializers options)
+  and returns a serialized collection if non-empty, or the root metadata if
+  present, or a HTTP status 204.
 
 ### Sinja or Sinatra::JSONAPI
 
@@ -1527,6 +1460,34 @@ applications will behave according to the {json:api} spec (as long as you
 follow the usage documented in this README) and focus on testing your business
 logic.
 
+## Comparison with JSONAPI::Resources
+
+| Feature         | JR                               | Sinja                                             |
+| :-------------- | :------------------------------- | :------------------------------------------------ |
+| Serializer      | Built-in                         | [JSONAPI::Serializers][3]                         |
+| Framework       | Rails                            | Sinatra, but easy to mount within others          |
+| Routing         | ActionDispatch::Routing          | Mustermann                                        |
+| Caching         | ActiveSupport::Cache             | BYO                                               |
+| ORM             | ActiveRecord/ActiveModel         | BYO                                               |
+| Authorization   | [Pundit][9]                      | Role-based                                        |
+| Immutability    | `immutable` method               | Omit mutator action helpers (e.g. `update`)       |
+| Fetchability    | `fetchable_fields` method        | Omit attributes in Serializer                     |
+| Creatability    | `creatable_fields` method        | Handle in `create` action helper or Model\*       |
+| Updatability    | `updatable_fields` method        | Handle in `update` action helper or Model\*       |
+| Sortability     | `sortable_fields` method         | `sort` helper and `:sort_by` option               |
+| Default sorting | `default_sort` method            | Set default for `params[:sort]`                   |
+| Context         | `context` method                 | Rack middleware (e.g. `env['context']`)           |
+| Attributes      | Define in Model and Resource     | Define in Model\* and Serializer                  |
+| Formatting      | `:format` attribute keyword      | Define attribute as a method in Serialier         |
+| Relationships   | Define in Model and Resource     | Define in Model, Resource, and Serializer         |
+| Filters         | `filter(s)` keywords             | `filter` helper and `:filter_by` option           |
+| Default filters | `:default` filter keyword        | Set default for `params[:filter]`                 |
+| Pagination      | JSONAPI::Paginator               | `page` helper and `page_using` configurable       |
+| Meta            | `meta` method                    | Serializer `:meta` option               |
+| Primary keys    | `resource_key_type` configurable | Serializer `id` method               |
+
+\* &ndash; Depending on your ORM.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run
@@ -1555,7 +1516,7 @@ License](http://opensource.org/licenses/MIT).
 [4]: http://www.rubydoc.info/github/rack/rack/master/Rack/URLMap
 [5]: http://rodauth.jeremyevans.net
 [6]: https://github.com/sinatra/sinatra/tree/master/rack-protection
-[7]: http://jsonapi.org/format/
+[7]: http://jsonapi.org/format/1.0/
 [8]: https://github.com/cerebris/jsonapi-resources
 [9]: https://github.com/cerebris/jsonapi-resources#authorization
 [10]: http://www.sinatrarb.com/extensions-wild.html
@@ -1574,8 +1535,9 @@ License](http://opensource.org/licenses/MIT).
 [23]: http://jsonapi.org/recommendations/#patchless-clients
 [24]: http://www.rubydoc.info/github/rack/rack/Rack/MethodOverride
 [25]: http://www.sinatrarb.com/mustermann/
-[26]: https://github.com/tiagopog/jsonapi-utils
+[26]: https://jsonapi-suite.github.io/jsonapi_suite/
 [27]: https://github.com/coryodaniel/munson
 [28]: https://github.com/chingor13/json_api_client
 [29]: https://github.com/brynary/rack-test
 [30]: https://github.com/mwpastore/sinja-sequel
+[31]: http://jsonapi.org/implementations/#server-libraries-ruby
