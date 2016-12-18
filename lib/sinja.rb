@@ -129,6 +129,8 @@ module Sinja
 
       if method_defined?(:bad_request?)
         # This screws up our error-handling logic in Sinatra 2.0, so monkeypatch it.
+        # https://github.com/sinatra/sinatra/issues/1211
+        # https://github.com/sinatra/sinatra/pull/1212
         def bad_request?
           false
         end
