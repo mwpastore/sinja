@@ -41,20 +41,23 @@ module Sinja
       end
     end
 
-    app.set :qcapture do |*index|
+    app.set :qcaptures do |*index|
       condition do
         @qcaptures ||= []
+
         index.to_h.all? do |key, subkeys|
-          Hash === params[key.to_s] && params[key.to_s].any? &&
-            [*subkeys].all? do |subkey|
-              # TODO: What if deleting one is successful, but not another?
-              # We'll need to restore the hash to its original state.
-              @qcaptures << params[key.to_s].delete(subkey.to_s) \
-                if params[key.to_s].key?(subkey.to_s)
-            end.tap do |ok|
-              # If us deleting key(s) causes the hash to be empty, delete it.
-              params.delete(key.to_s) if ok && params[key.to_s].empty?
-            end
+          key = key.to_s
+
+          Hash === params[key] && params[key].any? && [*subkeys].all? do |subkey|
+            subkey = subkey.to_s
+
+            # TODO: What if deleting one is successful, but not another?
+            # We'll need to restore the hash to its original state.
+            @qcaptures << params[key].delete(subkey) if params[key].key?(subkey)
+          end.tap do |ok|
+            # If us deleting key(s) causes the hash to become empty, delete it.
+            params.delete(key) if ok && params[key].empty?
+          end
         end
       end
     end
@@ -72,7 +75,7 @@ module Sinja
           # Ignore interal Sinatra query parameters (e.g. :captures) and any
           # "known" query parameter set to `nil' in the configurable.
           next if !env['rack.request.query_hash'].key?(key.to_s) ||
-            settings._sinja.query_params.fetch(key, :_).nil?
+            settings._sinja.query_params.fetch(key, :__NOT_FOUND__).nil?
 
           raise BadRequestError, "`#{key}' query parameter not allowed" \
             unless allow_params.include?(key)
@@ -88,13 +91,13 @@ module Sinja
 
         return true if env['sinja.normalized'] == params.object_id
 
-        settings._sinja.query_params.each do |key, value|
-          next if value.nil?
+        settings._sinja.query_params.each do |key, default_value|
+          next if default_value.nil?
 
           if respond_to?("normalize_#{key}_params")
-            params[key.to_s] = send("normalize_#{key}_params")
+            params[key.to_s] = send("normalize_#{key}_params", default_value)
           else
-            params[key.to_s] ||= value
+            params[key.to_s] ||= default_value
           end
         end
 
@@ -149,8 +152,8 @@ module Sinja
         end
       end
 
-      def normalize_filter_params
-        return {} unless params[:filter]&.any?
+      def normalize_filter_params(default_value)
+        return default_value unless params[:filter]&.any?
 
         raise BadRequestError, "Unsupported `filter' query parameter(s)" \
           unless respond_to?(:filter)
@@ -170,7 +173,7 @@ module Sinja
         raise BadRequestError, "Invalid `filter' query parameter(s)"
       end
 
-      def normalize_sort_params
+      def normalize_sort_params(_default_value)
         return {} unless params[:sort]&.any?
 
         raise BadRequestError, "Unsupported `sort' query parameter(s)" \
@@ -192,8 +195,8 @@ module Sinja
         raise BadRequestError, "Invalid `sort' query parameter(s)"
       end
 
-      def normalize_page_params
-        return {} unless params[:page]&.any?
+      def normalize_page_params(default_value)
+        return default_value unless params[:page]&.any?
 
         raise BadRequestError, "Unsupported `page' query parameter(s)" \
           unless respond_to?(:page)
@@ -207,25 +210,17 @@ module Sinja
         return if params[:page].empty?
 
         return params[:page] \
-          if params[:page].keys.to_set.subset?(settings._sinja.page_using.keys.to_set)
+          if (params[:page].keys - settings._sinja.page_using.keys).empty?
 
         raise BadRequestError, "Invalid `page' query parameter(s)"
       end
 
       def filter_sort_page?(action)
-        return enum_for(__callee__, action).to_h unless block_given?
+        return enum_for(__callee__, action) unless block_given?
 
-        if filter = filter_by?(action)
-          yield :filter, filter
-        end
-
-        if sort = sort_by?(action)
-          yield :sort, sort
-        end
-
-        if page = page_using?
-          yield :page, page
-        end
+        if filter = filter_by?(action) then yield :filter, filter end
+        if sort = sort_by?(action) then yield :sort, sort end
+        if page = page_using? then yield :page, page end
       end
 
       def filter_sort_page(collection, opts)
@@ -287,7 +282,7 @@ module Sinja
     end
 
     app.after do
-      body serialize_response_body if response.ok? || response.created?
+      body serialize_response_body if response.successful?
     end
 
     app.not_found do

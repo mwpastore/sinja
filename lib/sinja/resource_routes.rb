@@ -9,11 +9,11 @@ module Sinja
       app.def_action_helper(app, :update, :roles)
       app.def_action_helper(app, :destroy, :roles)
 
-      app.head '', :qcapture=>{ :filter=>:id } do
+      app.head '', :qcaptures=>{ :filter=>:id } do
         allow :get=>:show
       end
 
-      app.get '', :qcapture=>{ :filter=>:id }, :qparams=>%i[include fields], :actions=>:show do
+      app.get '', :qcaptures=>{ :filter=>:id }, :qparams=>%i[include fields], :actions=>:show do
         ids = @qcaptures.first # TODO: Get this as a block parameter?
         ids = ids.split(',') if String === ids
         ids = [*ids].tap(&:uniq!)
@@ -45,7 +45,7 @@ module Sinja
       app.get '', :qparams=>%i[include fields filter sort page], :actions=>:index do
         fsp_opts = filter_sort_page?(:index)
         collection, opts = index
-        collection, pagination = filter_sort_page(collection, fsp_opts)
+        collection, pagination = filter_sort_page(collection, fsp_opts.to_h)
         serialize_models(collection, opts, pagination)
       end
 

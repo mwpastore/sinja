@@ -26,7 +26,7 @@ module Sinja
         app.get '', :qparams=>%i[include fields filter sort page], :actions=>:fetch do
           fsp_opts = filter_sort_page?(:fetch)
           collection, opts = fetch
-          collection, pagination = filter_sort_page(collection, fsp_opts)
+          collection, pagination = filter_sort_page(collection, fsp_opts.to_h)
           serialize_models(collection, opts, pagination)
         end
 
