@@ -18,13 +18,13 @@ Gem::Specification.new do |spec|
     and it configures Sinatra with the proper settings, MIME-types, filters,
     conditions, and error-handling.
 
-    There are many parsing (deserializing) and rendering (serializing) and
-    so-called "JSON API" libraries available for Ruby, but relatively few that
-    attempt to correctly implement the entire {json:api} specification,
-    including routing, request header and query parameter checking, and
-    relationship side-loading. Sinja lets you focus on the business logic of
-    your applications without worrying about the specification, and without
-    pulling in a heavy framework like Rails. It's lightweight and ORM-agnostic!
+    There are many parsing (deserializing), rendering (serializing), and other
+    "JSON API" libraries available for Ruby, but relatively few that attempt to
+    correctly implement the entire {json:api} specification, including routing,
+    request header and query parameter checking, and relationship side-loading.
+    Sinja lets you focus on the business logic of your applications without
+    worrying about the specification, and without pulling in a heavy framework
+    like Rails. It's lightweight and ORM-agnostic!
   EOF
   spec.homepage      = 'https://github.com/mwpastore/sinja'
   spec.license       = 'MIT'

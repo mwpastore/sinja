@@ -20,13 +20,13 @@ DSL to enable resource-, relationship-, and role-centric API development, and
 it configures Sinatra with the proper settings, MIME-types, filters,
 conditions, and error-handling.
 
-There are [many][31] parsing (deserializing) and rendering (serializing) and
-so-called "JSON API" libraries available for Ruby, but relatively few that
-attempt to correctly implement the entire {json:api} specification, including
-routing, request header and query parameter checking, and relationship
-side-loading. Sinja lets you focus on the business logic of your applications
-without worrying about the specification, and without pulling in a heavy
-framework like [Rails][16]. It's lightweight and ORM-agnostic!
+There are [many][31] parsing (deserializing), rendering (serializing), and
+other "JSON API" libraries available for Ruby, but relatively few that attempt
+to correctly implement the entire {json:api} specification, including routing,
+request header and query parameter checking, and relationship side-loading.
+Sinja lets you focus on the business logic of your applications without
+worrying about the specification, and without pulling in a heavy framework like
+[Rails][16]. It's lightweight and ORM-agnostic!
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
