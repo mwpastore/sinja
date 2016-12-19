@@ -796,12 +796,6 @@ resource :posts do
   index(filter_by: [:title, :type]) do
     Foo # return a Sequel::Dataset (instead of an array of Sequel::Model instances)
   end
-
-  has_many :comments do
-    fetch(filter_by: :status) do
-      resource.comments_dataset # return a Sequel::Dataset
-    end
-  end
 end
 ```
 
