@@ -26,7 +26,7 @@ to correctly implement the entire {json:api} specification, including routing,
 request header and query parameter checking, and relationship side-loading.
 Sinja lets you focus on the business logic of your applications without
 worrying about the specification, and without pulling in a heavy framework like
-[Rails][16]. It's lightweight and ORM-agnostic!
+[Rails][16]. It's lightweight, ORM-agnostic, and [Ember.js][32]-friendly!
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -1538,3 +1538,4 @@ License](http://opensource.org/licenses/MIT).
 [29]: https://github.com/brynary/rack-test
 [30]: https://github.com/mwpastore/sinja-sequel
 [31]: http://jsonapi.org/implementations/#server-libraries-ruby
+[32]: http://emberjs.com

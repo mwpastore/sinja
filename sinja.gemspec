@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
     request header and query parameter checking, and relationship side-loading.
     Sinja lets you focus on the business logic of your applications without
     worrying about the specification, and without pulling in a heavy framework
-    like Rails. It's lightweight and ORM-agnostic!
+    like Rails. It's lightweight, ORM-agnostic, and Ember.js-friendly!
   EOF
   spec.homepage      = 'https://github.com/mwpastore/sinja'
   spec.license       = 'MIT'
