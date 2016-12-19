@@ -60,11 +60,11 @@ module Sinja
 
     def initialize
       @query_params = {
-        :include=>[], # passthru to JAS
-        :fields=>{}, # passthru to JAS
-        :filter=>{},
-        :page=>{},
-        :sort=>[]
+        :include=>Array, # passthru to JAS
+        :fields=>Hash, # passthru to JAS
+        :filter=>Hash,
+        :page=>Hash,
+        :sort=>Array
       }
 
       @error_logger = ->(h) { logger.error('sinja') { h } }
@@ -93,7 +93,7 @@ module Sinja
       @validation_exceptions = Set.new
       @validation_formatter = ->{ Array.new }
 
-      @opts = deep_copy(DEFAULT_OPTS)
+      @opts = DEFAULT_OPTS.dup
       @page_using = Hash.new
       @serializer_opts = deep_copy(DEFAULT_SERIALIZER_OPTS)
     end

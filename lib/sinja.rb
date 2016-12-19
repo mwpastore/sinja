@@ -75,29 +75,29 @@ module Sinja
           # Ignore interal Sinatra query parameters (e.g. :captures) and any
           # "known" query parameter set to `nil' in the configurable.
           next if !env['rack.request.query_hash'].key?(key.to_s) ||
-            settings._sinja.query_params.fetch(key, :__NOT_FOUND__).nil?
+            settings._sinja.query_params.fetch(key, BasicObject).nil?
 
           raise BadRequestError, "`#{key}' query parameter not allowed" \
             unless allow_params.include?(key)
 
           next if env['sinja.normalized'] == params.object_id
 
-          if !(String === settings._sinja.query_params[key]) && String === value
+          if String === value && settings._sinja.query_params[key] != String
             params[key.to_s] = value.split(',')
-          elsif !(settings._sinja.query_params[key].class === value)
+          elsif !(settings._sinja.query_params[key] === value)
             raise BadRequestError, "`#{key}' query parameter malformed"
           end
         end
 
         return true if env['sinja.normalized'] == params.object_id
 
-        settings._sinja.query_params.each do |key, default_value|
-          next if default_value.nil?
+        settings._sinja.query_params.each do |key, klass|
+          next if klass.nil?
 
           if respond_to?("normalize_#{key}_params")
-            params[key.to_s] = send("normalize_#{key}_params", default_value)
+            params[key.to_s] = send("normalize_#{key}_params")
           else
-            params[key.to_s] ||= default_value
+            params[key.to_s] ||= klass.new
           end
         end
 
@@ -154,8 +154,8 @@ module Sinja
         end
       end
 
-      def normalize_filter_params(default_value)
-        return default_value unless params[:filter]&.any?
+      def normalize_filter_params
+        return {} unless params[:filter]&.any?
 
         raise BadRequestError, "Unsupported `filter' query parameter(s)" \
           unless respond_to?(:filter)
@@ -175,7 +175,7 @@ module Sinja
         raise BadRequestError, "Invalid `filter' query parameter(s)"
       end
 
-      def normalize_sort_params(_default_value)
+      def normalize_sort_params
         return {} unless params[:sort]&.any?
 
         raise BadRequestError, "Unsupported `sort' query parameter(s)" \
@@ -197,8 +197,8 @@ module Sinja
         raise BadRequestError, "Invalid `sort' query parameter(s)"
       end
 
-      def normalize_page_params(default_value)
-        return default_value unless params[:page]&.any?
+      def normalize_page_params
+        return {} unless params[:page]&.any?
 
         raise BadRequestError, "Unsupported `page' query parameter(s)" \
           unless respond_to?(:page)
