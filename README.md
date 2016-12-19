@@ -323,7 +323,7 @@ configure_jsonapi do |c|
 
   #c.page_using = {} # see "Paging" below
 
-  # Set the error logger used by Sinja
+  # Set the error logger used by Sinja (set to `nil' to disable)
   #c.error_logger = ->(error_hash) { logger.error('sinja') { error_hash } }
 
   # A hash of options to pass to JSONAPI::Serializer.serialize

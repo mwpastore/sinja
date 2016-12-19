@@ -100,7 +100,7 @@ module Sinja
 
     def error_logger=(f)
       fail "Invalid error formatter #{f}" \
-        unless f.respond_to?(:call)
+        unless f.respond_to?(:call) || f.nil?
 
       fail "Can't modify frozen proc" \
         if @error_logger.frozen?
