@@ -1405,8 +1405,8 @@ Sinja applications might grow overly large with a block for each resource. I am
 still working on a better way to handle this (as well as a way to provide
 standalone resource controllers for e.g. cloud functions), but for the time
 being you can store each resource block as its own Proc, and pass it to the
-`resource` keyword in lieu of a block. The migration to some future solution
-should be relatively painless. For example:
+`resource` keyword as a block. The migration to some future solution should be
+relatively painless. For example:
 
 ```ruby
 # controllers/foo_controller.rb
@@ -1431,7 +1431,7 @@ require_relative 'controllers/foo_controller'
 class App < Sinatra::Base
   register Sinatra::JSONAPI
 
-  resource :foos, FooController
+  resource :foos, &FooController
 
   freeze_jsonapi
 end

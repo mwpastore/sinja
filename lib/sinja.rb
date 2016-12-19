@@ -317,6 +317,9 @@ module Sinja
     abort "Must supply proc constant or block for `resource'" \
       unless block = (konst if konst.is_a?(Proc)) || block
 
+    $stderr.puts "DEPRECATED: Pass a block to `resource'; the ability to pass a Proc " \
+      'will be removed in a future version of Sinja.' if konst.is_a?(Proc)
+
     resource_name = resource_name.to_s
       .pluralize
       .dasherize
