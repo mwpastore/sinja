@@ -394,6 +394,40 @@ simply returns `resource`.
 
 ### Action Helpers
 
+<table>
+<thead>
+<tr>
+  <th><a href="#resource"><code>resource</code></a></th>
+  <th><a href="#has_one"><code>has_one</code></a></th>
+  <th><a href="#has_many"><code>has_many</code></a></th>
+</tr>
+</thead>
+<tbody>
+<tr valign="top">
+  <td><ul>
+    <li><a href="#index---array"><code>index</code></a></li>
+    <li><code>show</code> <a href="#show---object">w/ resource locator</a> or <a href="#show-id---object">w/o</a></li>
+    <li><a href="#show_many-ids---array"><code>show_many</code></a></li>
+    <li><code>create</code> <a href="#create-attr-id---id-object">w/ client-generated IDs</a> or <a href="#create-attr---id-object">w/o</a></li>
+    <li><a href="#update-attr---object"><code>update</code></a></li>
+    <li><a href="#destroy-"><code>destroy</code></a></li>
+  </ul></td>
+  <td><ul>
+    <li><a href="#pluck---object"><code>pluck</code></a></li>
+    <li><a href="#prune---trueclass"><code>prune</code></a></li>
+    <li><a href="#graft-rio---trueclass"><code>graft</code></a></li>
+  </ul></td>
+  <td><ul>
+    <li><a href="#fetch---array"><code>fetch</code></a></li>
+    <li><a href="#clear---trueclass"><code>clear</code></a></li>
+    <li><a href="#replace-rios---trueclass"><code>replace</code></a></li>
+    <li><a href="#merge-rios---trueclass"><code>merge</code></a></li>
+    <li><a href="#subtract-rios---trueclass"><code>subtract</code></a></li>
+  </ul></td>
+</tr>
+</tbody>
+</table>
+
 Action helpers should be defined within the appropriate block contexts
 (`resource`, `has_one`, or `has_many`) using the given keywords and arguments
 below. Implicitly return the expected values as described below (as an array if
