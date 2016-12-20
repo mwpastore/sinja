@@ -79,14 +79,13 @@ module Sinja
               # Move cursor through each term, avoiding the default proc,
               # halting if no roles found, i.e. client asked to include
               # something that Sinja doesn't know about
-              throw :keep?, true \
-                unless config = settings._sinja.resource_config.fetch(term.pluralize.to_sym, nil)
+              throw :keep?, true unless config =
+                settings._sinja.resource_config.fetch(term.pluralize.to_sym, nil)
             end
 
-            roles = (
-              config.dig(:has_many, last_term.pluralize.to_sym, :fetch) ||
-              config.dig(:has_one, last_term.singularize.to_sym, :pluck)
-            )[:roles]
+            throw :keep?, true unless roles =
+              config.dig(:has_many, last_term.pluralize.to_sym, :fetch, :roles) ||
+              config.dig(:has_one, last_term.singularize.to_sym, :pluck, :roles)
 
             throw :keep?, roles && (roles.empty? || roles === memoized_role)
           end
