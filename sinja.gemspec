@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
     worrying about the specification, and without pulling in a heavy framework
     like Rails. It's lightweight, ORM-agnostic, and Ember.js-friendly!
   EOF
-  spec.homepage      = 'https://github.com/mwpastore/sinja'
+  spec.homepage      = 'http://sinja-rb.org'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
