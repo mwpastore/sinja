@@ -100,6 +100,8 @@ module Sinja
         options = settings._sinja.serializer_opts.merge(options)
 
         ::JSONAPI::Serializer.serialize(model, options)
+      rescue ::JSONAPI::Serializer::InvalidIncludeError=>e
+        raise BadRequestError, e
       end
 
       def serialize_model?(model=nil, options={})
@@ -151,6 +153,8 @@ module Sinja
         end
 
         ::JSONAPI::Serializer.serialize([*models], options)
+      rescue ::JSONAPI::Serializer::InvalidIncludeError=>e
+        raise BadRequestError, e
       end
 
       def serialize_models?(models=[], options={}, pagination=nil)
