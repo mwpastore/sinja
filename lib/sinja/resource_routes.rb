@@ -49,7 +49,7 @@ module Sinja
         serialize_models(collection, opts, pagination)
       end
 
-      app.post '', :qparams=>:include, :actions=>:create do
+      app.post '', :qparams=>%i[include fields], :actions=>:create do
         sanity_check!
 
         opts = {}
@@ -92,7 +92,7 @@ module Sinja
         serialize_model(tmp, opts)
       end
 
-      app.patch '/:id', :qparams=>:include, :actions=>:update do |id|
+      app.patch '/:id', :qparams=>%i[include fields], :actions=>:update do |id|
         sanity_check!(id)
         tmp, opts = transaction do
           update(attributes).tap do
