@@ -128,7 +128,7 @@ module Sinja
       end
 
       if method_defined?(:bad_request?)
-        # This screws up our error-handling logic in Sinatra 2.0, so monkeypatch it.
+        # This screws up our error-handling logic in Sinatra 2.0, so override it.
         # https://github.com/sinatra/sinatra/issues/1211
         # https://github.com/sinatra/sinatra/pull/1212
         def bad_request?
@@ -288,11 +288,11 @@ module Sinja
     end
 
     app.not_found do
-      serialize_errors(&settings._sinja.error_logger)
+      serialize_errors
     end
 
     app.error 400...600 do
-      serialize_errors(&settings._sinja.error_logger)
+      serialize_errors
     end
 
     app.error StandardError do
@@ -309,7 +309,7 @@ module Sinja
         handle_exception!(boom) if boom # re-throw the re-packaged exception
       end
 
-      serialize_errors(&settings._sinja.error_logger)
+      serialize_errors
     end
   end
 

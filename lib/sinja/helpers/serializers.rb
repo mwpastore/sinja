@@ -205,14 +205,14 @@ module Sinja
         e.respond_to?(:title) ? e.title : e.class.name.demodulize.titleize
       end
 
-      def serialize_errors(&block)
+      def serialize_errors
         raise env['sinatra.error'] if env['sinatra.error'] && sideloaded?
 
         error_hashes =
           if [*body].any?
             if [*body].all? { |error| Hash === error }
               # `halt' with a hash or array of hashes
-              [*body].flat_map { |error| error_hash(error) }
+              [*body].flat_map(&method(:error_hash))
             elsif not_found?
               # `not_found' or `halt 404'
               message = [*body].first.to_s
@@ -251,7 +251,9 @@ module Sinja
               :title=>'Unknown Error'
           end
 
-        error_hashes.each { |h| instance_exec(h, &block) } if block
+        if block = settings._sinja.error_logger
+          error_hashes.each { |h| instance_exec(h, &block) }
+        end
 
         content_type :api_json
         JSON.send settings._sinja.json_error_generator,
