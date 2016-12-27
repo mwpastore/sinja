@@ -48,7 +48,7 @@ module Sinja
         index.to_h.all? do |key, subkeys|
           key = key.to_s
 
-          Hash === params[key] && params[key].any? && [*subkeys].all? do |subkey|
+          params[key].is_a?(Hash) && params[key].any? && Array(subkeys).all? do |subkey|
             subkey = subkey.to_s
 
             # TODO: What if deleting one is successful, but not another?
@@ -82,9 +82,9 @@ module Sinja
 
           next if env['sinja.normalized'] == params.object_id
 
-          if String === value && settings._sinja.query_params[key] != String
+          if value.is_a?(String) && settings._sinja.query_params[key] != String
             params[key.to_s] = value.split(',')
-          elsif !(settings._sinja.query_params[key] === value)
+          elsif !value.is_a?(settings._sinja.query_params[key])
             raise BadRequestError, "`#{key}' query parameter malformed"
           end
         end
@@ -118,7 +118,7 @@ module Sinja
       def allow(h={})
         s = Set.new
         h.each do |method, actions|
-          s << method if [*actions].all? { |action| respond_to?(action) }
+          s << method if Array(actions).all?(&method(:respond_to?))
         end
         headers 'Allow'=>s.map(&:upcase).join(',')
       end
@@ -138,7 +138,7 @@ module Sinja
 
       def can?(action)
         roles = settings._resource_config[:resource].fetch(action, {})[:roles]
-        roles.nil? || roles.empty? || roles === memoized_role
+        roles.nil? || roles.empty? || roles.intersect?(memoized_role)
       end
 
       def content?
@@ -244,7 +244,7 @@ module Sinja
       end
 
       def memoized_role
-        @role ||= role
+        @role ||= Roles[*role]
       end
 
       def sideloaded?
@@ -256,7 +256,7 @@ module Sinja
       end
 
       def role?(*roles)
-        Roles[*roles] === memoized_role
+        Roles[*roles].intersect?(memoized_role)
       end
 
       def sanity_check!(resource_name, id=nil)
@@ -298,12 +298,12 @@ module Sinja
     app.error StandardError do
       env['sinatra.error'].tap do |e|
         boom =
-          if settings._sinja.not_found_exceptions.any? { |c| c === e }
-            NotFoundError.new(e.message) unless NotFoundError === e
-          elsif settings._sinja.conflict_exceptions.any? { |c| c === e }
-            ConflictError.new(e.message) unless ConflictError === e
-          elsif settings._sinja.validation_exceptions.any? { |c| c === e }
-            UnprocessibleEntityError.new(settings._sinja.validation_formatter.(e)) unless UnprocessibleEntityError === e
+          if settings._sinja.not_found_exceptions.any?(&e.method(:is_a?))
+            NotFoundError.new(e.message) unless e.instance_of?(NotFoundError)
+          elsif settings._sinja.conflict_exceptions.any?(&e.method(:is_a?))
+            ConflictError.new(e.message) unless e.instance_of?(ConflictError)
+          elsif settings._sinja.validation_exceptions.any?(&e.method(:is_a?))
+            UnprocessibleEntityError.new(settings._sinja.validation_formatter.(e)) unless e.instance_of?(UnprocessibleEntityError)
           end
 
         handle_exception!(boom) if boom # re-throw the re-packaged exception
@@ -317,7 +317,7 @@ module Sinja
     abort "Must supply proc constant or block for `resource'" \
       unless block = (konst if konst.is_a?(Proc)) || block
 
-    $stderr.puts "DEPRECATED: Pass a block to `resource'; the ability to pass a Proc " \
+    warn "DEPRECATED: Pass a block to `resource'; the ability to pass a Proc " \
       'will be removed in a future version of Sinja.' if konst.is_a?(Proc)
 
     resource_name = resource_name.to_s
@@ -355,7 +355,7 @@ module Sinja
     end
   end
 
-  alias_method :resources, :resource
+  alias resources resource
 
   def sinja
     if block_given?
@@ -365,7 +365,7 @@ module Sinja
     end
   end
 
-  alias_method :configure_jsonapi, :sinja
+  alias configure_jsonapi sinja
   def freeze_jsonapi
     _sinja.freeze
   end

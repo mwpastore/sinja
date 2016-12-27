@@ -11,7 +11,7 @@ module Sinja
       VALID_PAGINATION_KEYS = Set.new(%i[self first prev next last]).freeze
 
       def dedasherize(s=nil)
-        s.to_s.underscore.send(Symbol === s ? :to_sym : :itself)
+        s.to_s.underscore.send(s.is_a?(Symbol) ? :to_sym : :itself)
       end
 
       def dedasherize_names(*args)
@@ -22,7 +22,7 @@ module Sinja
         return enum_for(__callee__, hash) unless block_given?
 
         hash.each do |k, v|
-          yield dedasherize(k), Hash === v ? dedasherize_names(v) : v
+          yield dedasherize(k), v.is_a?(Hash) ? dedasherize_names(v) : v
         end
       end
 
@@ -48,12 +48,12 @@ module Sinja
           options.delete(:exclude) || []
 
         if included.empty?
-          included = Array === default ? default : default.split(',')
+          included = default.is_a?(Array) ? default : default.split(',')
 
           return included if included.empty?
         end
 
-        excluded = Array === excluded ? excluded : excluded.split(',')
+        excluded = excluded.is_a?(Array) ? excluded : excluded.split(',')
         unless excluded.empty?
           excluded = Set.new(excluded)
           included.delete_if do |termstr|
@@ -87,14 +87,14 @@ module Sinja
               config.dig(:has_many, last_term.pluralize.to_sym, :fetch, :roles) ||
               config.dig(:has_one, last_term.singularize.to_sym, :pluck, :roles)
 
-            throw :keep?, roles && (roles.empty? || roles === memoized_role)
+            throw :keep?, roles && (roles.empty? || roles.intersect?(memoized_role))
           end
         end
       end
 
       def serialize_model(model=nil, options={})
         options[:is_collection] = false
-        options[:skip_collection_check] = defined?(::Sequel) && ::Sequel::Model === model
+        options[:skip_collection_check] = defined?(::Sequel) && model.is_a?(::Sequel::Model)
         options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
         options = settings._sinja.serializer_opts.merge(options)
@@ -123,7 +123,7 @@ module Sinja
         if pagination
           # Whitelist pagination keys and dasherize query parameter names
           pagination = VALID_PAGINATION_KEYS
-            .select { |outer_key| pagination.key?(outer_key) }
+            .select(&pagination.method(:key?))
             .map! do |outer_key|
               [outer_key, pagination[outer_key].map do |inner_key, value|
                 [inner_key.to_s.dasherize.to_sym, value]
@@ -152,13 +152,13 @@ module Sinja
           end.to_h)
         end
 
-        ::JSONAPI::Serializer.serialize([*models], options)
+        ::JSONAPI::Serializer.serialize(Array(models), options)
       rescue ::JSONAPI::Serializer::InvalidIncludeError=>e
         raise BadRequestError, e
       end
 
       def serialize_models?(models=[], options={}, pagination=nil)
-        if [*models].any?
+        if Array(models).any?
           body serialize_models(models, options, pagination)
         elsif options.key?(:meta)
           body serialize_models([], :meta=>options[:meta])
@@ -169,7 +169,7 @@ module Sinja
 
       def serialize_linkage(model, rel, options={})
         options[:is_collection] = false
-        options[:skip_collection_check] = defined?(::Sequel) && ::Sequel::Model === model
+        options[:skip_collection_check] = defined?(::Sequel::Model) && model.is_a?(::Sequel::Model)
         options[:include] = rel.to_s
         options = settings._sinja.serializer_opts.merge(options)
 
@@ -208,14 +208,15 @@ module Sinja
       def serialize_errors
         raise env['sinatra.error'] if env['sinatra.error'] && sideloaded?
 
+        abody = Array(body)
         error_hashes =
-          if [*body].any?
-            if [*body].all? { |error| Hash === error }
+          if abody.any?
+            if abody.all? { |error| error.is_a?(Hash) }
               # `halt' with a hash or array of hashes
-              [*body].flat_map(&method(:error_hash))
+              abody.flat_map(&method(:error_hash))
             elsif not_found?
               # `not_found' or `halt 404'
-              message = [*body].first.to_s
+              message = abody.first.to_s
               error_hash \
                 :title=>'Not Found Error',
                 :detail=>(message unless message == '<h1>Not Found</h1>')
@@ -223,7 +224,7 @@ module Sinja
               # `halt'
               error_hash \
                 :title=>'Unknown Error',
-                :detail=>[*body].first.to_s
+                :detail=>abody.first.to_s
             end
           end
 

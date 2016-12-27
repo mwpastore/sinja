@@ -49,7 +49,7 @@ PostController = proc do
     end
 
     def role
-      [*super].tap do |a|
+      Array(super).tap do |a|
         a << :owner if resource&.author == current_user
       end
     end

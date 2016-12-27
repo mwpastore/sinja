@@ -20,11 +20,12 @@ Gem::Specification.new do |spec|
 
     There are many parsing (deserializing), rendering (serializing), and other
     "JSON API" libraries available for Ruby, but relatively few that attempt to
-    correctly implement the entire {json:api} specification, including routing,
-    request header and query parameter checking, and relationship side-loading.
-    Sinja lets you focus on the business logic of your applications without
-    worrying about the specification, and without pulling in a heavy framework
-    like Rails. It's lightweight, ORM-agnostic, and Ember.js-friendly!
+    correctly implement the entire {json:api} server specification, including
+    routing, request header and query parameter checking, and relationship
+    side-loading. Sinja lets you focus on the business logic of your
+    applications without worrying about the specification, and without pulling
+    in a heavy framework like Rails. It's lightweight, ORM-agnostic, and
+    Ember.js-friendly!
   EOF
   spec.homepage      = 'http://sinja-rb.org'
   spec.license       = 'MIT'

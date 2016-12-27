@@ -21,9 +21,10 @@ helpers Sinja::Sequel::Helpers do
   end
 
   def role
-    [].tap do |a|
-      a << :logged_in if current_user
-      a << :superuser if current_user&.admin?
+    return unless current_user
+
+    [:logged_in].tap do |a|
+      a << :superuser if current_user.admin?
     end
   end
 end

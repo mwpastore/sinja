@@ -27,10 +27,10 @@ module Sinja
 
       context.define_singleton_method(action) do |**opts, &block|
         abort "Unexpected option(s) for `#{action}' action helper" \
-          unless (opts.keys - [*allow_opts]).empty?
+          unless (opts.keys - Array(allow_opts)).empty?
 
         resource_config[action].each do |k, v|
-          v.replace([*opts[k]]) if opts.key?(k)
+          v.replace(Array(opts[k])) if opts.key?(k)
         end
 
         return unless block ||=
@@ -57,9 +57,9 @@ module Sinja
           case result = instance_exec(*args, &block)
           when Array
             opts = {}
-            if Hash === result.last
+            if result.last.is_a?(Hash)
               opts = result.pop
-            elsif required_arity < 0 && !(Array === result.first)
+            elsif required_arity < 0 && !result.first.is_a?(Array)
               result = [result]
             end
 
@@ -97,7 +97,7 @@ module Sinja
               parent = sideloaded? && env['sinja.passthru'].to_sym
 
               roles, sideload_on = config.fetch(action, {}).values_at(:roles, :sideload_on)
-              roles.nil? || roles.empty? || roles === memoized_role ||
+              roles.nil? || roles.empty? || roles.intersect?(memoized_role) ||
                 parent && sideload_on.include?(parent) && super(parent, *args)
             end
 

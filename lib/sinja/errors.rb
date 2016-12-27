@@ -74,10 +74,10 @@ module Sinja
     attr_reader :tuples
 
     def initialize(tuples=[])
-      @tuples = [*tuples]
+      @tuples = Array(tuples)
 
       fail 'Tuples not properly formatted' \
-        unless @tuples.any? && @tuples.all? { |t| Array === t && t.length == 2 }
+        unless @tuples.any? && @tuples.all? { |t| t.is_a?(Array) && t.length == 2 }
 
       super(HTTP_STATUS)
     end

@@ -21,8 +21,8 @@ module Sinja
       end
 
       if c.respond_to?(:values)
-        c.values.each do |i|
-          if Hash === i
+        c.each_value do |i|
+          if i.is_a?(Hash)
             deep_freeze(i)
           else
             i.freeze
@@ -109,15 +109,15 @@ module Sinja
     end
 
     def conflict_exceptions=(e=[])
-      @conflict_exceptions.replace([*e])
+      @conflict_exceptions.replace(Array(e))
     end
 
     def not_found_exceptions=(e=[])
-      @not_found_exceptions.replace([*e])
+      @not_found_exceptions.replace(Array(e))
     end
 
     def validation_exceptions=(e=[])
-      @validation_exceptions.replace([*e])
+      @validation_exceptions.replace(Array(e))
     end
 
     def validation_formatter=(f)
@@ -154,7 +154,7 @@ module Sinja
       @default_roles[:has_one].merge!(other)
     end
 
-    DEFAULT_OPTS.keys.each do |k|
+    DEFAULT_OPTS.each_key do |k|
       define_method(k) { @opts[k] }
       define_method("#{k}=") { |v| @opts[k] = v }
     end
@@ -188,9 +188,11 @@ module Sinja
   end
 
   class Roles < Set
-    def ===(other)
-      self.intersect?(Set === other ? other : Set[*other])
+    def intersect?(other)
+      super(other.instance_of?(self.class) ? other : self.class[*other])
     end
+
+    alias === intersect?
   end
 
   class RolesConfig
@@ -211,7 +213,7 @@ module Sinja
       h.each do |action, roles|
         abort "Unknown or invalid action helper `#{action}' in configuration" \
           unless @data.key?(action)
-        @data[action].replace([*roles])
+        @data[action].replace(Array(roles))
       end
       @data
     end

@@ -40,7 +40,7 @@ AuthorController = proc do
     end
 
     def role
-      [*super].tap do |a|
+      Array(super).tap do |a|
         a << :myself if resource == current_user
       end
     end
