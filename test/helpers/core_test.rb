@@ -32,7 +32,7 @@ class HelpersApp < MyAppBase
     params
   end
 
-  get('/role') {{ :role=>memoized_role.to_a }}
+  get('/role') {{ :role=>role }}
 
   get('/role_q') {{ :role_q=>role?(params[:roles].split(',')) }}
 
@@ -114,7 +114,7 @@ class TestHelpers < Minitest::Test
   def test_role
     get '/role'
     assert last_response.ok?
-    assert_empty json[:role]
+    assert_nil json[:role]
   end
 
   def test_role_q
