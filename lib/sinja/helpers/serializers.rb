@@ -87,7 +87,7 @@ module Sinja
               config.dig(:has_many, last_term.pluralize.to_sym, :fetch, :roles) ||
               config.dig(:has_one, last_term.singularize.to_sym, :pluck, :roles)
 
-            throw :keep?, roles && (roles.empty? || roles.intersect?(memoized_role))
+            throw :keep?, roles && (roles.empty? || roles.intersect?(role))
           end
         end
       end

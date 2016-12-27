@@ -138,7 +138,7 @@ module Sinja
 
       def can?(action)
         roles = settings._resource_config[:resource].fetch(action, {})[:roles]
-        roles.nil? || roles.empty? || roles.intersect?(memoized_role)
+        roles.nil? || roles.empty? || roles.intersect?(role)
       end
 
       def content?
@@ -243,10 +243,6 @@ module Sinja
         end
       end
 
-      def memoized_role
-        @role ||= Roles[*role]
-      end
-
       def sideloaded?
         env.key?('sinja.passthru')
       end
@@ -256,7 +252,7 @@ module Sinja
       end
 
       def role?(*roles)
-        Roles[*roles].intersect?(memoized_role)
+        Roles[*roles].intersect?(role)
       end
 
       def sanity_check!(resource_name, id=nil)
