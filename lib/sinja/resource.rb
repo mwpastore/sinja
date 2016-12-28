@@ -97,7 +97,7 @@ module Sinja
               parent = sideloaded? && env['sinja.passthru'].to_sym
 
               roles, sideload_on = config.fetch(action, {}).values_at(:roles, :sideload_on)
-              roles.nil? || roles.empty? || roles.intersect?(role) ||
+              roles.nil? || roles.empty? || roles.intersect?(memoized_role) ||
                 parent && sideload_on.include?(parent) && super(parent, *args)
             end
 
