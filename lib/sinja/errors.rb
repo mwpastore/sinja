@@ -77,7 +77,7 @@ module Sinja
       @tuples = Array(tuples)
 
       fail 'Tuples not properly formatted' \
-        unless @tuples.any? && @tuples.all? { |t| t.is_a?(Array) && t.length == 2 }
+        unless @tuples.any? && @tuples.all? { |t| t.instance_of?(Array) && t.length == 2 }
 
       super(HTTP_STATUS)
     end

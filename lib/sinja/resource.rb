@@ -57,7 +57,7 @@ module Sinja
           case result = instance_exec(*args, &block)
           when Array
             opts = {}
-            if result.last.is_a?(Hash)
+            if result.last.instance_of?(Hash)
               opts = result.pop
             elsif required_arity < 0 && !result.first.is_a?(Array)
               result = [result]

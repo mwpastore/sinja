@@ -15,7 +15,7 @@ module Sinja
 
       app.get '', :qcaptures=>{ :filter=>:id }, :qparams=>%i[include fields], :actions=>:show do
         ids = @qcaptures.first # TODO: Get this as a block parameter?
-        ids = ids.split(',') if ids.is_a?(String)
+        ids = ids.split(',') if ids.instance_of?(String)
         ids = Array(ids).tap(&:uniq!)
 
         resources, opts =

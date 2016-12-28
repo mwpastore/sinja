@@ -82,7 +82,7 @@ module Sinja
 
           next if env['sinja.normalized'] == params.object_id
 
-          if value.is_a?(String) && settings._sinja.query_params[key] != String
+          if value.instance_of?(String) && settings._sinja.query_params[key] != String
             params[key.to_s] = value.split(',')
           elsif !value.is_a?(settings._sinja.query_params[key])
             raise BadRequestError, "`#{key}' query parameter malformed"
@@ -311,10 +311,10 @@ module Sinja
 
   def resource(resource_name, konst=nil, &block)
     abort "Must supply proc constant or block for `resource'" \
-      unless block = (konst if konst.is_a?(Proc)) || block
+      unless block = (konst if konst.instance_of?(Proc)) || block
 
     warn "DEPRECATED: Pass a block to `resource'; the ability to pass a Proc " \
-      'will be removed in a future version of Sinja.' if konst.is_a?(Proc)
+      'will be removed in a future version of Sinja.' if konst.instance_of?(Proc)
 
     resource_name = resource_name.to_s
       .pluralize

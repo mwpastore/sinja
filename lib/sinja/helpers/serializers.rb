@@ -11,7 +11,7 @@ module Sinja
       VALID_PAGINATION_KEYS = Set.new(%i[self first prev next last]).freeze
 
       def dedasherize(s=nil)
-        s.to_s.underscore.send(s.is_a?(Symbol) ? :to_sym : :itself)
+        s.to_s.underscore.send(s.instance_of?(Symbol) ? :to_sym : :itself)
       end
 
       def dedasherize_names(*args)
