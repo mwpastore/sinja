@@ -235,12 +235,12 @@ module Sinja
         error_hashes ||=
           case e = env['sinatra.error']
           when UnprocessibleEntityError
-            e.tuples.flat_map do |attribute, full_message|
+            e.tuples.flat_map do |key, full_message, type=:attributes|
               error_hash \
                 :title=>exception_title(e),
                 :detail=>full_message.to_s,
                 :source=>{
-                  :pointer=>(attribute ? "/data/attributes/#{attribute.to_s.dasherize}" : '/data')
+                  :pointer=>(key ? "/data/#{type}/#{key.to_s.dasherize}" : '/data')
                 }
             end
           when Exception

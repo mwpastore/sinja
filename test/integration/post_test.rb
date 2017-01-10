@@ -33,7 +33,7 @@ class PostTest < SequelTest
       }
     })
     assert_error 422
-    assert_equal '/data/attributes/author', json[:errors].first[:source][:pointer]
+    assert_equal '/data/relationships/author', json[:errors].first[:source][:pointer]
     assert_empty DB[:posts].all
   end
 
