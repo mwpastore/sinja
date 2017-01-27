@@ -1,4 +1,4 @@
-FROM ruby:2.3-alpine
+FROM ruby:2.4-alpine
 ARG container_port=4567
 ENV container_port=$container_port
 

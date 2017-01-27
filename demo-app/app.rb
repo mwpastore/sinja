@@ -10,6 +10,9 @@ require_relative 'classes/comment'
 require_relative 'classes/post'
 require_relative 'classes/tag'
 
+# Freeze database after creating tables and loading models
+DB.freeze if DB.respond_to?(:freeze)
+
 configure :development do
   set :server_settings, AccessLog: [] # avoid WEBrick double-logging issue
 end
