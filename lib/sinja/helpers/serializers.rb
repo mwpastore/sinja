@@ -192,7 +192,7 @@ module Sinja
 
       def error_hash(title: nil, detail: nil, source: nil)
         [
-          { id: SecureRandom.uuid }.tap do |hash|
+          { :id=>SecureRandom.uuid }.tap do |hash|
             hash[:title] = title if title
             hash[:detail] = detail if detail
             hash[:status] = status.to_s if status
