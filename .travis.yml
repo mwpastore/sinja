@@ -2,14 +2,18 @@ sudo: false
 language: ruby
 rvm:
   - 2.3.3
+  - 2.4.0
   - ruby-head
-  - jruby-9.1.6.0
+  - jruby-9.1.7.0
   - jruby-head
 env:
   - sinatra=1.4.7 rails=4.2.7.1
-  - sinatra=2.0.0.beta2 rails=5.0.0.1
+  - sinatra=2.0.0.beta2 rails=5.0.1
 jdk:
   - oraclejdk8
 before_install:
-  - gem uninstall bundler
-  - gem install bundler -v 1.11.2
+  - gem install bundler
+matrix:
+  allow_failures:
+    - rvm: ruby-head
+    - rvm: jruby-head

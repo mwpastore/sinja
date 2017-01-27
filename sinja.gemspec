@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['mike@oobak.org']
 
   spec.summary       = 'RESTful, {json:api}-compliant web services in Sinatra'
-  spec.description   = <<~EOF
+  spec.description   = <<~'EOF'
     Sinja is a Sinatra extension for quickly building RESTful,
     {json:api}-compliant web services, leveraging the excellent
     JSONAPI::Serializers gem for payload serialization. It enhances Sinatra's
