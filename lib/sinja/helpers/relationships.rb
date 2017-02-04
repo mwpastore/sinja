@@ -19,10 +19,17 @@ module Sinja
       end
 
       def dispatch_relationship_requests!(id, methods: {}, **opts)
-        data.fetch(:relationships, {}).each do |rel, body|
-          rel_type = settings._resource_config[:has_one].key?(rel) ? :has_one : :has_many
+        rels = data.fetch(:relationships, {}).to_a
+        rels.each do |rel, body, rel_type=nil, count=0|
+          rel_type ||= settings._resource_config[:has_one].key?(rel) ? :has_one : :has_many
           code, _, *json = dispatch_relationship_request id, rel,
             opts.merge(:body=>body, :method=>methods.fetch(rel_type, :patch))
+
+          if code == 420 && count == 0
+            rels << [rel, body, rel_type, count + 1]
+
+            next
+          end
 
           # TODO: Gather responses and report all errors instead of only first?
           # `halt' was called (instead of raise); rethrow it as best as possible
