@@ -13,6 +13,7 @@ require 'sinja/resource'
 require 'sinja/version'
 
 module Sinja
+  DEFER_CODE = 357
   MIME_TYPE = 'application/vnd.api+json'
   ERROR_CODES = ObjectSpace.each_object(Class).to_a
     .keep_if { |klass| klass < HttpError }

@@ -25,7 +25,7 @@ module Sinja
           code, _, *json = dispatch_relationship_request id, rel,
             opts.merge(:body=>body, :method=>methods.fetch(rel_type, :patch))
 
-          if code == 420 && count == 0
+          if code == DEFER_CODE && count == 0
             rels << [rel, body, rel_type, count + 1]
 
             next
