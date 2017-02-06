@@ -9,7 +9,7 @@ module Sinja
       app.def_action_helper(app, :update, :roles)
       app.def_action_helper(app, :destroy, :roles)
 
-      app.head '', :qcaptures=>{ :filter=>:id } do
+      app.options '', :qcaptures=>{ :filter=>:id } do
         allow :get=>:show
       end
 
@@ -38,7 +38,7 @@ module Sinja
         serialize_models(resources, opts)
       end
 
-      app.head '' do
+      app.options '' do
         allow :get=>:index, :post=>:create
       end
 
@@ -82,7 +82,7 @@ module Sinja
         end
       end
 
-      app.head '/:id' do
+      app.options '/:id' do
         allow :get=>:show, :patch=>:update, :delete=>:destroy
       end
 

@@ -7,7 +7,7 @@ module Sinja
         app.def_action_helper(app, :prune, %i[roles sideload_on])
         app.def_action_helper(app, :graft, %i[roles sideload_on])
 
-        app.head '' do
+        app.options '' do
           unless relationship_link?
             allow :get=>:pluck
           else

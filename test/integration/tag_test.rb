@@ -10,8 +10,8 @@ class PostTest < SequelTest
     Sinatra::Application.new
   end
 
-  def test_uncoalesced_find_head
-    head '/tags'
+  def test_uncoalesced_find_options
+    options '/tags'
     assert_ok
     assert_equal 'GET,POST', last_response.headers['Allow']
   end
@@ -29,8 +29,8 @@ class PostTest < SequelTest
     assert_equal DB[:tags].all, vals
   end
 
-  def test_coalesced_find_head
-    head '/tags?filter[id]=1,2'
+  def test_coalesced_find_options
+    options '/tags?filter[id]=1,2'
     assert_ok
     assert_equal 'GET', last_response.headers['Allow']
   end

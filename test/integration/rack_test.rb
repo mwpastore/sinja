@@ -123,26 +123,26 @@ class DemoAppTest1 < Minitest::Test
     assert_error 404
   end
 
-  def test_head_for_a_collection
-    head '/authors'
+  def test_options_for_a_collection
+    options '/authors'
     assert_ok
     assert_equal 'GET,POST', last_response.headers['Allow']
   end
 
-  def test_head_for_a_resource
-    head '/authors/1'
+  def test_options_for_a_resource
+    options '/authors/1'
     assert_ok
     assert_equal 'GET,PATCH,DELETE', last_response.headers['Allow']
   end
 
-  def test_head_for_related
-    head '/authors/1/posts'
+  def test_options_for_related
+    options '/authors/1/posts'
     assert_ok
     assert_equal 'GET', last_response.headers['Allow']
   end
 
-  def test_head_for_relationship
-    head '/authors/1/relationships/posts'
+  def test_options_for_relationship
+    options '/authors/1/relationships/posts'
     assert_ok
     assert_equal 'GET', last_response.headers['Allow']
   end

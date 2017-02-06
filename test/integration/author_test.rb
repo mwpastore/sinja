@@ -10,8 +10,8 @@ class AuthorTest < SequelTest
     Sinatra::Application.new
   end
 
-  def test_uncoalesced_find_head
-    head '/authors'
+  def test_uncoalesced_find_options
+    options '/authors'
     assert_ok
     assert_equal 'GET,POST', last_response.headers['Allow']
   end
@@ -33,8 +33,8 @@ class AuthorTest < SequelTest
     assert_equal DB[:authors].select(:id, :display_name).all, vals
   end
 
-  def test_coalesced_find_head
-    head '/tags?filter[id]=2,4'
+  def test_coalesced_find_options
+    options '/tags?filter[id]=2,4'
     assert_ok
     assert_equal 'GET', last_response.headers['Allow']
   end

@@ -46,7 +46,7 @@ module MyAppTest
   def assert_ok
     assert last_response.successful?
     assert_equal Sinja::MIME_TYPE, last_response.content_type
-    unless last_request.head?
+    unless last_request.options?
       assert_equal({ :version=>'1.0' }, json[:jsonapi])
     end
   end
