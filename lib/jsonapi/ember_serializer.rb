@@ -16,7 +16,7 @@ module JSONAPI
         alias_method :format_name_for_link, :format_name
 
         def format_name(attribute_name)
-          attribute_name.to_s.camelize(:lower)
+          attribute_name.to_s.underscore.camelize(:lower)
         end
 
         def self_link

@@ -170,12 +170,14 @@ module Sinja
       def serialize_linkage(model, rel, options={})
         options[:is_collection] = false
         options[:skip_collection_check] = defined?(::Sequel::Model) && model.is_a?(::Sequel::Model)
-        options[:include] = rel.to_s
         options = settings._sinja.serializer_opts.merge(options)
+
+        options[:serializer] ||= ::JSONAPI::Serializer.find_serializer_class(model, options)
+        options[:include] = options[:serializer].new(model, options).format_name(rel)
 
         # TODO: This is extremely wasteful. Refactor JAS to expose the linkage serializer?
         content = ::JSONAPI::Serializer.serialize(model, options)
-        content['data']['relationships'][rel.to_s].tap do |linkage|
+        content['data']['relationships'].fetch(options[:include]).tap do |linkage|
           %w[meta jsonapi].each do |key|
             linkage[key] = content[key] if content.key?(key)
           end
