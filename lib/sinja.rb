@@ -143,8 +143,10 @@ module Sinja
       end
 
       def content?
-        request.body.respond_to?(:size) && request.body.size > 0 ||
-          request.body.rewind && request.body.read(1)
+        request.body.respond_to?(:size) && request.body.size > 0 || begin
+          request.body.rewind
+          request.body.read(1)
+        end
       end
 
       def data

@@ -7,7 +7,7 @@ class AuthorTest < SequelTest
   include Rack::Test::Methods
 
   def app
-    Sinatra::Application.new
+    Rack::Lint.new(Sinatra::Application.new)
   end
 
   def test_uncoalesced_find_options
