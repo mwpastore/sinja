@@ -778,6 +778,24 @@ end
 
 Please see the [demo-app](/demo-app) for a more complete example.
 
+Finally, because the `role` helper is invoked several times and may return
+different results throughout the request lifecycle, Sinja does not memoize
+(cache the return value keyed by function signature) it. If you have an
+expensive component of your role helper that is not context-dependent, it may
+be worth memoizing yourself:
+
+```ruby
+helpers do
+  def role
+    @roles ||= expensive_role_lookup.freeze
+
+    @roles.dup.tap do |a|
+      a << :foo if bar
+    end
+  end
+end
+```
+
 ### Query Parameters
 
 The {json:api} specification states that any unhandled query parameters should
