@@ -1185,6 +1185,30 @@ The following matrix outlines which combinations of action helpers and
 </tbody>
 </table>
 
+#### Deferring Relationships
+
+If you're side-loading multiple relationships, you may need one applied before
+another (e.g. set the author of a post before setting its tags). You can use
+the built-in `defer` helper to affect the order of operations:
+
+```ruby
+has_one :author do
+  graft do |rio|
+    resource.author = Author.with_pk!(rio[:id].to_i)
+    resource.save_changes
+  end
+end
+
+has_many :tags do
+  replace do |rios|
+    defer unless resource.author # come back to this if the author isn't set yet
+
+    tags = resource.author.preferred_tags
+    # ..
+  end
+end
+```
+
 #### Avoiding Null Foreign Keys
 
 Now, let's say our DBA is forward-thinking and wants to make the foreign key
