@@ -37,12 +37,11 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 2.3.0'
 
-  spec.add_dependency 'activesupport', ">= #{ENV.fetch('rails', '4.2.7.1')}", '< 6'
+  spec.add_dependency 'activesupport', '~> 5.0'
   spec.add_dependency 'json', '>= 1.8.3', '< 3'
   spec.add_dependency 'jsonapi-serializers', '~> 0.16'
-  spec.add_dependency 'mustermann', '>= 1.0.0.beta2', '< 2'
-  spec.add_dependency 'sinatra', ">= #{ENV.fetch('sinatra', '1.4.7')}", '< 3'
-  spec.add_dependency 'sinatra-contrib', ">= #{ENV.fetch('sinatra', '1.4.7')}", '< 3'
+  spec.add_dependency 'sinatra', '>= 2.0.0.beta2', '< 3'
+  spec.add_dependency 'sinatra-contrib', '>= 2.0.0.beta2', '< 3'
 
   spec.add_development_dependency 'bundler', '~> 1.11'
   spec.add_development_dependency 'jdbc-sqlite3', '~> 3.8' if defined?(JRUBY_VERSION)

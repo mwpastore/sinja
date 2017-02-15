@@ -6,9 +6,6 @@ rvm:
   - ruby-head
   - jruby-9.1.7.0
   - jruby-head
-env:
-  - sinatra=1.4.7 rails=4.2.7.1
-  - sinatra=2.0.0.beta2 rails=5.0.1
 jdk:
   - oraclejdk8
 before_install:

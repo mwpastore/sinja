@@ -13,7 +13,7 @@
 [![{json:api} version](https://img.shields.io/badge/%7Bjson%3Aapi%7D%20version-1.0-lightgrey.svg)][7]
 [![Chat in #sinja-rb on Gitter](https://badges.gitter.im/sinja-rb/Lobby.svg)](https://gitter.im/sinja-rb/Lobby)
 
-Sinja is a [Sinatra][1] [extension][10] for quickly building [RESTful][11],
+Sinja is a [Sinatra 2.0][1] [extension][10] for quickly building [RESTful][11],
 [{json:api}][2]-compliant web services, leveraging the excellent
 [JSONAPI::Serializers][3] gem for payload serialization. It enhances Sinatra's
 DSL to enable resource-, relationship-, and role-centric API development, and
@@ -155,6 +155,9 @@ Or install it yourself as:
 ```sh
 $ gem install sinja
 ```
+
+Sinja is not compatible with Sinatra 1.x due to its limitations with nested
+regexp-style namespaces and routes.
 
 ## Ol' Blue Eyes is Back
 
@@ -1537,7 +1540,7 @@ logic.
 | Feature         | JR                               | Sinja                                             |
 | :-------------- | :------------------------------- | :------------------------------------------------ |
 | Serializer      | Built-in                         | [JSONAPI::Serializers][3]                         |
-| Framework       | Rails                            | Sinatra, but easy to mount within others          |
+| Framework       | Rails                            | Sinatra 2.0, but easy to mount within others      |
 | Routing         | ActionDispatch::Routing          | Mustermann                                        |
 | Caching         | ActiveSupport::Cache             | BYO                                               |
 | ORM             | ActiveRecord/ActiveModel         | BYO                                               |

@@ -2,7 +2,6 @@
 require 'set'
 
 require 'active_support/inflector'
-require 'mustermann'
 require 'sinatra/base'
 require 'sinatra/namespace'
 
@@ -22,7 +21,6 @@ module Sinja
     .to_h.freeze
 
   def self.registered(app)
-    app.register Mustermann if Sinatra::VERSION[/^\d+/].to_i < 2
     app.register Sinatra::Namespace
 
     app.disable :protection, :show_exceptions, :static
@@ -102,9 +100,9 @@ module Sinja
           end
         end
 
-        # Sinatra 2.0 re-initializes `params' at namespace boundaries, but
-        # Sinatra 1.4 does not, so we'll reference its object_id in the flag
-        # to make sure we only re-normalize the parameters when necessary.
+        # Sinatra re-initializes `params' at namespace boundaries, so we'll
+        # reference its object_id in the flag to make sure we only re-normalize
+        # the parameters when necessary.
         env['sinja.normalized'] = params.object_id
       end
     end
