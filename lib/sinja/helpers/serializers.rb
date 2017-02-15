@@ -36,7 +36,12 @@ module Sinja
       end
 
       def serialize_response_body
-        JSON.send settings._sinja.json_generator, response.body
+        case response.content_type[/^[^;]+/]
+        when *[mime_type(:api_json), mime_type(:json), mime_type(:javascript)].freeze
+          JSON.send(settings._sinja.json_generator, response.body)
+        else
+          Array(response.body).map!(&:to_s)
+        end
       rescue JSON::GeneratorError
         raise BadRequestError, 'Unserializable entities in the response body'
       end
