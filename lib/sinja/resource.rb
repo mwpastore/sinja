@@ -89,7 +89,7 @@ module Sinja
 
         config = _resource_config[rel_type][rel] # trigger default proc
 
-        namespace %r{/[^/]+(?<r>/relationships)?/#{rel}} do
+        namespace %r{/#{_resource_config[:route_opts][:pkre]}(?<r>/relationships)?/#{rel}} do
           define_singleton_method(:resource_config) { config }
 
           helpers Helpers::Nested do

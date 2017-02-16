@@ -83,6 +83,7 @@ module Sinja
       }}.curry
 
       @resource_config = Hash.new { |h, k| h[k] = {
+        :route_opts=>{ :pkre=>/\d+/ },
         :resource=>Hash.new(&action_proc[:resource]),
         :has_many=>Hash.new { |rh, rk| rh[rk] = Hash.new(&action_proc[:has_many]) },
         :has_one=>Hash.new { |rh, rk| rh[rk] = Hash.new(&action_proc[:has_one]) }

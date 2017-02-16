@@ -82,17 +82,19 @@ module Sinja
         end
       end
 
-      app.options '/:id' do
+      pkre = app._resource_config[:route_opts][:pkre]
+
+      app.options %r{/#{pkre}} do
         allow :get=>:show, :patch=>:update, :delete=>:destroy
       end
 
-      app.get '/:id', :qparams=>%i[include fields], :actions=>:show do |id|
+      app.get %r{/(#{pkre})}, :qparams=>%i[include fields], :actions=>:show do |id|
         tmp, opts = show(*[].tap { |a| a << id unless respond_to?(:find) })
         raise NotFoundError, "Resource '#{id}' not found" unless tmp
         serialize_model(tmp, opts)
       end
 
-      app.patch '/:id', :qparams=>%i[include fields], :actions=>:update do |id|
+      app.patch %r{/(#{pkre})}, :qparams=>%i[include fields], :actions=>:update do |id|
         sanity_check!(id)
         tmp, opts = transaction do
           update(attributes).tap do
@@ -103,7 +105,7 @@ module Sinja
         serialize_model?(tmp, opts)
       end
 
-      app.delete '/:id', :actions=>:destroy do |id|
+      app.delete %r{/#{pkre}}, :actions=>:destroy do
         _, opts = destroy
         serialize_model?(nil, opts)
       end

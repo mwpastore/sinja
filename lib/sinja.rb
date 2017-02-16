@@ -311,7 +311,7 @@ module Sinja
     end
   end
 
-  def resource(resource_name, konst=nil, &block)
+  def resource(resource_name, konst=nil, **opts, &block)
     abort "Must supply proc constant or block for `resource'" \
       unless block = (konst if konst.instance_of?(Proc)) || block
 
@@ -326,7 +326,10 @@ module Sinja
     # trigger default procs
     config = _sinja.resource_config[resource_name]
 
-    namespace "/#{resource_name}" do
+    # incorporate route options
+    config[:route_opts].merge!(opts)
+
+    namespace %r{/#{resource_name}} do
       define_singleton_method(:_resource_config) { config }
       define_singleton_method(:resource_config) { config[:resource] }
 
@@ -336,12 +339,14 @@ module Sinja
         end
       end
 
-      before %r{/(?<id>[^/]+)(?:/.+)?} do |id|
+      before %r{/(#{config[:route_opts][:pkre]})(?:/.*)?} do |id|
         self.resource =
           if env.key?('sinja.resource')
             env['sinja.resource']
           elsif respond_to?(:find)
             find(id)
+          else
+            raise SinjaError, 'Resource locator not defined!'
           end
 
         raise NotFoundError, "Resource '#{id}' not found" unless resource

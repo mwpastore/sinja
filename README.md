@@ -344,6 +344,36 @@ FooError` and `c.serializer_opts[:meta] = { foo: 'bar' }`) until you call
 `freeze_jsonapi` to freeze the configuration store. **You should always freeze
 the store after Sinja is configured and all your resources are defined.**
 
+### Resources
+
+Resources declared with the `resource` keyword (and relationships declared with
+the `has_many` and `has_one` keywords) are dasherized and pluralized to match
+the "type" property of JSONAPI::Serializers. For example, `resource :foo_bar`
+would instruct Sinja to draw the appropriate routes under `/foo-bars`. Your
+serializer type(s) should always match your resource (and relationship) names;
+see the relevant [documentation][33] for more information.
+
+The primary key portion of the route is extracted using a regular expression,
+`\d+` by default. To use a different pattern, pass the `:pkre` resource route
+option:
+
+```ruby
+resource :foo_bar, pkre: /\d+-\d+/ do
+  helpers do
+    def find(id)
+      # Look up a FooBar with a composite primary key of two integers.
+      FooBar[id.split('-', 2).map!(&:to_i)]
+    end
+  end
+
+  # ..
+end
+```
+
+This helps Sinja (and Sinatra) disambiguate between standard {json:api} routes
+used to fetch resources (e.g. `GET /foos/1`) and similarly-structured custom
+routes (e.g. `GET /foos/recent`).
+
 ### Resource Locators
 
 Much of Sinja's advanced functionality (e.g. updating and destroying resources,
@@ -1617,3 +1647,4 @@ License](http://opensource.org/licenses/MIT).
 [30]: https://github.com/mwpastore/sinja-sequel
 [31]: http://jsonapi.org/implementations/#server-libraries-ruby
 [32]: http://emberjs.com
+[33]: https://github.com/fotinakis/jsonapi-serializers#more-customizations
