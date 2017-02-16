@@ -329,7 +329,7 @@ module Sinja
     # incorporate route options
     config[:route_opts].merge!(opts)
 
-    namespace %r{/#{resource_name}} do
+    namespace %r{/#{resource_name}(?![^/])} do
       define_singleton_method(:_resource_config) { config }
       define_singleton_method(:resource_config) { config[:resource] }
 
