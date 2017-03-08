@@ -10,7 +10,9 @@ require_relative 'classes/comment'
 require_relative 'classes/post'
 require_relative 'classes/tag'
 
-# Freeze database after creating tables and loading models
+Sequel::Model.finalize_associations
+Sequel::Model.freeze
+
 DB.freeze
 
 configure :development do

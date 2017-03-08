@@ -64,7 +64,7 @@ PostController = proc do
   end
 
   show_many do |slugs|
-    next Post.where(slug: slugs.map!(&:to_s)).all, include: %i[author tags]
+    next Post.where_all(slug: slugs.map!(&:to_s)), include: %i[author tags]
   end
 
   index do

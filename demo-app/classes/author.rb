@@ -55,7 +55,7 @@ AuthorController = proc do
   show
 
   show_many do |ids|
-    Author.where(id: ids.map!(&:to_i)).all
+    Author.where_all(id: ids.map!(&:to_i))
   end
 
   index do
