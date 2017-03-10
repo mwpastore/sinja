@@ -36,7 +36,7 @@ end
 
 resource :authors, &AuthorController
 resource :comments, &CommentController
-resource :posts, :pkre=>/[\w-]+/, &PostController
+resource :posts, pkre: /[\w-]+/, &PostController
 resource :tags, &TagController
 
 freeze_jsonapi
