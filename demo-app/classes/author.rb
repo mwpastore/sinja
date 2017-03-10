@@ -44,7 +44,7 @@ AuthorController = proc do
     alias before_update before_create
 
     def find(id)
-      Author[id.to_i]
+      Author.with_pk(id.to_i)
     end
 
     def role

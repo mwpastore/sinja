@@ -29,7 +29,7 @@ end
 TagController = proc do
   helpers do
     def find(id)
-      Tag[id.to_i]
+      Tag.with_pk(id.to_i)
     end
   end
 

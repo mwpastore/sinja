@@ -34,7 +34,7 @@ end
 CommentController = proc do
   helpers do
     def find(id)
-      Comment[id.to_i]
+      Comment.with_pk(id.to_i)
     end
 
     def role

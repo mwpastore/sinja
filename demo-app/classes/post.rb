@@ -47,7 +47,7 @@ end
 PostController = proc do
   helpers do
     def find(slug)
-      Post[slug.to_s]
+      Post.with_pk(slug.to_s)
     end
 
     def role
