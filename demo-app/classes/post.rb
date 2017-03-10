@@ -14,6 +14,8 @@ class Post < Sequel::Model
   plugin :timestamps
   plugin :update_primary_key
 
+  set_allowed_columns :slug, :title, :body
+
   unrestrict_primary_key # allow client-generated slugs
 
   # jdbc-sqlite3 reports unexpected record counts with cascading updates, which
@@ -53,10 +55,6 @@ PostController = proc do
         a << :owner if resource&.author == current_user
       end
     end
-
-    def settable_fields
-      %i[slug title body]
-    end
   end
 
   show do
@@ -72,14 +70,16 @@ PostController = proc do
   end
 
   create(roles: :logged_in) do |attr, slug|
-    post = Post.new
-    post.set_fields(attr.merge(slug: slug), settable_fields)
+    attr[:slug] = slug
+
+    post = Post.new(attr)
     post.save(validate: false)
     next_pk post
   end
 
   update(roles: %i[owner superuser]) do |attr|
-    resource.update_fields(attr, settable_fields, validate: false, missing: :skip)
+    resource.set(attr)
+    resource.save_changes(validate: false)
   end
 
   destroy(roles: %i[owner superuser]) do

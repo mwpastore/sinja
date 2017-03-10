@@ -129,7 +129,7 @@ class PostTest < SequelTest
     post '/tags', JSON.generate(:data=>{
       :type=>'tags', :attributes=>{ :name=>'sassafrass', :banana=>'apple' }
     })
-    assert_ok
+    assert_error 500
   end
 
   def test_create_with_restricted_fields
@@ -137,6 +137,6 @@ class PostTest < SequelTest
     post '/tags', JSON.generate(:data=>{
       :type=>'tags', :attributes=>{ :name=>'sassafrass', :id=>42 }
     })
-    assert_ok
+    assert_error 500
   end
 end

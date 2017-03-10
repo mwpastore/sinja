@@ -13,6 +13,8 @@ end
 class Comment < Sequel::Model
   plugin :timestamps
 
+  set_allowed_columns :body
+
   many_to_one :author
   many_to_one :post
 
@@ -40,10 +42,6 @@ CommentController = proc do
         a << :owner if resource&.author == current_user
       end
     end
-
-    def settable_fields
-      %i[body]
-    end
   end
 
   show do
@@ -51,14 +49,14 @@ CommentController = proc do
   end
 
   create(roles: :logged_in) do |attr|
-    comment = Comment.new
-    comment.set_fields(attr, settable_fields)
+    comment = Comment.new(attr)
     comment.save(validate: false)
     next_pk comment
   end
 
   update(roles: %i[owner superuser]) do |attr|
-    resource.update_fields(attr, settable_fields, validate: false, missing: :skip)
+    resource.set(attr)
+    resource.save_changes(validate: false)
   end
 
   destroy(roles: %i[owner superuser]) do

@@ -112,7 +112,6 @@ class AuthorTest < SequelTest
     id = register 'foo@example.com', 'Foo Bar'
     login 'foo@example.com'
     patch "/authors/#{id}", JSON.generate(:data=>{ :type=>'authors', :id=>id, :attributes=>{
-      :admin=>true,
       'real-name'=>'Bar Qux Foo',
       'display-name'=>'Bar Qux'
     }})
@@ -125,6 +124,15 @@ class AuthorTest < SequelTest
     assert_equal 'Bar Qux Foo', author[:real_name]
     assert_equal 'foo@example.com', author[:email]
     refute author[:admin]
+  end
+
+  def test_superuser_update_failure
+    id = register 'foo@example.com', 'Foo Bar'
+    login 'foo@example.com'
+    patch "/authors/#{id}", JSON.generate(:data=>{ :type=>'authors', :id=>id, :attributes=>{
+      :admin=>true
+    }})
+    assert_error 403
   end
 
   def test_superuser_update

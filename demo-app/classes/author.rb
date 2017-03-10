@@ -15,6 +15,8 @@ class Author < Sequel::Model
   plugin :boolean_readers
   plugin :timestamps
 
+  set_allowed_columns :email, :real_name, :display_name, :admin
+
   finder def self.by_email(arg)
     where(email: arg)
   end
@@ -35,6 +37,12 @@ end
 
 AuthorController = proc do
   helpers do
+    def before_create(attr)
+      halt 403, 'Only admins can admin admins' if attr.key?(:admin) && !role?(:superuser)
+    end
+
+    alias before_update before_create
+
     def find(id)
       Author[id.to_i]
     end
@@ -42,12 +50,6 @@ AuthorController = proc do
     def role
       Array(super).tap do |a|
         a << :myself if resource == current_user
-      end
-    end
-
-    def settable_fields
-      %i[email real_name display_name].tap do |a|
-        a << :admin if role?(:superuser)
       end
     end
   end
@@ -63,13 +65,14 @@ AuthorController = proc do
   end
 
   create do |attr|
-    author = Author.new
-    author.set_fields(attr, settable_fields)
-    next_pk author.save(validate: false)
+    author = Author.new(attr)
+    author.save(validate: false)
+    next_pk author
   end
 
   update(roles: %i[myself superuser]) do |attr|
-    resource.update_fields(attr, settable_fields, validate: false, missing: :skip)
+    resource.set(attr)
+    resource.save_changes(validate: false)
   end
 
   destroy(roles: %i[myself superuser]) do

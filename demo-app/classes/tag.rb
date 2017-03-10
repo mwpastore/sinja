@@ -15,6 +15,8 @@ DB.create_table?(:posts_tags) do
 end
 
 class Tag < Sequel::Model
+  set_allowed_columns :name
+
   many_to_many :posts, right_key: :post_slug
 end
 
@@ -29,10 +31,6 @@ TagController = proc do
     def find(id)
       Tag[id.to_i]
     end
-
-    def settable_fields
-      %i[name]
-    end
   end
 
   show
@@ -42,8 +40,7 @@ TagController = proc do
   end
 
   create(roles: :logged_in) do |attr|
-    tag = Tag.new
-    tag.set_fields(attr, settable_fields)
+    tag = Tag.new(attr)
     tag.save(validate: false)
     next_pk tag
   end
