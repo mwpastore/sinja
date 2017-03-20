@@ -37,7 +37,7 @@ module Sinja
 
       def serialize_response_body
         case response.content_type[/^[^;]+/]
-        when *[mime_type(:api_json), mime_type(:json), mime_type(:javascript)].freeze
+        when /json$/, /javascript$/
           JSON.send(settings._sinja.json_generator, response.body)
         else
           Array(response.body).map!(&:to_s)

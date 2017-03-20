@@ -13,6 +13,13 @@ require 'sinja/resource_routes'
 
 module Sinja
   module Resource
+    ARITIES = {
+      :create=>2,
+      :index=>-1,
+      :fetch=>-1,
+      :show_many=>-1
+    }.tap { |h| h.default = 1 }.freeze
+
     def self.registered(app)
       app.helpers Helpers::Relationships do
         attr_accessor :resource
@@ -39,13 +46,7 @@ module Sinja
             proc { resource } if method_defined?(:find)
           end
 
-        # TODO: Move this to a constant or configurable?
-        required_arity = {
-          :create=>2,
-          :index=>-1,
-          :fetch=>-1,
-          :show_many=>-1
-        }.freeze[action] || 1
+        required_arity = ARITIES[action]
 
         define_method(action) do |*args|
           raise ArgumentError, "Unexpected argument(s) for `#{action}' action helper" \
