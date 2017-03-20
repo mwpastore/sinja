@@ -217,23 +217,37 @@ module Sinja
 
         abody = Array(body)
         error_hashes =
-          if abody.any?
-            if abody.all? { |error| error.is_a?(Hash) }
-              # `halt' with a hash or array of hashes
-              abody.flat_map(&method(:error_hash))
-            elsif not_found?
-              # `not_found' or `halt 404'
-              message = abody.first.to_s
-              error_hash \
-                :title=>'Not Found Error',
-                :detail=>(message unless message == '<h1>Not Found</h1>')
-            else
-              # `halt'
-              error_hash \
-                :title=>'Unknown Error',
-                :detail=>abody.first.to_s
+          if abody.all? { |error| error.is_a?(Hash) }
+            # `halt' with a hash or array of hashes
+            abody.flat_map(&method(:error_hash))
+          elsif not_found?
+            # `not_found' or `halt 404'
+            message = abody.first.to_s
+            error_hash \
+              :title=>'Not Found Error',
+              :detail=>(message unless message == '<h1>Not Found</h1>')
+          elsif abody.all? { |error| error.is_a?(String) }
+            # Try to repackage a JSON-encoded middleware error
+            begin
+              abody.flat_map do |error|
+                miderr = JSON.parse(error, :symbolize_names=>true)
+                error_hash \
+                  :title=>'Middleware Error',
+                  :detail=>(miderr.key?(:error) ? miderr[:error] : error)
+              end
+            rescue JSON::ParserError
+              abody.flat_map do |error|
+                error_hash \
+                  :title=>'Middleware Error',
+                  :detail=>error
+              end
             end
-          end
+          else
+            # `halt'
+            error_hash \
+              :title=>'Unknown Error(s)',
+              :detail=>abody.to_s
+          end unless abody.empty?
 
         # Exception already contains formatted errors
         error_hashes ||= env['sinatra.error'].error_hashes \
