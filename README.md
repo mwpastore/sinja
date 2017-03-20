@@ -118,8 +118,8 @@ all other {json:api} endpoints returning 404 or 405):
 The resource locator and other action helpers, documented below, enable other
 endpoints.
 
-Of course, "modular"-style Sinatra aplications require you to register the
-extension:
+Of course, "modular"-style Sinatra aplications (subclassing Sinatra::Base)
+require you to register the extension:
 
 ```ruby
 require 'sinatra/base'
@@ -265,13 +265,13 @@ end
 
 You'll need a database schema and models (using the engine and ORM of your
 choice) and [serializers][3] to get started. Create a new Sinatra application
-(classic or modular) to hold all your {json:api} controllers and (if modular)
-register this extension. Instead of defining routes with `get`, `post`, etc. as
-you normally would, define `resource` blocks with action helpers and `has_one`
-and `has_many` relationship blocks (with their own action helpers). Sinja will
-draw and enable the appropriate routes based on the defined resources,
-relationships, and action helpers. Other routes will return the appropriate
-HTTP statuses: 403, 404, or 405.
+(classic or modular) to hold all your {json:api} controllers and (if
+subclassing Sinatra::Base) register this extension. Instead of defining routes
+with `get`, `post`, etc. as you normally would, define `resource` blocks with
+action helpers and `has_one` and `has_many` relationship blocks (with their own
+action helpers). Sinja will draw and enable the appropriate routes based on the
+defined resources, relationships, and action helpers. Other routes will return
+the appropriate HTTP statuses: 403, 404, or 405.
 
 ### Configuration
 

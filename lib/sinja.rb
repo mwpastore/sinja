@@ -21,6 +21,9 @@ module Sinja
     .to_h.freeze
 
   def self.registered(app)
+    abort "Sinatra::JSONAPI (Sinja) is already registered on #{app}!" \
+      if app.respond_to?(:_sinja)
+
     app.register Sinatra::Namespace
 
     app.disable :protection, :show_exceptions, :static
