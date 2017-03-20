@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby -s
+# frozen_string_literal: true
+
+require 'json'
+require 'net/http'
+require 'pp'
+require 'securerandom'
+require 'uri'
+
+abort "usage: $0 -count=<count> -url=<url>" \
+  unless $count && $url
+
+uri = URI($url)
+http = Net::HTTP.new(uri.host, uri.port)
+request = Net::HTTP::Post.new(uri.request_uri)
+request.initialize_http_header(
+  'Accept'=>'application/vnd.api+json',
+  'Content-Type'=>'application/vnd.api+json',
+  'X-Email'=>'all@yourbase.com'
+)
+
+Array.new(Integer($count)) {{
+  data: {
+    type: :posts,
+    id: SecureRandom.urlsafe_base64,
+    attributes: {
+      title: SecureRandom.base64(32),
+      body: SecureRandom.base64(500)
+    },
+    relationships: {
+      author: {
+        data: {
+          id: 1
+        }
+      }
+    }
+  }
+}}.each do |post|
+  request.body = JSON.generate(post)
+  response = http.request(request)
+
+  if response.code.to_i != 201
+    pp JSON.parse(response.body)
+    abort
+  end
+end

@@ -15,7 +15,7 @@ Sequel::Model.freeze
 
 DB.freeze
 
-configure :development do
+configure :development, :test do
   set :server_settings, AccessLog: [] # avoid WEBrick double-logging issue
 end
 
