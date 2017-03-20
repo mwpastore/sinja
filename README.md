@@ -373,8 +373,8 @@ end
 ```
 
 This helps Sinja (and Sinatra) disambiguate between standard {json:api} routes
-used to fetch resources (e.g. `GET /foos/1`) and similarly-structured custom
-routes (e.g. `GET /foos/recent`).
+used to fetch resources (e.g. `GET /foo-bars/1`) and similarly-structured
+custom routes (e.g. `GET /foo-bars/recent`).
 
 ### Resource Locators
 
@@ -420,7 +420,7 @@ end
   `pluck` and `fetch`.
 
 * What happens if I define an action helper that requires a resource locator,
-  but no resource locator?
+  but don't define a resource locator?
 
   Sinja will act as if you had not defined the action helper.
 
@@ -468,9 +468,9 @@ Action helpers should be defined within the appropriate block contexts
 (`resource`, `has_one`, or `has_many`) using the given keywords and arguments
 below. Implicitly return the expected values as described below (as an array if
 necessary) or use the `next` keyword (instead of `return` or `break`) to exit
-the action helper. Return values marked with a question mark below may be
-omitted entirely. Any helper may additionally return an options hash to pass
-along to JSONAPI::Serializer.serialize (which will be merged into the global
+the action helper. Return values with a question mark below may be omitted
+entirely. Any helper may additionally return an options hash to pass along to
+JSONAPI::Serializer.serialize (which will be merged into the global
 `serializer_opts` described above). The `:include` (see "Side-Unloading Related
 Resources" below) and `:fields` (for sparse fieldsets) query parameters are
 automatically passed through to JSONAPI::Serializers.
@@ -483,9 +483,7 @@ Finally, some routes will automatically invoke the resource locator on your
 behalf and make the selected resource available to the corresponding action
 helper(s) as `resource`. For example, the `PATCH /<name>/:id` route looks up
 the resource with that ID using the `find` resource locator and makes it
-available to the `update` action helper as `resource`. The same goes for the
-`DELETE /<name>/:id` route and the `destroy` action helper, and all of the
-`has_one` and `has_many` action helpers.
+available to the `update` action helper as `resource`.
 
 #### `resource`
 
@@ -1228,14 +1226,14 @@ the built-in `defer` helper to affect the order of operations:
 
 ```ruby
 has_one :author do
-  graft do |rio|
+  graft(sideload_on: :create) do |rio|
     resource.author = Author.with_pk!(rio[:id].to_i)
     resource.save_changes
   end
 end
 
 has_many :tags do
-  replace do |rios|
+  merge(sideload_on: :create) do |rios|
     defer unless resource.author # come back to this if the author isn't set yet
 
     tags = resource.author.preferred_tags
@@ -1359,7 +1357,7 @@ access to `show`. This feature is experimental.
 Collections assembled during coalesced find requests will not be filtered,
 sorted, or paged. The easiest way to limit the number of records that can be
 queried is to define a `show_many` action helper and validate the length of the
-passed array in the `before_show_many` hook:
+passed array in the `before_show_many` hook. For example, using [Sequel][13]:
 
 ```ruby
 resource :foos do
@@ -1370,7 +1368,7 @@ resource :foos do
   end
 
   show_many do |ids|
-    # ..
+    Foo.where_all(id: ids.map!(&:to_i))
   end
 end
 ```
