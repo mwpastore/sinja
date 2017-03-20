@@ -110,9 +110,7 @@ module Sinja
       end
     end
 
-    app.set :nullif do |nullish|
-      condition { nullish.(data) }
-    end
+    app.set(:on) { |block| condition(&block) }
 
     app.mime_type :api_json, MIME_TYPE
 

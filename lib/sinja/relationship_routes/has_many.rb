@@ -17,9 +17,7 @@ module Sinja
           end
         end
 
-        app.get '', :actions=>:show do
-          pass unless relationship_link?
-
+        app.get '', :on=>proc { relationship_link? }, :actions=>:show do
           serialize_linkage
         end
 
@@ -30,7 +28,7 @@ module Sinja
           serialize_models(collection, opts, pagination)
         end
 
-        app.patch '', :nullif=>proc(&:empty?), :actions=>:clear do
+        app.patch '', :on=>proc { data.empty? }, :actions=>:clear do
           serialize_linkages?(*clear)
         end
 

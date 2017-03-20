@@ -15,9 +15,7 @@ module Sinja
           end
         end
 
-        app.get '', :actions=>:show do
-          pass unless relationship_link?
-
+        app.get '', :on=>proc { relationship_link? }, :actions=>:show do
           serialize_linkage
         end
 
@@ -25,7 +23,7 @@ module Sinja
           serialize_model(*pluck)
         end
 
-        app.patch '', :nullif=>proc(&:nil?), :actions=>:prune do
+        app.patch '', :on=>proc { data.nil? }, :actions=>:prune do
           serialize_linkage?(*prune)
         end
 
