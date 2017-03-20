@@ -49,7 +49,7 @@ AuthorController = proc do
 
     def role
       Array(super).tap do |a|
-        a << :myself if resource == current_user
+        a << :self if resource == current_user
       end
     end
   end
@@ -70,12 +70,12 @@ AuthorController = proc do
     next_pk author
   end
 
-  update(roles: %i[myself superuser]) do |attr|
+  update(roles: %i[self superuser]) do |attr|
     resource.set(attr)
     resource.save_changes(validate: false)
   end
 
-  destroy(roles: %i[myself superuser]) do
+  destroy(roles: %i[self superuser]) do
     resource.destroy
   end
 

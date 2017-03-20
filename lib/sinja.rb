@@ -17,7 +17,7 @@ module Sinja
   ERROR_CODES = ObjectSpace.each_object(Class).to_a
     .keep_if { |klass| klass < HttpError }
     .map! { |c| [(c.const_get(:HTTP_STATUS) rescue nil), c] }
-    .delete_if { |a| a.first.nil? }
+    .delete_if { |s, _| s.nil? }
     .to_h.freeze
 
   def self.registered(app)
