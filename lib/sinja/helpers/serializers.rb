@@ -99,7 +99,6 @@ module Sinja
 
       def serialize_model(model=nil, options={})
         options[:is_collection] = false
-        options[:skip_collection_check] = defined?(::Sequel) && model.is_a?(::Sequel::Model)
         options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
         options = settings._sinja.serializer_opts.merge(options)
@@ -174,7 +173,6 @@ module Sinja
 
       def serialize_linkage(model, rel, options={})
         options[:is_collection] = false
-        options[:skip_collection_check] = defined?(::Sequel::Model) && model.is_a?(::Sequel::Model)
         options = settings._sinja.serializer_opts.merge(options)
 
         options[:serializer] ||= ::JSONAPI::Serializer.find_serializer_class(model, options)
