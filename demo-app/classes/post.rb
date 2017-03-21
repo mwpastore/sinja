@@ -3,7 +3,7 @@ require_relative 'base'
 
 DB.create_table?(:posts) do
   String :slug, primary_key: true
-  foreign_key :author_id, :authors, on_delete: :cascade
+  foreign_key :author_id, :authors, index: true, on_delete: :cascade
   String :title, null: false
   String :body, text: true, null: false
   Float :created_at

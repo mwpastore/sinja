@@ -3,6 +3,7 @@
 set -eou pipefail
 
 port=3333
+posts=100
 
 echo "Starting Rack..."
 pushd ../demo-app
@@ -19,9 +20,9 @@ trap cleanup EXIT
 
 sleep 15
 echo "Generating Posts..."
-./generate-posts -count=100 -url="http://0.0.0.0:$port/posts"
+./generate-posts -count=$posts -url="http://0.0.0.0:$port/posts"
 echo "Done."
 
 sleep 15
 ab -n 10000 -c 1 -k -H 'Accept: application/vnd.api+json' \
-  "http://0.0.0.0:$port/authors/1/posts?page[size]=5&page[number]=3&page[record-count]=15&include=tags"
+  "http://0.0.0.0:$port/authors/1/posts?page[size]=5&page[number]=3&page[record-count]=$posts&include=tags"
