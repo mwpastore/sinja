@@ -6,8 +6,8 @@ DB.create_table?(:comments) do
   foreign_key :author_id, :authors, on_delete: :cascade
   foreign_key :post_slug, :posts, type: String, on_delete: :cascade, on_update: :cascade
   String :body, text: true, null: false
-  DateTime :created_at
-  DateTime :updated_at
+  Float :created_at
+  Float :updated_at
 end
 
 class Comment < Sequel::Model

@@ -19,8 +19,8 @@ request.initialize_http_header(
   'X-Email'=>'all@yourbase.com'
 )
 
-Array.new(Integer($count)) {{
-  data: {
+Array.new(Integer($count)) do
+  request.body = JSON.generate(data: {
     type: :posts,
     id: SecureRandom.urlsafe_base64,
     attributes: {
@@ -34,9 +34,8 @@ Array.new(Integer($count)) {{
         }
       }
     }
-  }
-}}.each do |post|
-  request.body = JSON.generate(post)
+  })
+
   response = http.request(request)
 
   if response.code.to_i != 201

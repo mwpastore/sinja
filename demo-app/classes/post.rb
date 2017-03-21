@@ -6,8 +6,8 @@ DB.create_table?(:posts) do
   foreign_key :author_id, :authors, on_delete: :cascade
   String :title, null: false
   String :body, text: true, null: false
-  DateTime :created_at
-  DateTime :updated_at
+  Float :created_at
+  Float :updated_at
 end
 
 class Post < Sequel::Model

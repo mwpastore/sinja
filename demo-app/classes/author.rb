@@ -7,8 +7,8 @@ DB.create_table?(:authors) do
   String :real_name
   String :display_name
   TrueClass :admin, default: false
-  DateTime :created_at
-  DateTime :updated_at
+  Float :created_at
+  Float :updated_at
 end
 
 class Author < Sequel::Model
