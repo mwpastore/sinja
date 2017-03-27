@@ -10,8 +10,10 @@ require_relative 'classes/comment'
 require_relative 'classes/post'
 require_relative 'classes/tag'
 
-Sequel::Model.finalize_associations
-Sequel::Model.freeze
+[Author, Comment, Post, Tag].tap do |model_classes|
+  model_classes.each(&:finalize_associations)
+  model_classes.each(&:freeze)
+end
 
 DB.freeze
 
