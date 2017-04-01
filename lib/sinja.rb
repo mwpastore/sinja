@@ -171,9 +171,9 @@ module Sinja
       def filter_by?(action)
         return if params[:filter].empty?
 
-        return params[:filter] \
-          if settings.resource_config[action][:filter_by].empty? ||
-            params[:filter].keys.to_set.subset?(settings.resource_config[action][:filter_by])
+        filter = params[:filter].map { |k, v| [k.to_sym, v] }.to_h
+        filter_by = settings.resource_config[action][:filter_by]
+        return filter if filter_by.empty? || filter_by.superset?(filter.keys.to_set)
 
         raise BadRequestError, "Invalid `filter' query parameter(s)"
       end
@@ -193,9 +193,9 @@ module Sinja
       def sort_by?(action)
         return if params[:sort].empty?
 
-        return params[:sort] \
-          if settings.resource_config[action][:sort_by].empty? ||
-            params[:sort].keys.to_set.subset?(settings.resource_config[action][:sort_by])
+        sort = params[:sort].map { |k, v| [k.to_sym, v] }.to_h
+        sort_by = settings.resource_config[action][:sort_by]
+        return sort if sort_by.empty? || sort_by.superset?(sort.keys.to_set)
 
         raise BadRequestError, "Invalid `sort' query parameter(s)"
       end
@@ -214,8 +214,8 @@ module Sinja
       def page_using?
         return if params[:page].empty?
 
-        return params[:page] \
-          if (params[:page].keys - settings._sinja.page_using.keys).empty?
+        page = params[:page].map { |k, v| [k.to_sym, v] }.to_h
+        return page if (page.keys - settings._sinja.page_using.keys).empty?
 
         raise BadRequestError, "Invalid `page' query parameter(s)"
       end
