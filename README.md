@@ -674,8 +674,12 @@ read-only action helpers), but only administrators have access to `create`,
 `update`, etc. (the read-write action helpers). You can have as many roles as
 you'd like, e.g. a super-administrator role to restrict access to `destroy`.
 Users can be in one or more roles, and action helpers can be restricted to one
-or more roles for maximum flexibility. There are three main components to the
-scheme:
+or more roles for maximum flexibility.
+
+The scheme is 100% opt-in. If you prefer to use [Pundit][34] or some other gem
+to handle authorization, go nuts!
+
+There are three main components to Sinja's built-in scheme:
 
 #### `default_roles` configurables
 
@@ -1648,3 +1652,4 @@ License](http://opensource.org/licenses/MIT).
 [31]: http://jsonapi.org/implementations/#server-libraries-ruby
 [32]: http://emberjs.com
 [33]: https://github.com/fotinakis/jsonapi-serializers#more-customizations
+[34]: https://github.com/elabs/pundit
