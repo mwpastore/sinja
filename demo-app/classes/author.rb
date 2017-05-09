@@ -13,6 +13,7 @@ end
 
 class Author < Sequel::Model
   plugin :boolean_readers
+  plugin :finder
   plugin :timestamps
 
   set_allowed_columns :email, :real_name, :display_name, :admin

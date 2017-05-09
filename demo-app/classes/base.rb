@@ -8,3 +8,4 @@ end
 
 Sequel::Model.plugin :tactical_eager_loading
 Sequel::Model.plugin :validation_helpers
+Sequel::Model.plugin :whitelist_security
