@@ -24,6 +24,12 @@ class DemoAppTest1 < Minitest::Test
     assert_error 406
   end
 
+  def test_it_ignores_accept_header
+    header 'Accept', '*/*'
+    options '/'
+    assert_error 404
+  end
+
   def test_it_fails_content_type_header
     header 'Content-Type', 'application/json'
     post '/comments', JSON.generate(:data=>{ :type=>'comments' })

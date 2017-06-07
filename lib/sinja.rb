@@ -273,7 +273,7 @@ module Sinja
 
     app.before do
       unless sideloaded?
-        raise NotAcceptableError unless request.preferred_type.entry == MIME_TYPE
+        raise NotAcceptableError unless request.preferred_type.entry == MIME_TYPE || request.options?
         raise UnsupportedTypeError if content? && (
           request.media_type != MIME_TYPE || request.media_type_params.keys.any? { |k| k != 'charset' }
         )
