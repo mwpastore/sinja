@@ -1,8 +1,8 @@
 sudo: false
 language: ruby
 rvm:
-  - 2.3.3
-  - 2.4.0
+  - 2.3.4
+  - 2.4.1
   - ruby-head
   - jruby-9.1.7.0
   - jruby-head
