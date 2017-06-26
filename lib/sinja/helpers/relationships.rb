@@ -5,9 +5,10 @@ module Sinja
   module Helpers
     module Relationships
       def dispatch_relationship_request(id, path, **opts)
-        path_info = request.path.dup
-        path_info << "/#{id}" unless request.path.end_with?("/#{id}")
+        path_info = request.path_info.dup
+        path_info << "/#{id}" unless path_info.end_with?("/#{id}")
         path_info << "/relationships/#{path}"
+        path_info.freeze
 
         fakenv = env.merge 'PATH_INFO'=>path_info
         fakenv['REQUEST_METHOD'] = opts[:method].to_s.tap(&:upcase!) if opts[:method]
