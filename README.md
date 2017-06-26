@@ -100,7 +100,8 @@ resource :posts do
   end
 
   create do |attr|
-    Post.create(attr)
+    post = Post.create(attr)
+    next post.id, post
   end
 end
 
@@ -1300,6 +1301,7 @@ resource :photos do
     photo = Photo.new
     photo.set(attr)
     photo.save(validate: false) # defer validation
+    next photo.id, photo
   end
 
   has_one :photographer do
