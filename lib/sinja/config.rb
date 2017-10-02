@@ -168,6 +168,10 @@ module Sinja
       @serializer_opts.replace(deep_copy(DEFAULT_SERIALIZER_OPTS).merge!(h))
     end
 
+    def configure
+      yield self
+    end
+
     def freeze
       @query_params.freeze
       @error_logger.freeze

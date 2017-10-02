@@ -363,13 +363,18 @@ module Sinja
 
   def sinja
     if block_given?
+      warn "DEPRECATED: Pass a block to `sinja.configure' instead."
+
       yield _sinja
     else
       _sinja
     end
   end
 
-  alias configure_jsonapi sinja
+  def configure_jsonapi(&block)
+    _sinja.configure(&block)
+  end
+
   def freeze_jsonapi
     _sinja.freeze
   end

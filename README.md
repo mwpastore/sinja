@@ -1503,7 +1503,7 @@ require 'sinja'
 class App < Sinatra::Base
   register Sinja
 
-  sinja do |c|
+  sinja.configure do |c|
     # ..
   end
 
