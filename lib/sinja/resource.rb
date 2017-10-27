@@ -52,7 +52,7 @@ module Sinja
           raise ArgumentError, "Unexpected argument(s) for `#{action}' action helper" \
             unless args.length == block.arity
 
-          public_send("before_#{action}", *args) \
+          public_send("before_#{action}", *args.take(method("before_#{action}").arity.abs)) \
             if respond_to?("before_#{action}")
 
           case result = instance_exec(*args, &block)
