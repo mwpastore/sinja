@@ -197,7 +197,7 @@ class PostTest < SequelTest
 
     login 'foo@example.com'
 
-    delete "/posts/#{slug}/relationships/tags", JSON.generate(:data=>[
+    request "/posts/#{slug}/relationships/tags", :method=>:delete, :input=>JSON.generate(:data=>[
       { :type=>'tags', :id=>tag_ids.first },
       { :type=>'tags', :id=>999999 }
     ])

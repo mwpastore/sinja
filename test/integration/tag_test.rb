@@ -26,7 +26,7 @@ class TagTest < SequelTest
     get '/tags'
     assert_ok
     vals = json[:data].map { |t| { :id=>t[:id].to_i, :name=>t[:attributes][:name] } }
-    assert_equal DB[:tags].all, vals
+    assert_equal DB[:tags].select(:id, :name).order(:id).all, vals
   end
 
   def test_coalesced_find_options
@@ -45,7 +45,7 @@ class TagTest < SequelTest
     get '/tags?filter[id]=2,3'
     assert_ok
     vals = json[:data].map { |t| { :id=>t[:id].to_i, :name=>t[:attributes][:name] } }
-    assert_equal DB[:tags].where(:id=>[2, 3]).all, vals
+    assert_equal DB[:tags].select(:id, :name).where(:id=>[2, 3]).all, vals
   end
 
   def test_sort_denied

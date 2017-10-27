@@ -48,9 +48,9 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'minitest', '~> 5.9'
   spec.add_development_dependency 'minitest-hooks', '~> 1.4'
   #spec.add_development_dependency 'munson', '~> 0.4' # in Gemfile
-  spec.add_development_dependency 'rack-test', '~> 0.6'
+  spec.add_development_dependency 'rack-test', '~> 0.7.0'
   spec.add_development_dependency 'rake', '~> 12.0'
-  spec.add_development_dependency 'sequel', '~> 4.41'
+  spec.add_development_dependency 'sequel', '>= 4.49', '< 6'
   #spec.add_development_dependency 'sinja-sequel', '~> 0.1' # in Gemfile
   spec.add_development_dependency 'sqlite3', '~> 1.3' if !defined?(JRUBY_VERSION)
 end

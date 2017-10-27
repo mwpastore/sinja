@@ -5,6 +5,7 @@ require_relative 'post' # make sure we create the posts table before the join ta
 DB.create_table?(:tags) do
   primary_key :id
   String :name, null: false, unique: true
+  String :description
 end
 
 DB.create_table?(:posts_tags) do
@@ -15,13 +16,13 @@ DB.create_table?(:posts_tags) do
 end
 
 class Tag < Sequel::Model
-  set_allowed_columns :name
+  set_allowed_columns :name, :description
 
   many_to_many :posts, right_key: :post_slug
 end
 
 class TagSerializer < BaseSerializer
-  attribute :name
+  attributes :name, :description
 
   has_many :posts
 end
@@ -35,7 +36,7 @@ TagController = proc do
 
   show
 
-  index(sort_by: :name, filter_by: :name) do
+  index(sort_by: :name, filter_by: [:name, :description]) do
     Tag.dataset
   end
 
