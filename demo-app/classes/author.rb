@@ -12,6 +12,7 @@ DB.create_table?(:authors) do
 end
 
 class Author < Sequel::Model
+  plugin :auto_validations, not_null: :presence
   plugin :boolean_readers
   plugin :finder
   plugin :timestamps

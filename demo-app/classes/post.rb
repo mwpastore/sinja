@@ -11,6 +11,7 @@ DB.create_table?(:posts) do
 end
 
 class Post < Sequel::Model
+  plugin :auto_validations, not_null: :presence
   plugin :timestamps
   plugin :update_primary_key
 

@@ -11,6 +11,7 @@ DB.create_table?(:comments) do
 end
 
 class Comment < Sequel::Model
+  plugin :auto_validations, not_null: :presence
   plugin :timestamps
 
   set_allowed_columns :body

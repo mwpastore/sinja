@@ -16,6 +16,8 @@ DB.create_table?(:posts_tags) do
 end
 
 class Tag < Sequel::Model
+  plugin :auto_validations, not_null: :presence
+
   set_allowed_columns :name, :description
 
   many_to_many :posts, right_key: :post_slug
