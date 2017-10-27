@@ -2,7 +2,7 @@
 require_relative 'test_helper'
 require_relative '../../demo-app/app'
 
-class PostTest < SequelTest
+class TagTest < SequelTest
   include MyAppTest
   include Rack::Test::Methods
 
