@@ -6,6 +6,8 @@ RUN apk --no-cache upgrade
 RUN apk --no-cache add \
         sqlite-libs
 
+RUN gem update --system
+
 COPY Gemfile /app/
 RUN apk --no-cache add --virtual build-dependencies \
         build-base \
