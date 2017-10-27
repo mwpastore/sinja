@@ -58,11 +58,9 @@ module Sinja
             begin
               create(*[attributes].tap { |a| a << data[:id] if data.key?(:id) })
             rescue ArgumentError
-              if data.key?(:id)
-                raise ForbiddenError, 'Client-generated ID not supported'
-              else
-                raise ForbiddenError, 'Client-generated ID not provided'
-              end
+              kind = data.key?(:id) ? 'supported' : 'provided'
+
+              raise ForbiddenError, "Client-generated ID not #{kind}"
             end
 
           dispatch_relationship_requests!(id, :from=>:create, :methods=>{ :has_many=>:post })
