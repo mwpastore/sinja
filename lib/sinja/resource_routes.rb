@@ -18,7 +18,7 @@ module Sinja
         ids = ids.split(',') if ids.instance_of?(String)
         ids = Array(ids).tap(&:uniq!)
 
-        resources, opts =
+        collection, opts =
           if respond_to?(:show_many)
             show_many(ids)
           else
@@ -33,9 +33,9 @@ module Sinja
           end
 
         raise NotFoundError, "Resource(s) not found" \
-          unless ids.length == resources.length
+          unless ids.length == collection.length
 
-        serialize_models(resources, opts)
+        serialize_models(collection, opts)
       end
 
       app.options '' do
