@@ -40,8 +40,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'activesupport', '>= 4.2.8', '< 6'
   spec.add_dependency 'json', '>= 1.8.3', '< 3'
   spec.add_dependency 'jsonapi-serializers', '>= 0.16.2', '< 2'
-  spec.add_dependency 'sinatra', '>= 2.0.0.rc1', '< 3'
-  spec.add_dependency 'sinatra-contrib', '>= 2.0.0.rc1', '< 3'
+  spec.add_dependency 'sinatra', '~> 2.0'
+  spec.add_dependency 'sinatra-contrib', '~> 2.0'
 
   spec.add_development_dependency 'bundler', '~> 1.11'
   spec.add_development_dependency 'jdbc-sqlite3', '~> 3.8' if defined?(JRUBY_VERSION)
