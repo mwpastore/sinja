@@ -23,6 +23,7 @@ module Sinja
         rels = data.fetch(:relationships, {}).to_a
         rels.each do |rel, body, rel_type=nil, count=0|
           rel_type ||= settings._resource_config[:has_one].key?(rel) ? :has_one : :has_many
+          body = body.merge(included: included) if included
           code, _, *json = dispatch_relationship_request id, rel,
             opts.merge(:body=>body, :method=>methods.fetch(rel_type, :patch))
 
