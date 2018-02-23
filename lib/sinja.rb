@@ -157,6 +157,15 @@ module Sinja
         end
       end
 
+      def included
+        @included ||= {}
+        @included[request.path] ||= begin
+          deserialize_request_body.fetch(:included, nil)
+        rescue NoMethodError, KeyError
+          raise BadRequestError, 'Malformed {json:api} request payload'
+        end
+      end
+
       def normalize_filter_params
         return {} unless params[:filter]&.any?
 
