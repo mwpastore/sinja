@@ -5,6 +5,8 @@ module Sinja
   module Helpers
     module Relationships
       def dispatch_relationship_request(id, path, **opts)
+        id ||= '__NEW__'
+
         path_info = request.path_info.dup
         path_info << "/#{id}" unless path_info.end_with?("/#{id}")
         path_info << "/relationships/#{path}"
@@ -19,10 +21,11 @@ module Sinja
         call(fakenv)
       end
 
-      def dispatch_relationship_requests!(id, methods: {}, **opts)
+      def dispatch_relationship_requests!(id, only: nil, methods: {}, **opts)
         rels = data.fetch(:relationships, {}).to_a
         rels.each do |rel, body, rel_type=nil, count=0|
           rel_type ||= settings._resource_config[:has_one].key?(rel) ? :has_one : :has_many
+          next if only && only != rel_type
           code, _, *json = dispatch_relationship_request id, rel,
             opts.merge(:body=>body, :method=>methods.fetch(rel_type, :patch))
 

@@ -46,6 +46,7 @@ module Sinja
         fsp_opts = filter_sort_page?(:index)
         collection, opts = index
         collection, pagination = filter_sort_page(collection, fsp_opts.to_h)
+        opts[:collection_from] = :index
         serialize_models(collection, opts, pagination)
       end
 
@@ -63,8 +64,10 @@ module Sinja
               raise ForbiddenError, "Client-generated ID not #{kind}"
             end
 
-          dispatch_relationship_requests!(id, :from=>:create, :methods=>{ :has_many=>:post })
+          dispatch_relationship_requests!(id, :from=>:create, :only=>:has_one)
           validate! if respond_to?(:validate!)
+          id = after_create || id if respond_to?(:after_create)
+          dispatch_relationship_requests!(id, :from=>:create, :only=>:has_many, :methods=>{ :has_many=>:post })
         end
 
         if resource
@@ -98,6 +101,7 @@ module Sinja
           update(attributes).tap do
             dispatch_relationship_requests!(id, :from=>:update)
             validate! if respond_to?(:validate!)
+            after_update if respond_to?(:after_update)
           end
         end
         serialize_model?(tmp, opts)

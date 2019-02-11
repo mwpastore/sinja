@@ -47,10 +47,11 @@ module Sinja
       end
 
       def include_exclude!(options)
-        included, default, excluded =
+        included, default, excluded, collection_from =
           params[:include],
           options.delete(:include) || [],
-          options.delete(:exclude) || []
+          options.delete(:exclude) || [],
+          options[:collection_from]
 
         if included.empty?
           included = default.is_a?(Array) ? default : default.split(',')
@@ -88,17 +89,21 @@ module Sinja
                 settings._sinja.resource_config.fetch(term.pluralize.to_sym, nil)
             end
 
-            throw :keep?, true unless roles =
-              config.dig(:has_many, last_term.pluralize.to_sym, :fetch, :roles) ||
-              config.dig(:has_one, last_term.singularize.to_sym, :pluck, :roles)
+            options = config.dig(:has_many, last_term.pluralize.to_sym, :fetch) ||
+              config.dig(:has_one, last_term.singularize.to_sym, :pluck)
 
-            throw :keep?, roles && (roles.empty? || roles.intersect?(role))
+            throw :keep?, true unless options && options.respond_to?(:values_at)
+
+            roles, sideunload_on = options.values_at(:roles, :sideunload_on)
+
+            throw :keep?, roles.empty? || roles.intersect?(role) ||
+              collection_from && sideunload_on.include?(collection_from)
           end
         end
       end
 
       def serialize_model(model=nil, options={})
-        options[:is_collection] = false
+        options[:is_collection] = false unless options.key?(:is_collection)
         options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
         options = settings._sinja.serializer_opts.merge(options)
@@ -119,42 +124,12 @@ module Sinja
       end
 
       def serialize_models(models=[], options={}, pagination=nil)
-        options[:is_collection] = true
+        options[:is_collection] = true unless options.key?(:is_collection)
         options[:include] = include_exclude!(options)
         options[:fields] ||= params[:fields] unless params[:fields].empty?
         options = settings._sinja.serializer_opts.merge(options)
 
-        if pagination
-          # Whitelist pagination keys and dasherize query parameter names
-          pagination = VALID_PAGINATION_KEYS
-            .select(&pagination.method(:key?))
-            .map! do |outer_key|
-              [outer_key, pagination[outer_key].map do |inner_key, value|
-                [inner_key.to_s.dasherize.to_sym, value]
-              end.to_h]
-            end.to_h
-
-          options[:meta] ||= {}
-          options[:meta][:pagination] = pagination
-
-          options[:links] ||= {}
-          options[:links][:self] = request.url unless pagination.key?(:self)
-
-          base_query = Rack::Utils.build_nested_query \
-            env['rack.request.query_hash'].dup.tap { |h| h.delete('page') }
-
-          self_link, join_char =
-            if base_query.empty?
-              [request.path, ??]
-            else
-              ["#{request.path}?#{base_query}", ?&]
-            end
-
-          options[:links].merge!(pagination.map do |key, value|
-            [key, [self_link,
-              Rack::Utils.build_nested_query(:page=>value)].join(join_char)]
-          end.to_h)
-        end
+        serialize_pagination(options, pagination) if pagination
 
         ::JSONAPI::Serializer.serialize(Array(models), options)
       rescue ::JSONAPI::Serializer::InvalidIncludeError=>e
@@ -193,6 +168,39 @@ module Sinja
 
       def serialize_linkages?(updated=false, options={})
         body updated ? serialize_linkage(options) : serialize_models?([], options)
+      end
+
+      def serialize_pagination(options, pagination)
+        # Whitelist pagination keys and dasherize query parameter names
+        pagination = (pagination.keys & VALID_PAGINATION_KEYS.to_a).map! do |outer_key|
+          outer_value = pagination[outer_key].map do |inner_key, inner_value|
+            next inner_key.to_s.dasherize.to_sym, inner_value
+          end.to_h
+
+          next outer_key, outer_value
+        end.to_h
+
+        options[:meta] ||= {}
+        options[:meta][:pagination] = pagination
+
+        options[:links] ||= {}
+        options[:links][:self] = request.url unless pagination.key?(:self)
+
+        base_query = Rack::Utils.build_nested_query \
+          env['rack.request.query_hash'].reject { |k, _| k == 'page' }
+
+        self_link, join_char =
+          if base_query.empty?
+            [request.path, ??]
+          else
+            ["#{request.path}?#{base_query}", ?&]
+          end
+
+        options[:links].merge!(pagination.map do |key, value|
+          next key, [self_link, Rack::Utils.build_nested_query(:page=>value)].join(join_char)
+        end.to_h)
+
+        nil
       end
 
       def error_hash(title: nil, detail: nil, source: nil)

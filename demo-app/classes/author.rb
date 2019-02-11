@@ -67,9 +67,7 @@ AuthorController = proc do
   end
 
   create do |attr|
-    author = Author.new(attr)
-    author.save(validate: false)
-    next_pk author
+    next_pk Author.new(attr)
   end
 
   update(roles: %i[self superuser]) do |attr|

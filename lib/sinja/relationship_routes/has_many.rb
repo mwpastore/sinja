@@ -3,7 +3,7 @@ module Sinja
   module RelationshipRoutes
     module HasMany
       def self.registered(app)
-        app.def_action_helper(app, :fetch, %i[roles filter_by sort_by])
+        app.def_action_helper(app, :fetch, %i[roles sideunload_on filter_by sort_by])
         app.def_action_helper(app, :clear, %i[roles sideload_on])
         app.def_action_helper(app, :replace, %i[roles sideload_on])
         app.def_action_helper(app, :merge, %i[roles sideload_on])

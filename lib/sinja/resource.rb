@@ -89,8 +89,9 @@ module Sinja
           .to_sym
 
         config = _resource_config[rel_type][rel] # trigger default proc
+        pkre = _resource_config[:route_opts][:pkre]
 
-        namespace %r{/#{_resource_config[:route_opts][:pkre]}(?<r>/relationships)?/#{rel}(?![^/])} do
+        namespace %r{/(?:#{pkre}|__NEW__)(?<r>/relationships)?/#{rel}(?![^/])} do
           define_singleton_method(:resource_config) { config }
 
           helpers Helpers::Nested do

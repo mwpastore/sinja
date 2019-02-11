@@ -3,7 +3,7 @@ require_relative 'base'
 
 DB.create_table?(:posts) do
   String :slug, primary_key: true
-  foreign_key :author_id, :authors, index: true, on_delete: :cascade
+  foreign_key :author_id, :authors, null: false, index: true, on_delete: :cascade
   String :title, null: false
   String :body, text: true, null: false
   Float :created_at
@@ -26,11 +26,6 @@ class Post < Sequel::Model
   many_to_one :author
   one_to_many :comments
   many_to_many :tags, left_key: :post_slug
-
-  def validate
-    super
-    validates_not_null :author
-  end
 end
 
 class PostSerializer < BaseSerializer
@@ -73,9 +68,7 @@ PostController = proc do
   create(roles: :logged_in) do |attr, slug|
     attr[:slug] = slug
 
-    post = Post.new(attr)
-    post.save(validate: false)
-    next_pk post
+    next_pk Post.new(attr)
   end
 
   update(roles: %i[owner superuser]) do |attr|
@@ -97,7 +90,7 @@ PostController = proc do
         unless role?(:superuser) || rio[:id].to_i == current_user.id
 
       resource.author = Author.with_pk!(rio[:id].to_i)
-      resource.save_changes(validate: !sideloaded?)
+      resource.save_changes unless sideloaded?
     end
   end
 

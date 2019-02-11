@@ -250,6 +250,10 @@ module Sinja
         env.key?('sinja.passthru')
       end
 
+      def sideloaded_on?(action)
+        sideloaded? && action.to_s == env['sinja.passthru']
+      end
+
       def role
         nil
       end
@@ -340,9 +344,9 @@ module Sinja
         end
       end
 
-      before %r{/(#{config[:route_opts][:pkre]})(?:/.*)?} do |id|
+      before %r{/(#{config[:route_opts][:pkre]}|__NEW__)(?:/.*)?} do |id|
         self.resource =
-          if env.key?('sinja.resource')
+          if id == '__NEW__' || env.key?('sinja.resource')
             env['sinja.resource']
           elsif respond_to?(:find)
             find(id)

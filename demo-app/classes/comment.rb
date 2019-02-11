@@ -3,8 +3,8 @@ require_relative 'base'
 
 DB.create_table?(:comments) do
   primary_key :id
-  foreign_key :author_id, :authors, index: true, on_delete: :cascade
-  foreign_key :post_slug, :posts, type: String, index: true, on_delete: :cascade, on_update: :cascade
+  foreign_key :author_id, :authors, null: false, index: true, on_delete: :cascade
+  foreign_key :post_slug, :posts, type: String, null: false, index: true, on_delete: :cascade, on_update: :cascade
   String :body, text: true, null: false
   Float :created_at
   Float :updated_at
@@ -18,11 +18,6 @@ class Comment < Sequel::Model
 
   many_to_one :author
   many_to_one :post
-
-  def validate
-    super
-    validates_not_null [:author, :post]
-  end
 end
 
 class CommentSerializer < BaseSerializer
@@ -50,9 +45,7 @@ CommentController = proc do
   end
 
   create(roles: :logged_in) do |attr|
-    comment = Comment.new(attr)
-    comment.save(validate: false)
-    next_pk comment
+    next_pk Comment.new(attr)
   end
 
   update(roles: %i[owner superuser]) do |attr|
@@ -71,7 +64,7 @@ CommentController = proc do
 
     graft(roles: :superuser, sideload_on: :create) do |rio|
       resource.post = Post.with_pk!(rio[:id].to_i)
-      resource.save_changes(validate: !sideloaded?)
+      resource.save_changes unless sideloaded?
     end
   end
 
@@ -85,7 +78,7 @@ CommentController = proc do
         unless role?(:superuser) || rio[:id].to_i == current_user.id
 
       resource.author = Author.with_pk!(rio[:id].to_i)
-      resource.save_changes(validate: !sideloaded?)
+      resource.save_changes unless sideloaded?
     end
   end
 end

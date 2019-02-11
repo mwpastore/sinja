@@ -78,6 +78,7 @@ module Sinja
       action_proc = proc { |type, hash, action| hash[action] = {
         :roles=>@default_roles[type][action].dup,
         :sideload_on=>Set.new,
+        :sideunload_on=>Set.new,
         :filter_by=>Set.new,
         :sort_by=>Set.new
       }}.curry

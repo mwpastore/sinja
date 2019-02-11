@@ -43,9 +43,7 @@ TagController = proc do
   end
 
   create(roles: :logged_in) do |attr|
-    tag = Tag.new(attr)
-    tag.save(validate: false)
-    next_pk tag
+    next_pk Tag.new(attr)
   end
 
   destroy(roles: :superuser) do
