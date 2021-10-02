@@ -9,7 +9,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/sinja.svg)](https://badge.fury.io/rb/sinja)
 [![Dependency Status](https://gemnasium.com/badges/github.com/mwpastore/sinja.svg)](https://gemnasium.com/github.com/mwpastore/sinja)
-[![Build Status](https://travis-ci.org/mwpastore/sinja.svg?branch=master)](https://travis-ci.org/mwpastore/sinja)
+[![Build Status](https://github.com/mwpastore/sinja/actions/workflows/test.yml/badge.svg)](https://github.com/mwpastore/sinja/actions)
 [![{json:api} version](https://img.shields.io/badge/%7Bjson%3Aapi%7D%20version-1.0-lightgrey.svg)][7]
 [![Chat in #sinja-rb on Gitter](https://badges.gitter.im/sinja-rb/Lobby.svg)](https://gitter.im/sinja-rb/Lobby)
 
